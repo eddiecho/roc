@@ -192,59 +192,60 @@ impl Scanner<'_> {
     }
 
     fn match_numeric(&mut self, first: char) -> LiteralVariant {
-        // floats may not be anything but decimal
+        // floats may not be anything but decimal, does rust even allow it?
+        let mut numeric = Numeric::default();
+        let mut num: String;
+
         if first == '0' {
-            match self.peek() {
-                None => return LiteralVariant::Integer(0),
+            num = match self.peek() {
+                None => '0'.to_string(),
                 Some(c) => {
                     match c {
                         'b' => {
+                            numeric.base = NumericBase::Binary;
                             self.next();
-                            match i64::from_str_radix(self.match_decimal().as_str(), 2) {
-                                Ok(num) => return LiteralVariant::Integer(num),
-                                Err(e) => panic!(e)
-                            }
+                            self.match_decimal()
                         },
+                        // do people actually use octal?
                         'o' => {
+                            numeric.base = NumericBase::Octal;
                             self.next();
-                            match i64::from_str_radix(self.match_decimal().as_str(), 8) {
-                                Ok(num) => return LiteralVariant::Integer(num),
-                                Err(e) => panic!(e)
-                            }
+                            self.match_decimal()
                         },
                         'x' => {
+                            numeric.base = NumericBase::Hexadecimal;
                             self.next();
-                            match i64::from_str_radix(self.match_hex().as_str(), 16) {
-                                Ok(num) => return LiteralVariant::Integer(num),
-                                Err(e) => panic!(e)
-                            }
+                            self.match_hex()
                         },
                         '0'..='9' | '_' | '.' | 'e' => {
-                            match i64::from_str_radix(self.match_decimal().as_str(), 10) {
-                                Ok(num) => return LiteralVariant::Integer(num),
-                                Err(e) => panic!(e)
-                            }
+                            self.match_decimal()
                         },
-                        _ => return LiteralVariant::Integer(0)
+                        _ => '0'.to_string()
                     }
                 }
+            };
+        }
+
+        match self.peek() {
+            None => {},
+            Some(_) => {
+
             }
         }
 
-        LiteralVariant::Integer(0)
+        LiteralVariant::Integer(numeric)
     }
 
     fn advance(&mut self) -> Token {
         self.skip_whitespace();
 
         let mut token = Token::default();
-        token.col = self.curr_col;
-        token.row = self.curr_row;
+        let mut location = Location::default();
+        location.col = self.curr_row;
+        location.row = self.curr_row;
 
         match self.next() {
-            None => {
-                token
-            }
+            None => {},
             Some(byte) => {
                 match byte {
                     '(' => {
@@ -281,13 +282,13 @@ impl Scanner<'_> {
                         // DESIGN - identifiers can't start with a digit
                         token.variant = Lexeme::Literal(self.match_numeric(c));
                     },
-                    _ => {
-                    }
+                    _ => {}
                 }
-
-                token
             }
-        }
+        };
+
+        token.location = location;
+        token
     }
 
     pub fn scan(&mut self) {

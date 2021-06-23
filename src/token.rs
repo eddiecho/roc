@@ -1,9 +1,49 @@
 use std::fmt;
 
 #[derive(Debug)]
+pub struct Numeric {
+    pub base: NumericBase,
+    pub value: String,
+}
+
+impl Default for Numeric {
+    fn default() -> Numeric {
+        Numeric {
+            base: NumericBase::Decimal,
+            value: '0'.to_string()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Location {
+    pub col: u32,
+    pub row: u32,
+    pub len: u32,
+}
+
+impl Default for Location {
+    fn default() -> Location {
+        Location {
+            col: 0,
+            row: 0,
+            len: 0
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum LiteralVariant {
-    Integer(i64),
-    Floating(f64),
+    Integer(Numeric),
+    Floating(Numeric)
+}
+
+#[derive(Debug)]
+pub enum NumericBase {
+    Binary,
+    Octal,
+    Decimal,
+    Hexadecimal
 }
 
 // TODO - rustc lexes whitespace, probably for better error reporting
@@ -77,18 +117,14 @@ impl fmt::Debug for Identifier {
 #[derive(Debug)]
 pub struct Token {
     pub variant: Lexeme,
-    pub row: u32,
-    pub col: u32,
-    pub identifier: Identifier,
+    pub location: Location,
 }
 
 impl Default for Token {
     fn default() -> Token {
         Token {
             variant: Lexeme::Eof,
-            row: 0,
-            col: 0,
-            identifier: Identifier::new(""),
+            location: Location::default(),
         }
     }
 }
