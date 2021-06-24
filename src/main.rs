@@ -9,7 +9,10 @@ const ROC_VERSION_MINOR: usize = 0;
 const ROC_VERSION_PATCH: usize = 1;
 
 fn print_version() {
-    println!("Roc version {}.{}.{}", ROC_VERSION_MAJOR, ROC_VERSION_MINOR, ROC_VERSION_PATCH);
+    println!(
+        "Roc version {}.{}.{}",
+        ROC_VERSION_MAJOR, ROC_VERSION_MINOR, ROC_VERSION_PATCH
+    );
 }
 
 fn main() {
@@ -33,7 +36,7 @@ fn main() {
         Err(e) => {
             println!("{:?}", e);
             println!("Unable to parse input file: {}", args[1]);
-        },
+        }
         Ok(content) => {
             let mut scanner = scanner::Scanner::new(content.as_str());
             scanner.scan();

@@ -10,7 +10,7 @@ impl Default for Numeric {
     fn default() -> Numeric {
         Numeric {
             base: NumericBase::Decimal,
-            value: '0'.to_string()
+            value: '0'.to_string(),
         }
     }
 }
@@ -27,7 +27,7 @@ impl Default for Location {
         Location {
             col: 0,
             row: 0,
-            len: 0
+            len: 0,
         }
     }
 }
@@ -35,7 +35,7 @@ impl Default for Location {
 #[derive(Debug)]
 pub enum LiteralVariant {
     Integer(Numeric),
-    Floating(Numeric)
+    Floating(Numeric),
 }
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ pub enum NumericBase {
     Binary,
     Octal,
     Decimal,
-    Hexadecimal
+    Hexadecimal,
 }
 
 // TODO - rustc lexes whitespace, probably for better error reporting
@@ -101,7 +101,9 @@ impl Identifier {
 
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let name: Vec<u8> = self.name.iter()
+        let name: Vec<u8> = self
+            .name
+            .iter()
             .take(self.length as usize)
             .map(|c| *c)
             .collect();

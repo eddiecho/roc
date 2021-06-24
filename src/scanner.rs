@@ -74,11 +74,11 @@ impl Scanner<'_> {
             match whitespace {
                 0x01 => {
                     self.curr_col += 1;
-                },
+                }
                 0x02 => {
                     self.curr_row += 1;
                     self.curr_col = 1;
-                },
+                }
                 _ => {
                     break;
                 }
@@ -133,17 +133,15 @@ impl Scanner<'_> {
                     // TODO ERROR - better error handling here
                     None => {
                         panic!("End of file while parsing string");
-                    },
-                    Some(escape) => {
-                        match escape {
-                            'n' => {
-                                self.curr_row += 1;
-                                self.curr_col = 1;
-                                '\n'
-                            },
-                            _ => escape,
-                        }
                     }
+                    Some(escape) => match escape {
+                        'n' => {
+                            self.curr_row += 1;
+                            self.curr_col = 1;
+                            '\n'
+                        }
+                        _ => escape,
+                    },
                 }
             }
 
@@ -159,10 +157,10 @@ impl Scanner<'_> {
             match c {
                 '_' => {
                     continue;
-                },
+                }
                 '0'..='9' => {
                     buff.push(c);
-                },
+                }
                 _ => {
                     break;
                 }
@@ -178,10 +176,10 @@ impl Scanner<'_> {
             match c {
                 '_' => {
                     continue;
-                },
+                }
                 '0'..='9' | 'a'..='f' | 'A'..='F' => {
                     buff.push(c);
-                },
+                }
                 _ => {
                     break;
                 }
@@ -205,32 +203,28 @@ impl Scanner<'_> {
                             numeric.base = NumericBase::Binary;
                             self.next();
                             self.match_decimal()
-                        },
+                        }
                         // do people actually use octal?
                         'o' => {
                             numeric.base = NumericBase::Octal;
                             self.next();
                             self.match_decimal()
-                        },
+                        }
                         'x' => {
                             numeric.base = NumericBase::Hexadecimal;
                             self.next();
                             self.match_hex()
-                        },
-                        '0'..='9' | '_' | '.' | 'e' => {
-                            self.match_decimal()
-                        },
-                        _ => '0'.to_string()
+                        }
+                        '0'..='9' | '_' | '.' | 'e' => self.match_decimal(),
+                        _ => '0'.to_string(),
                     }
                 }
             };
         }
 
         match self.peek() {
-            None => {},
-            Some(_) => {
-
-            }
+            None => {}
+            Some(_) => {}
         }
 
         LiteralVariant::Integer(numeric)
@@ -245,15 +239,15 @@ impl Scanner<'_> {
         location.row = self.curr_row;
 
         match self.next() {
-            None => {},
+            None => {}
             Some(byte) => {
                 match byte {
                     '(' => {
                         token.variant = Lexeme::LeftParens;
-                    },
+                    }
                     ')' => {
                         token.variant = Lexeme::RightParens;
-                    },
+                    }
                     '/' => {
                         if self.match_char('/') {
                             // single line comment
@@ -270,18 +264,18 @@ impl Scanner<'_> {
                         } else {
                             token.variant = Lexeme::Divide;
                         }
-                    },
+                    }
                     // TODO - raw string literals
                     '\"' => {
                         token.variant = Lexeme::String(self.match_string('\"'));
-                    },
+                    }
                     '\'' => {
                         token.variant = Lexeme::String(self.match_string('\''));
-                    },
+                    }
                     c @ '0'..='9' => {
                         // DESIGN - identifiers can't start with a digit
                         token.variant = Lexeme::Literal(self.match_numeric(c));
-                    },
+                    }
                     _ => {}
                 }
             }
@@ -297,7 +291,6 @@ impl Scanner<'_> {
     }
 
     pub fn print(&self) {
-        self.tokens.iter()
-            .for_each(|token| println!("{:?}", token));
+        self.tokens.iter().for_each(|token| println!("{:?}", token));
     }
 }
