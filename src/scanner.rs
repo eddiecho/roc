@@ -1,11 +1,12 @@
 use crate::token::*;
 
 use std::i64;
+use std::iter::Peekable;
 use std::str::Chars;
 use std::vec::Vec;
 
 pub struct Scanner<'a> {
-    source: Chars<'a>,
+    source: Peekable<Chars<'a>>,
     tokens: Vec<Token>,
     curr_row: u32,
     curr_col: u32,
@@ -47,7 +48,7 @@ fn is_alphanumeric(c: char) -> bool {
 impl Scanner<'_> {
     pub fn new(source: &str) -> Scanner {
         Scanner {
-            source: source.chars(),
+            source: source.chars().peekable(),
             tokens: vec![],
             curr_col: 1,
             curr_row: 1,
@@ -55,27 +56,30 @@ impl Scanner<'_> {
     }
 
     fn peek(&mut self) -> Option<char> {
-        let c = self.source.nth(0)?;
-        Some(c)
+        self.source.peek().map(|c| *c)
     }
 
     fn next(&mut self) -> Option<char> {
-        let c = self.source.next()?;
-        Some(c)
+        self.source.next()
     }
 
-    fn good(&self) -> bool {
-        self.source.as_str().is_empty()
+    fn good(&mut self) -> bool {
+        match self.source.peek() {
+            None => true,
+            Some(_) => false
+        }
     }
 
     fn skip_whitespace(&mut self) {
-        while let Some(c) = self.next() {
+        while let Some(c) = self.peek() {
             let whitespace = is_whitespace(c as u8);
             match whitespace {
                 0x01 => {
+                    self.next();
                     self.curr_col += 1;
                 }
                 0x02 => {
+                    self.next();
                     self.curr_row += 1;
                     self.curr_col = 1;
                 }
@@ -235,8 +239,9 @@ impl Scanner<'_> {
 
         let mut token = Token::default();
         let mut location = Location::default();
-        location.col = self.curr_row;
+        location.col = self.curr_col;
         location.row = self.curr_row;
+        token.location = location;
 
         match self.next() {
             None => {}
@@ -281,13 +286,17 @@ impl Scanner<'_> {
             }
         };
 
-        token.location = location;
         token
     }
 
     pub fn scan(&mut self) {
-        let token = self.advance();
-        self.tokens.push(token);
+        loop {
+            let token = self.advance();
+            if token.variant == Lexeme::Eof {
+                break;
+            }
+            self.tokens.push(token);
+        }
     }
 
     pub fn print(&self) {

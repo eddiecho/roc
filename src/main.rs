@@ -44,3 +44,25 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const INPUT: &'static str = "
+()
+// single line comment
+/*
+multi line \
+comment
+ */
+1234
+";
+
+    #[test]
+    fn test_scanner() {
+        let mut scanner = scanner::Scanner::new(INPUT);
+        scanner.scan();
+        scanner.print();
+    }
+}

@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Numeric {
     pub base: NumericBase,
     pub value: String,
@@ -32,13 +32,13 @@ impl Default for Location {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralVariant {
     Integer(Numeric),
     Floating(Numeric),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum NumericBase {
     Binary,
     Octal,
@@ -47,7 +47,7 @@ pub enum NumericBase {
 }
 
 // TODO - rustc lexes whitespace, probably for better error reporting
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Lexeme {
     Eof,
     String(String),
