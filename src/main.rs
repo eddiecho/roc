@@ -1,6 +1,9 @@
 use std::env;
 use std::fs;
 
+#[macro_use]
+pub mod macros;
+
 pub mod scanner;
 pub mod token;
 
@@ -50,13 +53,11 @@ mod tests {
     use super::*;
 
     const INPUT: &'static str = "
-()
-// single line comment
+() // single line comment
 /*
 multi line \
 comment
- */
-1234
+ */ 1234
 ";
 
     #[test]

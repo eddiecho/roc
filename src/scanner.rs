@@ -55,11 +55,17 @@ impl Scanner<'_> {
         }
     }
 
+    fn carriage_return(&mut self) {
+        self.curr_col = 1;
+        self.curr_row += 1;
+    }
+
     fn peek(&mut self) -> Option<char> {
         self.source.peek().map(|c| *c)
     }
 
     fn next(&mut self) -> Option<char> {
+        self.curr_col += 1;
         self.source.next()
     }
 
@@ -76,12 +82,10 @@ impl Scanner<'_> {
             match whitespace {
                 0x01 => {
                     self.next();
-                    self.curr_col += 1;
                 }
                 0x02 => {
                     self.next();
-                    self.curr_row += 1;
-                    self.curr_col = 1;
+                    self.carriage_return();
                 }
                 _ => {
                     break;
@@ -96,7 +100,6 @@ impl Scanner<'_> {
             None => false,
             Some(cc) => cc == c,
         };
-        self.curr_col += res as u32;
 
         if res {
             self.next();
@@ -106,10 +109,8 @@ impl Scanner<'_> {
 
     fn find_next(&mut self, c: char) {
         while let Some(byte) = self.next() {
-            self.curr_col += 1;
             if byte == '\n' {
-                self.curr_col = 1;
-                self.curr_row += 1;
+                self.carriage_return();
             }
 
             if byte == c {
@@ -122,7 +123,6 @@ impl Scanner<'_> {
         let mut val = String::new();
 
         while let Some(byte) = self.next() {
-            self.curr_col += 1;
             let mut c = byte;
 
             if byte == delimit {
@@ -130,8 +130,7 @@ impl Scanner<'_> {
             }
 
             if byte == '\n' {
-                self.curr_col = 1;
-                self.curr_row += 1;
+                self.carriage_return();
             } else if byte == '\\' {
                 c = match self.next() {
                     // TODO ERROR - better error handling here
@@ -140,8 +139,7 @@ impl Scanner<'_> {
                     }
                     Some(escape) => match escape {
                         'n' => {
-                            self.curr_row += 1;
-                            self.curr_col = 1;
+                            self.carriage_return();
                             '\n'
                         }
                         _ => escape,
@@ -196,8 +194,10 @@ impl Scanner<'_> {
     fn match_numeric(&mut self, first: char) -> LiteralVariant {
         // floats may not be anything but decimal, does rust even allow it?
         let mut numeric = Numeric::default();
-        let mut num: String;
+        let mut num: String = first.to_string();
 
+        // TODO - binary, octal, and hex numbers
+        /*
         if first == '0' {
             num = match self.peek() {
                 None => '0'.to_string(),
@@ -225,11 +225,23 @@ impl Scanner<'_> {
                 }
             };
         }
+        */
 
-        match self.peek() {
-            None => {}
-            Some(_) => {}
+        loop {
+            match self.peek() {
+                Some(c) => {
+                    if is_digit(c) {
+                        num.push(c);
+                        self.next();
+                    } else {
+                        break;
+                    }
+                },
+                None => break
+            }
         }
+
+        numeric.value = num;
 
         LiteralVariant::Integer(numeric)
     }
