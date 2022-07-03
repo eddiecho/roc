@@ -7,6 +7,9 @@ pub mod macros;
 pub mod scanner;
 pub mod token;
 
+use scanner::Scanner;
+use token::Lexeme;
+
 const ROC_VERSION_MAJOR: usize = 0;
 const ROC_VERSION_MINOR: usize = 0;
 const ROC_VERSION_PATCH: usize = 1;
@@ -41,9 +44,15 @@ fn main() {
             println!("Unable to parse input file: {}", args[1]);
         }
         Ok(content) => {
-            let mut scanner = scanner::Scanner::new(content.as_str());
-            scanner.scan();
-            scanner.print();
+            let mut scanner = Scanner::new(content.as_str());
+            loop {
+                let token = scanner.advance();
+                println!("{:?}", token);
+                match token.variant {
+                    Lexeme::Eof => break,
+                    _ => continue,
+                }
+            }
         }
     }
 }
@@ -62,8 +71,14 @@ comment
 
     #[test]
     fn test_scanner() {
-        let mut scanner = scanner::Scanner::new(INPUT);
-        scanner.scan();
-        scanner.print();
+        let mut scanner = Scanner::new(INPUT);
+        loop {
+            let token = scanner.advance();
+            println!("{:?}", token);
+            match token.variant {
+                Lexeme::Eof => break,
+                _ => continue,
+            }
+        }
     }
 }

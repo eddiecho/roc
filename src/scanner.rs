@@ -3,11 +3,9 @@ use crate::token::*;
 use std::i64;
 use std::iter::Peekable;
 use std::str::Chars;
-use std::vec::Vec;
 
 pub struct Scanner<'a> {
     source: Peekable<Chars<'a>>,
-    tokens: Vec<Token>,
     curr_row: u32,
     curr_col: u32,
 }
@@ -49,7 +47,6 @@ impl Scanner<'_> {
     pub fn new(source: &str) -> Scanner {
         Scanner {
             source: source.chars().peekable(),
-            tokens: vec![],
             curr_col: 1,
             curr_row: 1,
         }
@@ -246,7 +243,7 @@ impl Scanner<'_> {
         LiteralVariant::Integer(numeric)
     }
 
-    fn advance(&mut self) -> Token {
+    pub fn advance(&mut self) -> Token {
         self.skip_whitespace();
 
         let mut token = Token::default();
@@ -299,19 +296,5 @@ impl Scanner<'_> {
         };
 
         token
-    }
-
-    pub fn scan(&mut self) {
-        loop {
-            let token = self.advance();
-            if token.variant == Lexeme::Eof {
-                break;
-            }
-            self.tokens.push(token);
-        }
-    }
-
-    pub fn print(&self) {
-        self.tokens.iter().for_each(|token| println!("{:?}", token));
     }
 }
