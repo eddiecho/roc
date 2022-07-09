@@ -180,6 +180,9 @@ impl Scanner<'_> {
             !is_identifier_char(*c) && !is_whitespace(*c)
         }).into_iter().peekable();
 
+        // fuckin .count() consumes the iterator
+        let mut count: usize = 0;
+
         for c in keyword.chars() {
             match identifier.next() {
                 None => ret = Lexeme::Identifier,
@@ -188,6 +191,8 @@ impl Scanner<'_> {
                     if c != next {
                         ret = Lexeme::Identifier;
                     }
+
+                    count += 1;
                 }
             }
         }
@@ -195,6 +200,10 @@ impl Scanner<'_> {
         match identifier.peek() {
             None => {},
             Some(_) => ret = Lexeme::Identifier,
+        }
+
+        for _ in 0..count {
+            self.next();
         }
 
         for _ in 0..identifier.count() {
@@ -253,11 +262,29 @@ impl Scanner<'_> {
             'r' => self.check_keyword("eturn", identifier, Lexeme::Return),
             's' => self.check_keyword("truct", identifier, Lexeme::Struct),
             't' => self.check_keyword("rue", identifier, Lexeme::True),
+            'v' => self.check_keyword("ar", identifier, Lexeme::Var),
+            'w' => self.check_keyword("hile", identifier, Lexeme::While),
             _ => {
                 self.skip_identifier();
                 return Lexeme::Identifier;
             }
         }
+    }
+
+    fn find_next(&mut self, c: char) {
+        loop {
+            match self.source.peek() {
+                None => break,
+                Some(nc) => {
+                    if *nc == c {
+                        break;
+                    }
+                    self.next();
+                }
+            }
+        }
+
+        self.next();
     }
 
     pub fn advance(&mut self) -> Token {
@@ -291,9 +318,17 @@ impl Scanner<'_> {
                     } else {
                         Lexeme::Star
                     },
-                    // TODO - need comment
                     '/' => variant = if self.match_next('=') {
                         Lexeme::SlashEqual
+                    } else if self.match_next('/') {
+                        self.find_next('\n');
+                        Lexeme::Comment
+                    } else if self.match_next('*') {
+                        while {
+                            self.find_next('*');
+                            !self.match_next('/')
+                        } {}
+                        Lexeme::Comment
                     } else {
                         Lexeme::Slash
                     },
@@ -338,7 +373,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_scanner() {
+    fn test_scanner_random() {
         const INPUT: &'static str = "
 () // single line comment
 /*
@@ -352,7 +387,6 @@ comment
 
         loop {
             let token = scanner.advance();
-            println!("{:?}", token);
             test.push(token.clone());
 
             match token.variant {
@@ -367,6 +401,60 @@ comment
             Lexeme::Comment,
             Lexeme::Comment,
             Lexeme::Number,
+            Lexeme::Function,
+            Lexeme::Eof,
+        ];
+
+        for (t1, t2) in compare.into_iter().zip(test) {
+            assert!(t1 == t2.variant);
+        }
+    }
+
+    #[test]
+    fn test_scanner_keywords() {
+        const INPUT: &'static str = "
+            and
+            defer
+            else
+            false
+            for
+            fun
+            if
+            or
+            return
+            struct
+            true
+            var
+            while
+    ";
+
+        let mut test = vec![];
+        let mut scanner = Scanner::new(INPUT);
+
+        loop {
+            let token = scanner.advance();
+            test.push(token.clone());
+
+            match token.variant {
+                Lexeme::Eof => break,
+                _ => continue,
+            }
+        }
+
+        let compare = vec![
+            Lexeme::And,
+            Lexeme::Defer,
+            Lexeme::Else,
+            Lexeme::False,
+            Lexeme::For,
+            Lexeme::Function,
+            Lexeme::If,
+            Lexeme::Or,
+            Lexeme::Return,
+            Lexeme::Struct,
+            Lexeme::True,
+            Lexeme::Var,
+            Lexeme::While,
             Lexeme::Eof,
         ];
 
