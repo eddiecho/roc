@@ -1,300 +1,377 @@
-use crate::token::*;
-
-use std::i64;
-use std::iter::Peekable;
+use std::iter::{Iterator, Peekable};
 use std::str::Chars;
 
-pub struct Scanner<'a> {
-    source: Peekable<Chars<'a>>,
-    curr_row: u32,
-    curr_col: u32,
-}
-
-#[repr(u32)]
-enum Whitespace {
-    General = 0x01,
-    NewLine = 0x02,
-}
-
-fn is_whitespace(c: u8) -> u32 {
-    let mut result: u32 = 0;
-
-    let disc = ((c == b'\n') as u32) << 1;
-    result |= disc & (Whitespace::NewLine as u32);
-    let disc = (c == b'\t') as u32;
-    result |= disc & (Whitespace::General as u32);
-    let disc = (c == b'\r') as u32;
-    result |= disc & (Whitespace::General as u32);
-    let disc = (c == b' ') as u32;
-    result |= disc & (Whitespace::General as u32);
-
-    result
-}
+use crate::token::{Token, Lexeme};
 
 fn is_digit(c: char) -> bool {
     c >= '0' && c <= '9'
 }
 
-fn is_alpha(c: char) -> bool {
-    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_')
+fn is_whitespace(c: char) -> bool {
+    c == ' ' || c == '\n' || c == '\t' || c == '\r'
 }
 
-fn is_alphanumeric(c: char) -> bool {
-    is_alpha(c) || is_digit(c)
+fn is_identifier_char(c: char) -> bool {
+    c == '(' || c == ')' || c == '{' || c == '}' || c == '=' ||
+    c == '[' || c == ']' || c == '/' || c == '+' || c == '-' ||
+    c == '*' || c == ',' || c == '.' || c == ';' || c == ':' ||
+    c == '>' || c == '<' || c == '|' || c == '\'' || c == '"'
+}
+
+pub struct Scanner<'a> {
+    source: Peekable<Chars<'a>>,
+    curr_idx: u32,
+    curr_col: u32,
+    curr_line: u32,
+    start_idx: u32,
 }
 
 impl Scanner<'_> {
     pub fn new(source: &str) -> Scanner {
         Scanner {
             source: source.chars().peekable(),
-            curr_col: 1,
-            curr_row: 1,
+            curr_col: 0,
+            curr_idx: 0,
+            curr_line: 1,
+            start_idx: 0,
         }
     }
 
-    fn carriage_return(&mut self) {
-        self.curr_col = 1;
-        self.curr_row += 1;
-    }
-
-    fn peek(&mut self) -> Option<char> {
-        self.source.peek().map(|c| *c)
+    fn end(&mut self) -> bool {
+        match self.source.peek() {
+            None => true,
+            Some(_) => false,
+        }
     }
 
     fn next(&mut self) -> Option<char> {
+        self.curr_idx += 1;
         self.curr_col += 1;
         self.source.next()
     }
 
-    fn good(&mut self) -> bool {
+    fn match_next(&mut self, expected: char) -> bool {
         match self.source.peek() {
-            None => true,
-            Some(_) => false
+            None => return false,
+            Some(next) => {
+                if expected != *next {
+                    return false;
+                }
+
+                self.curr_idx += 1;
+                self.source.next();
+                return true;
+            }
+        }
+    }
+
+    fn make_token(&self, variant: Lexeme) -> Token {
+        Token {
+            variant,
+            idx: self.curr_idx,
+            col: self.curr_col,
+            line: self.curr_line,
+            len: self.curr_idx - self.start_idx,
         }
     }
 
     fn skip_whitespace(&mut self) {
-        while let Some(c) = self.peek() {
-            let whitespace = is_whitespace(c as u8);
-            match whitespace {
-                0x01 => {
-                    self.next();
-                }
-                0x02 => {
-                    self.next();
-                    self.carriage_return();
-                }
-                _ => {
-                    break;
-                }
-            }
-        }
-    }
-
-    // TODO - does this work if c is \n?
-    fn match_char(&mut self, c: char) -> bool {
-        let res = match self.peek() {
-            None => false,
-            Some(cc) => cc == c,
-        };
-
-        if res {
-            self.next();
-        }
-        res
-    }
-
-    fn find_next(&mut self, c: char) {
-        while let Some(byte) = self.next() {
-            if byte == '\n' {
-                self.carriage_return();
-            }
-
-            if byte == c {
-                break;
-            }
-        }
-    }
-
-    fn match_string(&mut self, delimit: char) -> String {
-        let mut val = String::new();
-
-        while let Some(byte) = self.next() {
-            let mut c = byte;
-
-            if byte == delimit {
-                break;
-            }
-
-            if byte == '\n' {
-                self.carriage_return();
-            } else if byte == '\\' {
-                c = match self.next() {
-                    // TODO ERROR - better error handling here
-                    None => {
-                        panic!("End of file while parsing string");
-                    }
-                    Some(escape) => match escape {
-                        'n' => {
-                            self.carriage_return();
-                            '\n'
-                        }
-                        _ => escape,
-                    },
-                }
-            }
-
-            val.push(c);
-        }
-
-        val
-    }
-
-    fn match_decimal(&mut self) -> String {
-        let mut buff = String::new();
-        while let Some(c) = self.next() {
-            match c {
-                '_' => {
-                    continue;
-                }
-                '0'..='9' => {
-                    buff.push(c);
-                }
-                _ => {
-                    break;
-                }
-            }
-        }
-
-        buff
-    }
-
-    fn match_hex(&mut self) -> String {
-        let mut buff = String::new();
-        while let Some(c) = self.next() {
-            match c {
-                '_' => {
-                    continue;
-                }
-                '0'..='9' | 'a'..='f' | 'A'..='F' => {
-                    buff.push(c);
-                }
-                _ => {
-                    break;
-                }
-            }
-        }
-
-        buff
-    }
-
-    fn match_numeric(&mut self, first: char) -> LiteralVariant {
-        // floats may not be anything but decimal, does rust even allow it?
-        let mut numeric = Numeric::default();
-        let mut num: String = first.to_string();
-
-        // TODO - binary, octal, and hex numbers
-        /*
-        if first == '0' {
-            num = match self.peek() {
-                None => '0'.to_string(),
+        loop {
+            match self.source.peek() {
+                None => return,
                 Some(c) => {
                     match c {
-                        'b' => {
-                            numeric.base = NumericBase::Binary;
+                        ' ' | '\t' |'\r' => {
                             self.next();
-                            self.match_decimal()
                         }
-                        // do people actually use octal?
-                        'o' => {
-                            numeric.base = NumericBase::Octal;
+                        '\n' => {
+                            self.curr_line += 1;
+                            self.curr_col = 0;
                             self.next();
-                            self.match_decimal()
                         }
-                        'x' => {
-                            numeric.base = NumericBase::Hexadecimal;
-                            self.next();
-                            self.match_hex()
-                        }
-                        '0'..='9' | '_' | '.' | 'e' => self.match_decimal(),
-                        _ => '0'.to_string(),
+                        _ => return
                     }
                 }
-            };
+            }
         }
-        */
+    }
 
+    fn match_string(&mut self, expected: char) -> Lexeme {
         loop {
-            match self.peek() {
+            match self.source.peek() {
+                None => break,
                 Some(c) => {
-                    if is_digit(c) {
-                        num.push(c);
+                    if *c == expected {
+                        break;
+                    }
+
+                    if *c == '\n' {
+                        self.curr_line += 1;
+                    }
+
+                    self.next();
+                }
+            }
+        }
+
+        if self.end() {
+            return Lexeme::Error("Unterminated string".to_string());
+        }
+
+        // the closing quote
+        self.next();
+        Lexeme::String
+    }
+
+    fn match_number(&mut self) -> Lexeme {
+        loop {
+            match self.source.peek() {
+                None => break,
+                Some(c) => {
+                    if is_digit(*c) {
                         self.next();
                     } else {
                         break;
                     }
-                },
-                None => break
+                }
             }
         }
 
-        numeric.value = num;
+        // holy fuck this is awful
+        match self.source.peek() {
+            None => {},
+            Some(c) => {
+                if *c == '.' {
+                    match self.source.nth(1) {
+                        None => {},
+                        Some(c1) => {
+                            match c1 {
+                                '0'..='9' => {
+                                    self.next();
+                                    self.next();
 
-        LiteralVariant::Integer(numeric)
+                                    loop {
+                                        match self.source.peek() {
+                                            None => break,
+                                            Some(c2) => {
+                                                if is_digit(*c2) {
+                                                    self.next();
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Lexeme::Number
+    }
+
+    fn check_keyword(&mut self, keyword: &str, remaining: Peekable<Chars<'_>>, expected: Lexeme) -> Lexeme {
+        let mut ret = expected;
+        let mut identifier = remaining.take_while(|c| {
+            !is_identifier_char(*c) && !is_whitespace(*c)
+        }).into_iter().peekable();
+
+        for c in keyword.chars() {
+            match identifier.next() {
+                None => ret = Lexeme::Identifier,
+                Some(next) => {
+                    self.next();
+                    if c != next {
+                        ret = Lexeme::Identifier;
+                    }
+                }
+            }
+        }
+
+        match identifier.peek() {
+            None => {},
+            Some(_) => ret = Lexeme::Identifier,
+        }
+
+        for _ in 0..identifier.count() {
+            self.next();
+        }
+
+        ret
+    }
+
+    fn skip_identifier(&mut self) {
+        loop {
+            match self.source.peek() {
+                None => return,
+                Some(c) => {
+                    if is_identifier_char(*c) || is_whitespace(*c) {
+                        return;
+                    }
+
+                    self.next();
+                }
+            }
+        }
+    }
+
+    // TODO - this doesnt properly advance,
+    // TODO - ideally, any utf8 codepoint should be valid identifier
+    fn match_identifier(&mut self, first: char) -> Lexeme {
+        let mut identifier = self.source.clone();
+
+        match first {
+            'a' => self.check_keyword("nd", identifier, Lexeme::And),
+            'd' => self.check_keyword("efer", identifier, Lexeme::Defer),
+            'e' => self.check_keyword("lse", identifier, Lexeme::Else),
+            'f' => {
+                match self.source.peek() {
+                    None => {
+                        self.skip_identifier();
+                        return Lexeme::Identifier;
+                    }
+                    Some(second) => {
+                        identifier.next();
+                        match second {
+                            'a' => self.check_keyword("lse", identifier, Lexeme::False),
+                            'o' => self.check_keyword("r", identifier, Lexeme::For),
+                            'u' => self.check_keyword("n", identifier, Lexeme::Function),
+                            _ => {
+                                self.skip_identifier();
+                                return Lexeme::Identifier;
+                            }
+                        }
+                    }
+                }
+            }
+            'i' => self.check_keyword("f", identifier, Lexeme::If),
+            'o' => self.check_keyword("r", identifier, Lexeme::Or),
+            'r' => self.check_keyword("eturn", identifier, Lexeme::Return),
+            's' => self.check_keyword("truct", identifier, Lexeme::Struct),
+            't' => self.check_keyword("rue", identifier, Lexeme::True),
+            _ => {
+                self.skip_identifier();
+                return Lexeme::Identifier;
+            }
+        }
     }
 
     pub fn advance(&mut self) -> Token {
+        self.start_idx = self.curr_idx;
         self.skip_whitespace();
 
-        let mut token = Token::default();
-        let mut location = Location::default();
-        location.col = self.curr_col;
-        location.row = self.curr_row;
-        token.location = location;
+        let mut variant = Lexeme::Eof;
 
         match self.next() {
-            None => {}
-            Some(byte) => {
-                match byte {
-                    '(' => {
-                        token.variant = Lexeme::LeftParens;
+            Some(c) => {
+                match c {
+                    '(' => variant = Lexeme::LeftParens,
+                    ')' => variant = Lexeme::RightParens,
+                    '{' => variant = Lexeme::LeftBrace,
+                    '}' => variant = Lexeme::RightBrace,
+                    ';' => variant = Lexeme::SemiColon,
+                    ',' => variant = Lexeme::Comma,
+                    '.' => variant = Lexeme::Dot,
+                    '+' => variant = if self.match_next('=') {
+                        Lexeme::PlusEqual
+                    } else {
+                        Lexeme::Plus
+                    },
+                    '-' => variant = if self.match_next('=') {
+                        Lexeme::MinusEqual
+                    } else {
+                        Lexeme::Minus
+                    },
+                    '*' => variant = if self.match_next('=') {
+                        Lexeme::StarEqual
+                    } else {
+                        Lexeme::Star
+                    },
+                    // TODO - need comment
+                    '/' => variant = if self.match_next('=') {
+                        Lexeme::SlashEqual
+                    } else {
+                        Lexeme::Slash
+                    },
+                    '!' => variant = if self.match_next('=') {
+                        Lexeme::BangEqual
+                    } else {
+                        Lexeme::Bang
+                    },
+                    '=' => variant = if self.match_next('=') {
+                        Lexeme::Equality
+                    } else {
+                        Lexeme::Assignment
+                    },
+                    '>' => variant = if self.match_next('=') {
+                        Lexeme::GreaterEqual
+                    } else {
+                        Lexeme::Greater
+                    },
+                    '<' => variant = if self.match_next('=') {
+                        Lexeme::LessEqual
+                    } else {
+                        Lexeme::Less
+                    },
+                    '"' | '\'' => {
+                        variant = self.match_string(c);
                     }
-                    ')' => {
-                        token.variant = Lexeme::RightParens;
+                    '0'..='9' => {
+                        variant = self.match_number();
                     }
-                    '/' => {
-                        if self.match_char('/') {
-                            // single line comment
-                            token.variant = Lexeme::Comment;
-                            self.find_next('\n');
-                        } else if self.match_char('*') {
-                            // multi line comment
-                            token.variant = Lexeme::Comment;
-                            // HACK LANG - rust's shit replacement for a do-while loop
-                            while {
-                                self.find_next('*');
-                                !self.match_char('/')
-                            } {}
-                        } else {
-                            token.variant = Lexeme::Divide;
-                        }
-                    }
-                    // TODO - raw string literals
-                    '\"' => {
-                        token.variant = Lexeme::String(self.match_string('\"'));
-                    }
-                    '\'' => {
-                        token.variant = Lexeme::String(self.match_string('\''));
-                    }
-                    c @ '0'..='9' => {
-                        // DESIGN - identifiers can't start with a digit
-                        token.variant = Lexeme::Literal(self.match_numeric(c));
-                    }
-                    _ => {}
+                    _ => variant = self.match_identifier(c),
                 }
             }
-        };
+            None => {},
+        }
 
-        token
+        self.make_token(variant)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scanner() {
+        const INPUT: &'static str = "
+() // single line comment
+/*
+multi line \
+comment
+ */ 1234 fun
+    ";
+
+        let mut test = vec![];
+        let mut scanner = Scanner::new(INPUT);
+
+        loop {
+            let token = scanner.advance();
+            println!("{:?}", token);
+            test.push(token.clone());
+
+            match token.variant {
+                Lexeme::Eof => break,
+                _ => continue,
+            }
+        }
+
+        let compare = vec![
+            Lexeme::LeftParens,
+            Lexeme::RightParens,
+            Lexeme::Comment,
+            Lexeme::Comment,
+            Lexeme::Number,
+            Lexeme::Eof,
+        ];
+
+        for (t1, t2) in compare.into_iter().zip(test) {
+            assert!(t1 == t2.variant);
+        }
     }
 }

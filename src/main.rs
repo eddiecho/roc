@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::vec::Vec;
 
 #[macro_use]
 pub mod macros;
@@ -57,28 +58,3 @@ fn main() {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const INPUT: &'static str = "
-() // single line comment
-/*
-multi line \
-comment
- */ 1234
-";
-
-    #[test]
-    fn test_scanner() {
-        let mut scanner = Scanner::new(INPUT);
-        loop {
-            let token = scanner.advance();
-            println!("{:?}", token);
-            match token.variant {
-                Lexeme::Eof => break,
-                _ => continue,
-            }
-        }
-    }
-}
