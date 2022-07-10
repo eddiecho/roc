@@ -228,8 +228,6 @@ impl Scanner<'_> {
         }
     }
 
-    // TODO - this doesnt properly advance,
-    // TODO - ideally, any utf8 codepoint should be valid identifier
     fn match_identifier(&mut self, first: char) -> Lexeme {
         let mut identifier = self.source.clone();
 
@@ -455,6 +453,32 @@ comment
             Lexeme::True,
             Lexeme::Var,
             Lexeme::While,
+            Lexeme::Eof,
+        ];
+
+        for (t1, t2) in compare.into_iter().zip(test) {
+            assert!(t1 == t2.variant);
+        }
+    }
+
+    #[test]
+    fn test_unicode() {
+        const INPUT: &'static str = "😄";
+        let mut test = vec![];
+        let mut scanner = Scanner::new(INPUT);
+
+        loop {
+            let token = scanner.advance();
+            test.push(token.clone());
+
+            match token.variant {
+                Lexeme::Eof => break,
+                _ => continue,
+            }
+        }
+
+        let compare = vec![
+            Lexeme::Identifier,
             Lexeme::Eof,
         ];
 

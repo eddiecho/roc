@@ -58,15 +58,3 @@ pub struct Token {
     pub line: u32,
     pub len: u32,
 }
-
-impl Default for Token {
-    fn default() -> Token {
-        Token {
-            variant: Lexeme::Eof,
-            col: 0,
-            line: 1,
-            len: 0,
-            idx: 0,
-        }
-    }
-}
