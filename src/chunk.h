@@ -18,9 +18,9 @@ struct Chunk : DynamicArray<u8> {
   Chunk() noexcept;
   ~Chunk();
 
-  void disassemble();
-  int printAtOffset(int offset);
-  void addChunk(u8 byte, u32 line);
-  void addLine(u32 line);
-  void addConstant(Value val, u32 line);
+  auto disassemble() -> void;
+  auto printAtOffset(int offset) -> int;
+  auto addChunk(u8 byte, u32 line) -> void;
+  auto addLine(u32 line) -> void;
+  auto addConstant(Value val, u32 line) -> void;
 };

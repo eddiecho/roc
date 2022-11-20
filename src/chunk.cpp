@@ -18,7 +18,7 @@ Chunk::~Chunk() {
   this->deinit();
 }
 
-void Chunk::addLine(u32 line) {
+auto Chunk::addLine(u32 line) -> void {
   if (this->lines.count == 0) {
     this->lines.append({this->count, line});
   } else {
@@ -29,17 +29,36 @@ void Chunk::addLine(u32 line) {
   }
 }
 
-void Chunk::addChunk(u8 byte, u32 line) {
+auto Chunk::addChunk(u8 byte, u32 line) -> void {
   this->addLine(line);
   this->append(byte);
 }
 
-static int simpleInstruction(const char* name, int offset) {
+#define SMALL_CONST_POOL_SIZE 1
+auto Chunk::addConstant(Value val, u32 line) -> void {
+  this->addLine(line);
+
+  if (this->constants.count < SMALL_CONST_POOL_SIZE) {
+    this->append(OpCode::CONSTANT);
+    this->append((u8)this->constants.count);
+  } else {
+    this->append(OpCode::CONSTANT_LONG);
+
+    u32 count = this->constants.count;
+    this->append(count >> 16);
+    this->append(count >> 8);
+    this->append(count);
+  }
+
+  this->constants.append(val);
+}
+
+auto static simpleInstruction(const char* name, int offset) -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-static int constantInstruction(Chunk* chunk, int offset) {
+auto static constantInstruction(Chunk* chunk, int offset) -> int {
   u8 const_idx = chunk->data[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   printValue(chunk->constants.data[const_idx]);
@@ -48,7 +67,7 @@ static int constantInstruction(Chunk* chunk, int offset) {
   return offset + 2;
 }
 
-static int constantLongInstruction(Chunk* chunk, int offset) {
+auto static constantLongInstruction(Chunk* chunk, int offset) -> int {
   u8 one = chunk->data[offset + 1];
   u8 two = chunk->data[offset + 2];
   u8 thr = chunk->data[offset + 3];
@@ -65,7 +84,7 @@ static int constantLongInstruction(Chunk* chunk, int offset) {
   return offset + 4;
 }
 
-int Chunk::printAtOffset(int offset) {
+auto Chunk::printAtOffset(int offset) -> int {
   printf("%04d ", offset);
 
   u32 line_idx = this->lines.search(offset);
@@ -90,28 +109,9 @@ int Chunk::printAtOffset(int offset) {
   }
 }
 
-void Chunk::disassemble() {
+auto Chunk::disassemble() -> void {
   printf("==========\n");
-  for (int offset = 0; offset < this->count;) {
+  for (u32 offset = 0; offset < this->count;) {
     offset = this->printAtOffset(offset);
   }
-}
-
-#define SMALL_CONST_POOL_SIZE 1
-void Chunk::addConstant(Value val, u32 line) {
-  this->addLine(line);
-
-  if (this->constants.count < SMALL_CONST_POOL_SIZE) {
-    this->append(OpCode::CONSTANT);
-    this->append((u8)this->constants.count);
-  } else {
-    this->append(OpCode::CONSTANT_LONG);
-
-    u32 count = this->constants.count;
-    this->append(count >> 16);
-    this->append(count >> 8);
-    this->append(count);
-  }
-
-  this->constants.append(val);
 }

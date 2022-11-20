@@ -19,7 +19,7 @@ struct RangeArray : DynamicArray<Range<T>> {
 
 template <typename T>
 // returns the index of the Range struct
-u32 RangeArray<T>::search(u32 range) {
+auto RangeArray<T>::search(u32 range) -> u32 {
   if (this->count == 0) {
     return 0xFFFFFFFF;
   }

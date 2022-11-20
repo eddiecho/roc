@@ -16,11 +16,11 @@ struct DynamicArray {
   u32 capacity;
   T* data;
 
-  void init();
-  void append(T item);
-  void deinit();
+  auto init() -> void;
+  auto append(T item) -> void;
+  auto deinit() -> void;
 
-  T& operator[](std::size_t idx) {
+  auto operator[](std::size_t idx) -> T& {
     return data[idx];
   }
   const T& operator[](std::size_t idx) const {
@@ -29,14 +29,14 @@ struct DynamicArray {
 };
 
 template <typename T>
-void DynamicArray<T>::init() {
+auto DynamicArray<T>::init() -> void {
   this->count = 0;
   this->capacity = 0;
   this->data = NULL;
 }
 
 template <typename T>
-void DynamicArray<T>::append(T item) {
+auto DynamicArray<T>::append(T item) -> void {
   if (this->capacity < this->count + 1) {
     int oldCapacity = this->capacity;
     this->capacity = GROW_CAPACITY(oldCapacity);
@@ -49,7 +49,7 @@ void DynamicArray<T>::append(T item) {
 }
 
 template <typename T>
-void DynamicArray<T>::deinit() {
+auto DynamicArray<T>::deinit() -> void {
   typedef T type;
   FREE_ARRAY(type, this->data, this->capacity);
   this->init();

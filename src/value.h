@@ -7,7 +7,7 @@
 
 typedef double Value;
 
-void printValue(Value val) {
+auto printValue(Value val) -> void {
   printf("%g", val);
 }
 
