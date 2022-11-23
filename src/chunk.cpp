@@ -39,10 +39,10 @@ auto Chunk::addConstant(Value val, u32 line) -> void {
   this->addLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
-    this->append(OpCode::CONSTANT);
+    this->append(OpCode::Constant);
     this->append((u8)this->constants.count);
   } else {
-    this->append(OpCode::CONSTANT_LONG);
+    this->append(OpCode::ConstantLong);
 
     u32 count = this->constants.count;
     this->append(count >> 16);
@@ -93,13 +93,13 @@ auto Chunk::printAtOffset(int offset) -> int {
 
   u8 instruction = this->data[offset];
   switch (instruction) {
-    case OpCode::CONSTANT: {
+    case OpCode::Constant: {
       return constantInstruction(this, offset);
     }
-    case OpCode::CONSTANT_LONG: {
+    case OpCode::ConstantLong: {
       return constantLongInstruction(this, offset);
     }
-    case OpCode::RETURN: {
+    case OpCode::Return: {
       return simpleInstruction("OP_RETURN", offset);
     }
     default: {

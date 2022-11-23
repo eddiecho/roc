@@ -6,9 +6,9 @@
 #include "value.h"
 
 enum OpCode {
-  CONSTANT,
-  CONSTANT_LONG,
-  RETURN,
+  Constant,
+  ConstantLong,
+  Return,
 };
 
 struct Chunk : DynamicArray<u8> {
