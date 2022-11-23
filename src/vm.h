@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "chunk.h"
+#include "value.h"
 
 enum class InterpretError {
   Success,
@@ -26,11 +27,16 @@ auto static printInterpretError(InterpretError err) -> void {
   }
 }
 
+#define VM_STACK_MAX 256
 struct VirtualMachine {
   Chunk* chunk = nullptr;
   u8* instructionPointer = 0;
+  Value stack[VM_STACK_MAX];
+  Value* stackTop;
 
   auto init() -> void;
   auto deinit() -> void;
   auto interpret(Chunk *chunk) -> InterpretError;
+  auto push(Value value) -> void;
+  auto pop() -> Value;
 };

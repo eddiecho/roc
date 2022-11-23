@@ -5,9 +5,27 @@
 
 #define DEBUG_TRACE_EXECUTION
 
-auto VirtualMachine::init() -> void {}
+auto VirtualMachine::init() -> void {
+  // reset stack pointer
+  this->stackTop = this->stack;
+}
 
 auto VirtualMachine::deinit() -> void {}
+
+auto VirtualMachine::push(Value value) -> void {
+  // TODO - this is bad
+  if (this->stackTop - this->stack > VM_STACK_MAX) {
+    exit(1);
+  }
+
+  *this->stackTop = value;
+  this->stackTop++;
+}
+
+auto VirtualMachine::pop() -> Value {
+  this->stackTop--;
+  return *this->stackTop;
+}
 
 auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
   this->chunk = chunk;
@@ -15,6 +33,13 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
 
 #define READ_BYTE() (*this->instructionPointer++)
 #define READ_CONSTANT() (this->chunk->constants.data[READ_BYTE()])
+// TODO - this isnt good for operator overloading
+#define BINARY_OP(op) \
+  do { \
+    double b = this->pop(); \
+    double a = this->pop(); \
+    push(a op b); \
+  } while(0)
 
   while (1) {
     u8 instruction;
@@ -25,12 +50,14 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
 
     switch(instruction = READ_BYTE()) {
       case OpCode::Return: {
+        printValue(this->pop());
+        printf("\n");
+
         return InterpretError::Success;
       }
       case OpCode::Constant: {
         Value constant = READ_CONSTANT();
-        printValue(constant);
-        printf("\n");
+        this->push(constant);
         break;
       }
       case OpCode::ConstantLong: {
@@ -40,9 +67,15 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
         idx |= (u8) READ_BYTE();
 
         Value constant = this->chunk->constants.data[idx];
-        printValue(constant);
-        printf("\n");
-
+        this->push(constant);
+        break;
+      }
+      case OpCode::Add:      { BINARY_OP(+); break; }
+      case OpCode::Subtract: { BINARY_OP(-); break; }
+      case OpCode::Multiply: { BINARY_OP(*); break; }
+      case OpCode::Divide:   { BINARY_OP(/); break; }
+      case OpCode::Negate: {
+        this->push(-this->pop());
         break;
       }
       default: {
@@ -53,6 +86,7 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef BINARY_OP
 
   return InterpretError::Success;
 }
