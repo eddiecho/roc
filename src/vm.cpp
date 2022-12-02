@@ -27,6 +27,10 @@ auto VirtualMachine::pop() -> Value {
   return *this->stackTop;
 }
 
+auto VirtualMachine::interpret(const char* src) -> InterpretError {
+  return InterpretError::Success;
+}
+
 auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
   this->chunk = chunk;
   this->instructionPointer = chunk->data;

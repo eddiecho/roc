@@ -5,25 +5,27 @@
 #include "chunk.h"
 #include "value.h"
 
+#define VM_INTERPRET_ERRORS \
+  X(Success) \
+  X(CompileError) \
+  X(RuntimeError)
+
 enum class InterpretError {
-  Success,
-  CompileError,
-  RuntimeError,
+#define X(ID) ID,
+  VM_INTERPRET_ERRORS
+#undef X
 };
 
-auto static printInterpretError(InterpretError err) -> void {
+auto static errorToString(InterpretError err) -> const char* {
   switch (err) {
-    case InterpretError::CompileError: {
-      printf("InterpretError CompileError");
-      break;
-    }
-    case InterpretError::RuntimeError: {
-      printf("InterpretError RuntimeError");
-      break;
-    }
-    default: {
-      printf("InterpretError Success");
-    }
+
+#define X(ID) case InterpretError::ID: return #ID;
+    VM_INTERPRET_ERRORS
+#undef X
+
+  default: {
+    return "Success";
+  }
   }
 }
 
@@ -37,6 +39,7 @@ struct VirtualMachine {
   auto init() -> void;
   auto deinit() -> void;
   auto interpret(Chunk *chunk) -> InterpretError;
+  auto interpret(const char* src) -> InterpretError;
   auto push(Value value) -> void;
   auto pop() -> Value;
 };

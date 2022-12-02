@@ -1,3 +1,9 @@
+#pragma once
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <cctype>
+
 template <typename F>
 struct privDefer {
 	F f;
@@ -14,3 +20,35 @@ privDefer<F> defer_func(F f) {
 #define DEFER_2(x, y) DEFER_1(x, y)
 #define DEFER_3(x)    DEFER_2(x, __COUNTER__)
 #define defer(code)   auto DEFER_3(_defer_) = defer_func([&](){code;})
+
+namespace Utils {
+
+auto static readFile(const char* path) -> char* {
+  FILE* file = fopen(path, "rb");
+  if (file == NULL) {
+    fprintf(stderr, "Could not open file \"%s\".\n", path);
+    exit(75);
+  }
+
+  defer(fclose(file));
+
+  fseek(file, 0L, SEEK_END);
+  size_t fileSize = ftell(file);
+  rewind(file);
+
+  char* buffer = (char*)malloc(fileSize + 1);
+  size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
+  buffer[bytesRead] = '\0';
+
+  return buffer;
+}
+
+auto static IsDigit(char c) -> bool {
+  return c >= '0' && c <= '9';
+}
+
+auto static IsIdentifier(char c) -> bool {
+  return !ispunct(c);
+}
+
+}

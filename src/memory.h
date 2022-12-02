@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common.h"
 #include <stdlib.h>
+
+#include "common.h"
 
 auto reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
   if (newSize == 0) {
