@@ -13,7 +13,7 @@ auto VirtualMachine::Init() -> void {
 auto VirtualMachine::Deinit() -> void {}
 
 auto VirtualMachine::Push(Value value) -> void {
-  // TODO - this is bad
+  // TODO(eddie) - this is bad error handling
   if (this->stackTop - this->stack > VM_STACK_MAX) {
     exit(1);
   }
@@ -37,25 +37,24 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
 
 #define READ_BYTE() (*this->instructionPointer++)
 #define READ_CONSTANT() (this->chunk->constants_.data_[READ_BYTE()])
-// TODO - this isnt good for operator overloading
+// TODO(eddie) - this isnt good for operator overloading
 #define BINARY_OP(op) \
   do { \
     double b = this->Pop(); \
     double a = this->Pop(); \
     this->Push(a op b); \
-  } while(0)
+  } while (0)
 
   u8 byte;
   while (1) {
-
 #ifdef DEBUG_TRACE_EXECUTION
-    this->chunk->PrintAtOffset((int) (this->instructionPointer - this->chunk->data_));
+    this->chunk->PrintAtOffset(static_cast<int>(this->instructionPointer - this->chunk->data_));
 #endif
 
     byte = READ_BYTE();
     OpCode instruction = static_cast<OpCode>(byte);
 
-    switch(instruction) {
+    switch (instruction) {
       case OpCode::Return: {
         PrintValue(this->Pop());
         printf("\n");

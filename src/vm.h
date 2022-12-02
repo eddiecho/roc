@@ -18,7 +18,6 @@ enum class InterpretError {
 
 auto static errorToString(InterpretError err) -> const char* {
   switch (err) {
-
 #define X(ID) case InterpretError::ID: return #ID;
     VM_INTERPRET_ERRORS
 #undef X
@@ -31,14 +30,13 @@ auto static errorToString(InterpretError err) -> const char* {
 
 #define VM_STACK_MAX 256
 class VirtualMachine {
-
-public:
+ public:
   auto Init() -> void;
   auto Deinit() -> void;
   auto Interpret(Chunk *chunk) -> InterpretError;
   auto Interpret(const char* src) -> InterpretError;
 
-private:
+ private:
   Chunk* chunk = nullptr;
   u8* instructionPointer = 0;
   Value stack[VM_STACK_MAX];

@@ -2,8 +2,9 @@
 
 #include "compiler.h"
 
-#include <cstring>
 #include <stdio.h>
+
+#include <cstring>
 
 #include "utils/utils.h"
 
@@ -62,7 +63,7 @@ auto constexpr inline Scanner::PeekNext() -> char {
 
 auto Scanner::SkipWhitespace() -> void {
   while (1) {
-    switch(this->Peek()) {
+    switch (this->Peek()) {
       case ' ':
       case '\r':
       case '\t': {

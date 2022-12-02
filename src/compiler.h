@@ -30,15 +30,13 @@ struct Token {
 
   Token() noexcept;
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
-  Token(const char* error);
+  explicit Token(const char* error);
 
   auto Type() -> const char* {
-    switch(this->type) {
-
+    switch (this->type) {
 #define X(ID) case Lexeme::ID: return #ID;
     VM_LEXEME_TYPE
 #undef X
-
     default: {
       return "Eof";
     }
@@ -56,11 +54,11 @@ class Scanner {
   u32 line;
   u32 row;
 
-public:
+ public:
   auto Init(const char* src) -> void;
   auto ScanToken() -> Token;
 
-private:
+ private:
   auto inline Match(char expected) -> bool;
   auto constexpr inline IsEnd() -> bool;
   auto inline Advance() -> char;

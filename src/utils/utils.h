@@ -6,14 +6,14 @@
 
 template <typename F>
 struct privDefer {
-	F f;
-	privDefer(F f) : f(f) {}
-	~privDefer() { f(); }
+  F f;
+  explicit privDefer(F f) : f(f) {}
+  ~privDefer() { f(); }
 };
 
 template <typename F>
 privDefer<F> defer_func(F f) {
-	return privDefer<F>(f);
+  return privDefer<F>(f);
 }
 
 #define DEFER_1(x, y) x##y
@@ -36,7 +36,7 @@ auto static ReadFile(const char* path) -> char* {
   size_t fileSize = ftell(file);
   rewind(file);
 
-  char* buffer = (char*)malloc(fileSize + 1);
+  char* buffer = reinterpret_cast<char*>(malloc(fileSize + 1));
   size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
   buffer[bytesRead] = '\0';
 
@@ -51,4 +51,4 @@ auto static IsIdentifier(char c) -> bool {
   return !ispunct(c);
 }
 
-}
+}  // namespace Utils

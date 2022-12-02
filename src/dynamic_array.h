@@ -6,14 +6,17 @@
 #define GROW_CAPACITY(cap) \
   ((cap) < 8 ? 8 : (cap) * 2)
 #define GROW_ARRAY(type, ptr, oldC, newC) \
-  (type*)Reallocate(ptr, sizeof(type) * (oldC), sizeof(type) * (newC))
+  reinterpret_cast<type*>(Reallocate(ptr, sizeof(type) * (oldC), sizeof(type) * (newC)))
 #define FREE_ARRAY(type, ptr, count) \
   Reallocate(ptr, sizeof(type) * count, 0)
 
 template <typename T>
 class DynamicArray {
+ public:
+  u32 count_;
+  u32 capacity_;
+  T* data_;
 
-public:
   auto Init() -> void;
   auto Append(T item) -> void;
   auto Deinit() -> void;
@@ -24,11 +27,6 @@ public:
   const T& operator[](std::size_t idx) const {
     return data_[idx];
   }
-
-  u32 count_;
-  u32 capacity_;
-  T* data_;
-
 };
 
 template <typename T>
