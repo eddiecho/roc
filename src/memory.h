@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-auto reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
+auto Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
   if (newSize == 0) {
     free(ptr);
     return NULL;

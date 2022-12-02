@@ -8,14 +8,14 @@
 
 static VirtualMachine VM;
 
-auto static runFile(const char* path) -> InterpretError {
-  char* src = Utils::readFile(path);
+auto static RunFile(const char* path) -> InterpretError {
+  char* src = Utils::ReadFile(path);
   defer(free(src));
 
-  return VM.interpret(src);
+  return VM.Interpret(src);
 }
 
-auto static repl() -> void {
+auto static Repl() -> void {
   char line[1024];
 
   while (1) {
@@ -26,7 +26,7 @@ auto static repl() -> void {
       break;
     }
 
-    VM.interpret(line);
+    VM.Interpret(line);
   }
 }
 
@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
     << Roc_VERSION_MAJOR << "." << Roc_VERSION_MINOR
     << std::endl;
 
-  VM.init();
-  defer(VM.deinit(););
+  VM.Init();
+  defer(VM.Deinit(););
 
   /*
   Chunk chunk;
@@ -57,9 +57,9 @@ int main(int argc, char** argv) {
   */
 
   if (argc == 0) {
-    repl();
+    Repl();
   } else if (argc == 2) {
-    runFile(argv[1]);
+    RunFile(argv[1]);
   } else {
     printf("Usage: roc [path]\n");
   }

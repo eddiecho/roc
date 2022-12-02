@@ -5,14 +5,14 @@
 
 #define DEBUG_TRACE_EXECUTION
 
-auto VirtualMachine::init() -> void {
+auto VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stackTop = this->stack;
 }
 
-auto VirtualMachine::deinit() -> void {}
+auto VirtualMachine::Deinit() -> void {}
 
-auto VirtualMachine::push(Value value) -> void {
+auto VirtualMachine::Push(Value value) -> void {
   // TODO - this is bad
   if (this->stackTop - this->stack > VM_STACK_MAX) {
     exit(1);
@@ -22,46 +22,49 @@ auto VirtualMachine::push(Value value) -> void {
   this->stackTop++;
 }
 
-auto VirtualMachine::pop() -> Value {
+auto VirtualMachine::Pop() -> Value {
   this->stackTop--;
   return *this->stackTop;
 }
 
-auto VirtualMachine::interpret(const char* src) -> InterpretError {
+auto VirtualMachine::Interpret(const char* src) -> InterpretError {
   return InterpretError::Success;
 }
 
-auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
+auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
   this->chunk = chunk;
-  this->instructionPointer = chunk->data;
+  this->instructionPointer = chunk->data_;
 
 #define READ_BYTE() (*this->instructionPointer++)
-#define READ_CONSTANT() (this->chunk->constants.data[READ_BYTE()])
+#define READ_CONSTANT() (this->chunk->constants_.data_[READ_BYTE()])
 // TODO - this isnt good for operator overloading
 #define BINARY_OP(op) \
   do { \
-    double b = this->pop(); \
-    double a = this->pop(); \
-    push(a op b); \
+    double b = this->Pop(); \
+    double a = this->Pop(); \
+    this->Push(a op b); \
   } while(0)
 
+  u8 byte;
   while (1) {
-    u8 instruction;
 
 #ifdef DEBUG_TRACE_EXECUTION
-    this->chunk->printAtOffset((int) (this->instructionPointer - this->chunk->data));
+    this->chunk->PrintAtOffset((int) (this->instructionPointer - this->chunk->data_));
 #endif
 
-    switch(instruction = READ_BYTE()) {
+    byte = READ_BYTE();
+    OpCode instruction = static_cast<OpCode>(byte);
+
+    switch(instruction) {
       case OpCode::Return: {
-        printValue(this->pop());
+        PrintValue(this->Pop());
         printf("\n");
 
         return InterpretError::Success;
       }
       case OpCode::Constant: {
         Value constant = READ_CONSTANT();
-        this->push(constant);
+        this->Push(constant);
         break;
       }
       case OpCode::ConstantLong: {
@@ -70,8 +73,8 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
         idx |= ((u8) READ_BYTE() << 8);
         idx |= (u8) READ_BYTE();
 
-        Value constant = this->chunk->constants.data[idx];
-        this->push(constant);
+        Value constant = this->chunk->constants_.data_[idx];
+        this->Push(constant);
         break;
       }
       case OpCode::Add:      { BINARY_OP(+); break; }
@@ -79,7 +82,7 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
       case OpCode::Multiply: { BINARY_OP(*); break; }
       case OpCode::Divide:   { BINARY_OP(/); break; }
       case OpCode::Negate: {
-        this->push(-this->pop());
+        this->Push(-this->Pop());
         break;
       }
       default: {

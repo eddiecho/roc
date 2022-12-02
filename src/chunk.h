@@ -5,7 +5,7 @@
 #include "utils/range_search.h"
 #include "value.h"
 
-enum OpCode {
+enum class OpCode : u8 {
   Constant,
   ConstantLong,
   Add,
@@ -16,16 +16,16 @@ enum OpCode {
   Return,
 };
 
-struct Chunk : DynamicArray<u8> {
-  ConstData constants;
-  RangeArray<u32> lines;
+struct Chunk : public DynamicArray<u8> {
+  ConstData constants_;
+  RangeArray<u32> lines_;
 
   Chunk() noexcept;
   ~Chunk();
 
-  auto disassemble() -> void;
-  auto printAtOffset(int offset) -> int;
-  auto addChunk(u8 byte, u32 line) -> void;
-  auto addLine(u32 line) -> void;
-  auto addConstant(Value val, u32 line) -> void;
+  auto Disassemble() -> void;
+  auto PrintAtOffset(int offset) -> int;
+  auto AddChunk(u8 byte, u32 line) -> void;
+  auto AddLine(u32 line) -> void;
+  auto AddConstant(Value val, u32 line) -> void;
 };
