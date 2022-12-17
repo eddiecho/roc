@@ -66,15 +66,16 @@ class Scanner {
   auto inline Match(char expected) -> bool;
   auto constexpr inline IsEnd() -> bool;
   auto inline Pop() -> char;
-  auto inline MakeToken(Token::Lexeme type) -> Token;
-  auto constexpr inline Peek() -> char;
-  auto constexpr inline PeekNext() -> char;
+  auto inline MakeToken(Token::Lexeme type) -> const Token;
+  auto constexpr inline Peek() -> const char;
+  auto constexpr inline PeekNext() -> const char;
   auto SkipWhitespace() -> void;
-  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) -> Token::Lexeme;
+  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible)
+    -> const Token::Lexeme;
   auto StringToken() -> Token;
   auto NumberToken() -> Token;
   auto IdentifierToken() -> Token;
-  auto IdentifierType() -> Token::Lexeme;
+  auto IdentifierType() -> const Token::Lexeme;
 };
 
 struct Compiler;
@@ -161,8 +162,6 @@ struct Compiler {
   }
 
  private:
-  auto Constant(Value value) -> void;
-
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };
 

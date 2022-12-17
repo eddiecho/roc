@@ -23,8 +23,8 @@ privDefer<F> defer_func(F f) {
 
 namespace Utils {
 
+// @STDLIB
 auto static ReadFile(const char* path) -> char* {
-  // @STDLIB
   FILE* file;
 #ifdef _WIN32
   errno_t err = fopen_s(&file, path, "rb");
@@ -34,7 +34,6 @@ auto static ReadFile(const char* path) -> char* {
   }
 #else
   file = fopen(path, "rb");
-
   if (file == NULL) {
     fprintf(stderr, "Could not open file \"%s\".\n", path);
     exit(75);

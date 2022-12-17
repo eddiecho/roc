@@ -27,6 +27,8 @@ auto VirtualMachine::Pop() -> Value {
   return *this->stackTop;
 }
 
+// @TODO(eddie) - all of it
+// needs to hold current state of the VM and then add to it with the new line
 auto VirtualMachine::Interpret(const char* src) -> InterpretError {
   Chunk chunk;
   return InterpretError::Success;

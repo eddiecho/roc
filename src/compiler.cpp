@@ -53,7 +53,7 @@ auto inline Scanner::Pop() -> char {
   return this->curr[-1];
 }
 
-auto inline Scanner::MakeToken(Token::Lexeme type) -> Token {
+auto inline Scanner::MakeToken(Token::Lexeme type) -> const Token {
   return Token {
     type,
     this->start,
@@ -69,11 +69,11 @@ auto inline Scanner::Match(char expected) -> bool {
   return true;
 }
 
-auto constexpr inline Scanner::Peek() -> char {
+auto constexpr inline Scanner::Peek() -> const char {
   return *this->curr;
 }
 
-auto constexpr inline Scanner::PeekNext() -> char {
+auto constexpr inline Scanner::PeekNext() -> const char {
   return this->IsEnd() ? '\0' : this->curr[1];
 }
 
@@ -123,7 +123,8 @@ auto Scanner::NumberToken() -> Token {
 }
 
 // @STDLIB
-auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) -> Token::Lexeme {
+auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible)
+  -> const Token::Lexeme {
   if (this->curr - this->start == start + length &&
       memcmp(this->start + start, rest, length) == 0) {
     return possible;
@@ -132,7 +133,7 @@ auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexem
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierType() -> Token::Lexeme {
+auto Scanner::IdentifierType() -> const Token::Lexeme {
   switch (*this->start) {
     case 'a': return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
     case 'e': return this->CheckKeyword(1, 3, "lse", Token::Lexeme::Else);

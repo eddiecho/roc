@@ -6,11 +6,14 @@ template <typename T>
 struct Range {
   u32 min;
   T val;
+
+  Range(u32 min, T val) : min(min), val(val) {}
 };
 
 // Array for holding contiguous intervals that map to some value
 template <typename T>
-struct RangeArray : public DynamicArray<Range<T>> {
+class RangeArray : public DynamicArray<Range<T>> {
+ public:
   auto Search(u32 val) -> const u32;
 };
 
