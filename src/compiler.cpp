@@ -347,8 +347,6 @@ auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
 
 auto Compiler::EndCompilation() -> void {
   this->Emit(OpCode::Return);
-
-  this->chunk->Disassemble();
 }
 
 auto Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {

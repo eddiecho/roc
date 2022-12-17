@@ -21,10 +21,10 @@ struct Chunk : public DynamicArray<u8> {
   RangeArray<u32> lines_;
 
   Chunk() noexcept;
-  ~Chunk();
+  ~Chunk() noexcept;
 
-  auto Disassemble() -> void;
-  auto PrintAtOffset(int offset) -> int;
+  auto Disassemble() -> const void;
+  auto PrintAtOffset(int offset) -> const int;
   auto AddChunk(u8 byte, u32 line) -> void;
   auto AddLine(u32 line) -> void;
   auto AddConstant(Value val, u32 line) -> void;

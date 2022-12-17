@@ -11,7 +11,7 @@ Chunk::Chunk() noexcept {
   this->lines_.Init();
 }
 
-Chunk::~Chunk() {
+Chunk::~Chunk() noexcept {
   this->lines_.Deinit();
   this->constants_.Deinit();
   this->Deinit();
@@ -33,7 +33,7 @@ auto Chunk::AddChunk(u8 byte, u32 line) -> void {
   this->Append(byte);
 }
 
-#define SMALL_CONST_POOL_SIZE 1
+#define SMALL_CONST_POOL_SIZE 256
 auto Chunk::AddConstant(Value val, u32 line) -> void {
   this->AddLine(line);
 
@@ -57,7 +57,7 @@ auto static SimpleInstruction(const char* name, int offset) -> int {
   return offset + 1;
 }
 
-auto static ConstantInstruction(Chunk* chunk, int offset) -> int {
+auto static ConstantInstruction(const Chunk* chunk, int offset) -> int {
   u8 const_idx = chunk->data_[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   PrintValue(chunk->constants_.data_[const_idx]);
@@ -66,7 +66,7 @@ auto static ConstantInstruction(Chunk* chunk, int offset) -> int {
   return offset + 2;
 }
 
-auto static ConstantLongInstruction(Chunk* chunk, int offset) -> int {
+auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
   u8 one = chunk->data_[offset + 1];
   u8 two = chunk->data_[offset + 2];
   u8 thr = chunk->data_[offset + 3];
@@ -83,7 +83,7 @@ auto static ConstantLongInstruction(Chunk* chunk, int offset) -> int {
   return offset + 4;
 }
 
-auto Chunk::PrintAtOffset(int offset) -> int {
+auto Chunk::PrintAtOffset(int offset) -> const int {
   printf("%04d ", offset);
 
   u32 line_idx = this->lines_.Search(offset);
@@ -125,7 +125,7 @@ auto Chunk::PrintAtOffset(int offset) -> int {
   }
 }
 
-auto Chunk::Disassemble() -> void {
+auto Chunk::Disassemble() -> const void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->count_;) {
     offset = this->PrintAtOffset(offset);
