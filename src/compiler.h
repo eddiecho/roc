@@ -58,6 +58,7 @@ class Scanner {
   u32 row;
 
  public:
+  Scanner();
   auto Init(const char* src) -> void;
   auto ScanToken() -> Token;
 
@@ -92,6 +93,7 @@ struct Parser {
 
   friend Compiler;
 
+  Parser();
   auto ErrorAtCurr(const char* message) -> void;
 };
 
@@ -139,8 +141,6 @@ struct Compiler {
   Chunk* chunk = nullptr;
 
  public:
-
- public:
   Compiler() noexcept;
   auto Init(const char* src, Chunk* chunk) -> void;
   auto Advance() -> void;
@@ -152,6 +152,7 @@ struct Compiler {
   auto GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
 
   auto Emit(u8 byte) -> void;
+  auto Emit(OpCode opcode) -> void;
 
   template <typename... Types>
   auto Emit(u8 byte, Types... bytes) -> void {

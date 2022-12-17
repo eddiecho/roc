@@ -29,6 +29,13 @@ Token::Token(const char* error) {
   this->line = 0;
 }
 
+Scanner::Scanner() {
+  this->start = nullptr;
+  this->curr = nullptr;
+  this->line = 0;
+  this->row = 0;
+}
+
 auto Scanner::Init(const char* src) -> void {
   this->start = src;
   this->curr = src;
@@ -158,6 +165,8 @@ auto Scanner::IdentifierToken() -> Token {
 auto Scanner::ScanToken() -> Token {
   this->start = this->curr;
 
+  this->SkipWhitespace();
+
   if (this->IsEnd()) {
     return Token();
   }
@@ -208,7 +217,10 @@ auto Scanner::ScanToken() -> Token {
   }
 }
 
-Compiler::Compiler() noexcept {}
+Compiler::Compiler() noexcept {
+  this->scanner = new Scanner();
+  this->parser = new Parser();
+}
 
 std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
   {Token::Lexeme::LeftParens, ParseRule(&Grammar::Parenthesis, nullptr, Precedence::None)},
@@ -266,11 +278,25 @@ auto Compiler::Expression() -> void {
 }
 
 auto Compiler::Compile() -> bool {
+
+  this->Advance();
+  this->Expression();
+  this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
+  this->EndCompilation();
+
+  return !this->parser->state.error;
+}
+
+auto Compiler::Advance() -> void {
   u32 line = 0xFFFFFFFF;
+  Token token;
+  this->parser->prev = this->parser->curr;
 
   while (1) {
-    Token token = this->scanner->ScanToken();
+    token = this->scanner->ScanToken();
+    this->parser->curr = token;
 
+    // output debug token info
     if (token.line != line) {
       printf("%4d ", token.line);
     } else {
@@ -278,21 +304,15 @@ auto Compiler::Compile() -> bool {
     }
     printf("%s '%.*s'\n", token.Type(), token.len, token.start);
 
-    if (token.IsEnd()) break;
-  }
-
-  return this->parser->state.error;
-}
-
-auto Compiler::Advance() -> void {
-  this->parser->prev = this->parser->curr;
-
-  while (1) {
-    this->parser->curr = this->scanner->ScanToken();
     if (this->parser->curr.type != Token::Lexeme::Error) return;
 
     this->parser->ErrorAtCurr(this->parser->curr.start);
   }
+}
+
+Parser::Parser() {
+  this->curr = Token();
+  this->prev = Token();
 }
 
 auto Parser::ErrorAtCurr(const char* message) -> void {
@@ -310,6 +330,11 @@ auto Compiler::Emit(u8 byte) -> void {
   this->chunk->AddChunk(byte, this->parser->prev.line);
 }
 
+auto Compiler::Emit(OpCode op) -> void {
+  u8 byte = static_cast<u8>(op);
+  this->chunk->AddChunk(byte, this->parser->prev.line);
+}
+
 auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   if (this->parser->curr.type == type) {
     this->Advance();
@@ -321,7 +346,7 @@ auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
 }
 
 auto Compiler::EndCompilation() -> void {
-  this->Emit(static_cast<u8>(Token::Lexeme::Return));
+  this->Emit(OpCode::Return);
 
   this->chunk->Disassemble();
 }
@@ -341,8 +366,7 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 
   rule->prefix(this);
 
-  ParseRule* curr_rule = this->GetParseRule(this->parser->curr.type);
-  while (precedence <= curr_rule->precedence) {
+  while (precedence <= this->GetParseRule(this->parser->curr.type)->precedence) {
     this->Advance();
     ParseRule* prev_rule = this->GetParseRule(this->parser->prev.type);
     prev_rule->infix(this);
@@ -354,8 +378,6 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 auto Grammar::Number(Compiler* compiler) -> void {
   f64 value = strtod(compiler->parser->prev.start, NULL);
   compiler->chunk->AddConstant(value, compiler->parser->prev.line);
-  // @TODO(eddie) - needs to check for long constants
-  compiler->Emit(static_cast<u8>(OpCode::Constant));
 }
 
 auto Grammar::Parenthesis(Compiler* compiler) -> void {
@@ -370,7 +392,7 @@ auto Grammar::Unary(Compiler* compiler) -> void {
   switch (op) {
     default: return;
     case Token::Lexeme::Minus: {
-      compiler->Emit(static_cast<u8>(OpCode::Negate));
+      compiler->Emit(OpCode::Negate);
       break;
     }
   }
@@ -385,9 +407,9 @@ auto Grammar::Binary(Compiler* compiler) -> void {
 
   switch (op) {
     default: return;
-    case Token::Lexeme::Plus: { compiler->Emit(static_cast<u8>(OpCode::Add)); break; }
-    case Token::Lexeme::Minus: { compiler->Emit(static_cast<u8>(OpCode::Subtract)); break; }
-    case Token::Lexeme::Star: { compiler->Emit(static_cast<u8>(OpCode::Multiply)); break; }
-    case Token::Lexeme::Slash: { compiler->Emit(static_cast<u8>(OpCode::Divide)); break; }
+    case Token::Lexeme::Plus: { compiler->Emit(OpCode::Add); break; }
+    case Token::Lexeme::Minus: { compiler->Emit(OpCode::Subtract); break; }
+    case Token::Lexeme::Star: { compiler->Emit(OpCode::Multiply); break; }
+    case Token::Lexeme::Slash: { compiler->Emit(OpCode::Divide); break; }
   }
 }
