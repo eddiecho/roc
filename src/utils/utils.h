@@ -54,11 +54,11 @@ auto static ReadFile(const char* path) -> char* {
   return buffer;
 }
 
-auto static IsDigit(char c) -> bool {
+auto static constexpr IsDigit(char c) -> bool {
   return c >= '0' && c <= '9';
 }
 
-auto static IsIdentifier(char c) -> bool {
+auto static IsIdentifier(char c) -> const bool {
   return !ispunct(c);
 }
 

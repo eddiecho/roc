@@ -33,9 +33,9 @@ struct Token {
 
   Token() noexcept;
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
-  explicit Token(const char* error);
+  explicit Token(const char* error) noexcept;
 
-  auto Type() -> const char* {
+  auto constexpr Type() -> const char* {
     switch (this->type) {
 #define X(ID) case Lexeme::ID: return #ID;
     VM_LEXEME_TYPE
@@ -46,7 +46,7 @@ struct Token {
     }
   }
 
-  auto inline IsEnd() -> bool {
+  auto constexpr inline IsEnd() -> bool {
     return this->type == Lexeme::Eof;
   }
 };
@@ -58,7 +58,7 @@ class Scanner {
   u32 row;
 
  public:
-  Scanner();
+  Scanner() noexcept;
   auto Init(const char* src) -> void;
   auto ScanToken() -> Token;
 
@@ -93,7 +93,7 @@ struct Parser {
 
   friend Compiler;
 
-  Parser();
+  Parser() noexcept;
   auto ErrorAtCurr(const char* message) -> void;
 };
 
@@ -117,7 +117,7 @@ struct ParseRule {
   ParseFunction infix;
   Precedence precedence;
 
-  ParseRule() {
+  ParseRule() noexcept {
     this->prefix = nullptr;
     this->infix = nullptr;
     this->precedence = Precedence::None;

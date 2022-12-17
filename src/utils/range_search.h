@@ -11,12 +11,12 @@ struct Range {
 // Array for holding contiguous intervals that map to some value
 template <typename T>
 struct RangeArray : public DynamicArray<Range<T>> {
-  u32 Search(u32 val);
+  auto Search(u32 val) -> const u32;
 };
 
 template <typename T>
 // returns the index of the Range struct
-auto RangeArray<T>::Search(u32 range) -> u32 {
+auto RangeArray<T>::Search(u32 range) -> const u32 {
   if (this->count_ == 0) {
     return 0xFFFFFFFF;
   }

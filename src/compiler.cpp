@@ -22,14 +22,14 @@ Token::Token(Token::Lexeme type, const char* start, u32 len, u32 line) noexcept 
 
 // @TODO(eddie) - I don't like this. Should be able to point to where the error starts
 // @STDLIB
-Token::Token(const char* error) {
+Token::Token(const char* error) noexcept {
   this->type = Token::Lexeme::Error;
   this->start = error;
   this->len = (u32)strlen(error);
   this->line = 0;
 }
 
-Scanner::Scanner() {
+Scanner::Scanner() noexcept {
   this->start = nullptr;
   this->curr = nullptr;
   this->line = 0;
@@ -310,7 +310,7 @@ auto Compiler::Advance() -> void {
   }
 }
 
-Parser::Parser() {
+Parser::Parser() noexcept {
   this->curr = Token();
   this->prev = Token();
 }
