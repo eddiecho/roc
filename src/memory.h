@@ -4,6 +4,7 @@
 
 #include "common.h"
 
+// @STDLIB
 auto Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
   if (newSize == 0) {
     free(ptr);

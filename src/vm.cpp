@@ -28,6 +28,7 @@ auto VirtualMachine::Pop() -> Value {
 }
 
 auto VirtualMachine::Interpret(const char* src) -> InterpretError {
+  Chunk chunk;
   return InterpretError::Success;
 }
 

@@ -24,6 +24,7 @@ privDefer<F> defer_func(F f) {
 namespace Utils {
 
 auto static ReadFile(const char* path) -> char* {
+  // @STDLIB
   FILE* file = fopen(path, "rb");
   if (file == NULL) {
     fprintf(stderr, "Could not open file \"%s\".\n", path);

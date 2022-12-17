@@ -2,17 +2,23 @@
 
 #include "chunk.cpp"
 #include "common.h"
+#include "compiler.cpp"
 #include "roc_config.h"
 #include "utils/utils.h"
 #include "vm.cpp"
 
 static VirtualMachine VM;
+static Compiler COMPILER;
 
 auto static RunFile(const char* path) -> InterpretError {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
-  return VM.Interpret(src);
+  Chunk chunk;
+  COMPILER.Init(src, &chunk);
+  COMPILER.Compile();
+
+  return VM.Interpret(&chunk);
 }
 
 auto static Repl() -> void {
@@ -36,7 +42,7 @@ int main(int argc, char** argv) {
     << std::endl;
 
   VM.Init();
-  defer(VM.Deinit(););
+  defer(VM.Deinit());
 
   /*
   Chunk chunk;

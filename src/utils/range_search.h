@@ -1,8 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <tuple>
-
 #include "../dynamic_array.h"
 
 template <typename T>

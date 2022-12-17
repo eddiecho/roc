@@ -1,6 +1,9 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "common.h"
+#include "chunk.h"
 
 #define VM_LEXEME_TYPE \
   X(Eof) \
@@ -61,7 +64,7 @@ class Scanner {
  private:
   auto inline Match(char expected) -> bool;
   auto constexpr inline IsEnd() -> bool;
-  auto inline Advance() -> char;
+  auto inline Pop() -> char;
   auto inline MakeToken(Token::Lexeme type) -> Token;
   auto constexpr inline Peek() -> char;
   auto constexpr inline PeekNext() -> char;
@@ -73,10 +76,95 @@ class Scanner {
   auto IdentifierType() -> Token::Lexeme;
 };
 
+struct Compiler;
+
+struct Parser {
+  Token curr;
+  Token prev;
+
+  union {
+    struct {
+      u64 error : 1;
+      u64 panic : 1;
+    } state;
+    u64 value = 0;
+  };
+
+  friend Compiler;
+
+  auto ErrorAtCurr(const char* message) -> void;
+};
+
+enum class Precedence : u8 {
+  None,
+  Assignment,
+  Or,
+  And,
+  Equality,
+  Comparison,
+  Term,
+  Factor,
+  Unary,
+  Invoke,
+  Primary
+};
+
+typedef void (*ParseFunction)(Compiler*);
+struct ParseRule {
+  ParseFunction prefix;
+  ParseFunction infix;
+  Precedence precedence;
+
+  ParseRule() {
+    this->prefix = nullptr;
+    this->infix = nullptr;
+    this->precedence = Precedence::None;
+  }
+
+  ParseRule(ParseFunction prefix, ParseFunction infix, Precedence precedence) noexcept :
+    prefix{prefix}, infix{infix}, precedence{precedence}
+  {}
+};
+
+namespace Grammar {
+  auto Number(Compiler* compiler) -> void;
+  auto Parenthesis(Compiler* compiler) -> void;
+  auto Unary(Compiler* compiler) -> void;
+  auto Binary(Compiler* compiler) -> void;
+}
+
 struct Compiler {
   Scanner* scanner;
+  Parser* parser;
+  Chunk* chunk = nullptr;
 
-  auto Compile(const char* src) -> void;
+ public:
+
+ public:
+  Compiler() noexcept;
+  auto Init(const char* src, Chunk* chunk) -> void;
+  auto Advance() -> void;
+  auto Consume(Token::Lexeme type, const char* message) -> void;
+  auto Compile() -> bool;
+  auto Expression() -> void;
+  auto EndCompilation() -> void;
+  auto GetPrecedence(Precedence prec) -> void;
+  auto GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
+
+  auto Emit(u8 byte) -> void;
+
+  template <typename... Types>
+  auto Emit(u8 byte, Types... bytes) -> void {
+    this->Emit(byte);
+    if constexpr (sizeof...(bytes) != 0) this->Emit(bytes...);
+  }
+
+ private:
+  auto Constant(Value value) -> void;
+
+  static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };
+
+
 
 #undef VM_LEXEME_TYPE

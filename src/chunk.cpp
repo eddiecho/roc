@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdio.h>
-#include <tuple>
 
 #include "chunk.h"
 #include "value.h"
