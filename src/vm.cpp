@@ -5,15 +5,15 @@
 
 #define DEBUG_TRACE_EXECUTION
 
-auto VirtualMachine::init() -> void {
+auto VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stackTop = this->stack;
 }
 
-auto VirtualMachine::deinit() -> void {}
+auto VirtualMachine::Deinit() -> void {}
 
-auto VirtualMachine::push(Value value) -> void {
-  // TODO - this is bad
+auto VirtualMachine::Push(Value value) -> void {
+  // TODO(eddie) - this is bad error handling
   if (this->stackTop - this->stack > VM_STACK_MAX) {
     exit(1);
   }
@@ -22,42 +22,44 @@ auto VirtualMachine::push(Value value) -> void {
   this->stackTop++;
 }
 
-auto VirtualMachine::pop() -> Value {
+auto VirtualMachine::Pop() -> Value {
   this->stackTop--;
   return *this->stackTop;
 }
 
-auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
+auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
   this->chunk = chunk;
   this->instructionPointer = chunk->data;
 
 #define READ_BYTE() (*this->instructionPointer++)
-#define READ_CONSTANT() (this->chunk->constants.data[READ_BYTE()])
-// TODO - this isnt good for operator overloading
+#define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
+// TODO(eddie) - this isnt good for operator overloading
 #define BINARY_OP(op) \
   do { \
-    double b = this->pop(); \
-    double a = this->pop(); \
-    push(a op b); \
-  } while(0)
+    double b = this->Pop().as.number; \
+    double a = this->Pop().as.number; \
+    this->Push(a op b); \
+  } while (0)
 
+  u8 byte;
   while (1) {
-    u8 instruction;
-
 #ifdef DEBUG_TRACE_EXECUTION
-    this->chunk->printAtOffset((int) (this->instructionPointer - this->chunk->data));
+    this->chunk->PrintAtOffset(static_cast<int>(this->instructionPointer - this->chunk->data));
 #endif
 
-    switch(instruction = READ_BYTE()) {
+    byte = READ_BYTE();
+    OpCode instruction = static_cast<OpCode>(byte);
+
+    switch (instruction) {
       case OpCode::Return: {
-        printValue(this->pop());
+        this->Pop().Print();
         printf("\n");
 
         return InterpretError::Success;
       }
       case OpCode::Constant: {
         Value constant = READ_CONSTANT();
-        this->push(constant);
+        this->Push(constant);
         break;
       }
       case OpCode::ConstantLong: {
@@ -66,8 +68,8 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
         idx |= ((u8) READ_BYTE() << 8);
         idx |= (u8) READ_BYTE();
 
-        Value constant = this->chunk->constants.data[idx];
-        this->push(constant);
+        Value constant = this->chunk->constants[idx];
+        this->Push(constant);
         break;
       }
       case OpCode::Add:      { BINARY_OP(+); break; }
@@ -75,7 +77,7 @@ auto VirtualMachine::interpret(Chunk *chunk) -> InterpretError {
       case OpCode::Multiply: { BINARY_OP(*); break; }
       case OpCode::Divide:   { BINARY_OP(/); break; }
       case OpCode::Negate: {
-        this->push(-this->pop());
+        this->Push(-this->Pop().as.number);
         break;
       }
       default: {

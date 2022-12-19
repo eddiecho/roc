@@ -1,76 +1,75 @@
 #pragma once
 
 #include <stdio.h>
-#include <tuple>
 
 #include "chunk.h"
 #include "value.h"
 
 Chunk::Chunk() noexcept {
-  this->init();
-  this->constants.init();
-  this->lines.init();
+  this->Init();
+  this->constants.Init();
+  this->lines.Init();
 }
 
-Chunk::~Chunk() {
-  this->lines.deinit();
-  this->constants.deinit();
-  this->deinit();
+Chunk::~Chunk() noexcept {
+  this->lines.Deinit();
+  this->constants.Deinit();
+  this->Deinit();
 }
 
-auto Chunk::addLine(u32 line) -> void {
+auto Chunk::AddLine(u32 line) -> void {
   if (this->lines.count == 0) {
-    this->lines.append({this->count, line});
+    this->lines.Append({this->count, line});
   } else {
     Range<u32> prev = this->lines[this->lines.count - 1];
     if (prev.val != line) {
-      this->lines.append({this->count, line});
+      this->lines.Append({this->count, line});
     }
   }
 }
 
-auto Chunk::addChunk(u8 byte, u32 line) -> void {
-  this->addLine(line);
-  this->append(byte);
+auto Chunk::AddChunk(u8 byte, u32 line) -> void {
+  this->AddLine(line);
+  this->Append(byte);
 }
 
-#define SMALL_CONST_POOL_SIZE 1
-auto Chunk::addConstant(Value val, u32 line) -> void {
-  this->addLine(line);
+#define SMALL_CONST_POOL_SIZE 256
+auto Chunk::AddConstant(Value val, u32 line) -> void {
+  this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
-    this->append(OpCode::Constant);
-    this->append((u8)this->constants.count);
+    this->Append(static_cast<u8>(OpCode::Constant));
+    this->Append((u8)this->constants.count);
   } else {
-    this->append(OpCode::ConstantLong);
+    this->Append(static_cast<u8>(OpCode::ConstantLong));
 
     u32 count = this->constants.count;
-    this->append(count >> 16);
-    this->append(count >> 8);
-    this->append(count);
+    this->Append(count >> 16);
+    this->Append(count >> 8);
+    this->Append(count);
   }
 
-  this->constants.append(val);
+  this->constants.Append(val);
 }
 
-auto static simpleInstruction(const char* name, int offset) -> int {
+auto static SimpleInstruction(const char* name, int offset) -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-auto static constantInstruction(Chunk* chunk, int offset) -> int {
-  u8 const_idx = chunk->data[offset + 1];
+auto static ConstantInstruction(const Chunk* chunk, int offset) -> int {
+  u8 const_idx = (*chunk)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
-  printValue(chunk->constants.data[const_idx]);
+  chunk->constants[const_idx].Print();
   printf("\n");
 
   return offset + 2;
 }
 
-auto static constantLongInstruction(Chunk* chunk, int offset) -> int {
-  u8 one = chunk->data[offset + 1];
-  u8 two = chunk->data[offset + 2];
-  u8 thr = chunk->data[offset + 3];
+auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
+  u8 one = (*chunk)[offset + 1];
+  u8 two = (*chunk)[offset + 2];
+  u8 thr = (*chunk)[offset + 3];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT_LONG", one, two, thr);
 
   u32 idx = 0;
@@ -78,55 +77,57 @@ auto static constantLongInstruction(Chunk* chunk, int offset) -> int {
   idx |= (two << 8);
   idx |= (thr);
 
-  printValue(chunk->constants.data[idx]);
+  chunk->constants[idx].Print();
   printf("\n");
 
   return offset + 4;
 }
 
-auto Chunk::printAtOffset(int offset) -> int {
+auto Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
-  u32 line_idx = this->lines.search(offset);
+  u32 line_idx = this->lines.Search(offset);
   u32 line = this->lines[line_idx].val;
   printf("%4d ", line);
 
-  u8 instruction = this->data[offset];
+  u8 byte = (*this)[offset];
+  OpCode instruction = static_cast<OpCode>(byte);
+
   switch (instruction) {
     case OpCode::Constant: {
-      return constantInstruction(this, offset);
+      return ConstantInstruction(this, offset);
     }
     case OpCode::ConstantLong: {
-      return constantLongInstruction(this, offset);
+      return ConstantLongInstruction(this, offset);
     }
     case OpCode::Negate: {
-      return simpleInstruction("OP_NEGATE", offset);
+      return SimpleInstruction("OP_NEGATE", offset);
     }
     case OpCode::Add: {
-      return simpleInstruction("OP_ADD", offset);
+      return SimpleInstruction("OP_ADD", offset);
     }
     case OpCode::Subtract: {
-      return simpleInstruction("OP_SUBTRACT", offset);
+      return SimpleInstruction("OP_SUBTRACT", offset);
     }
     case OpCode::Multiply: {
-      return simpleInstruction("OP_MULTIPLY", offset);
+      return SimpleInstruction("OP_MULTIPLY", offset);
     }
     case OpCode::Divide: {
-      return simpleInstruction("OP_DIVIDE", offset);
+      return SimpleInstruction("OP_DIVIDE", offset);
     }
     case OpCode::Return: {
-      return simpleInstruction("OP_RETURN", offset);
+      return SimpleInstruction("OP_RETURN", offset);
     }
     default: {
-      printf("Unknown opcode %d\n", instruction);
+      printf("Unknown opcode %d\n", byte);
       return offset + 1;
     }
   }
 }
 
-auto Chunk::disassemble() -> void {
+auto Chunk::Disassemble() const -> const void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->count;) {
-    offset = this->printAtOffset(offset);
+    offset = this->PrintAtOffset(offset);
   }
 }

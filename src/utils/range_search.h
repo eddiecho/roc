@@ -1,25 +1,33 @@
 #pragma once
 
-#include <algorithm>
-#include <tuple>
-
 #include "../dynamic_array.h"
 
 template <typename T>
 struct Range {
   u32 min;
   T val;
+
+  Range(u32 min, T val) : min(min), val(val) {}
 };
 
 // Array for holding contiguous intervals that map to some value
 template <typename T>
-struct RangeArray : DynamicArray<Range<T>> {
-  u32 search(u32 val);
+class RangeArray : public DynamicArray<Range<T>> {
+ public:
+  auto Search(u32 val) const -> const u32;
+
+  auto operator[](std::size_t idx) -> Range<T>& {
+    return this->data[idx];
+  }
+  const Range<T>& operator[](std::size_t idx) const {
+    return this->data[idx];
+  }
+
 };
 
 template <typename T>
 // returns the index of the Range struct
-auto RangeArray<T>::search(u32 range) -> u32 {
+auto RangeArray<T>::Search(u32 range) const -> const u32 {
   if (this->count == 0) {
     return 0xFFFFFFFF;
   }
@@ -34,12 +42,15 @@ auto RangeArray<T>::search(u32 range) -> u32 {
 
   while (hi - lo > 1) {
     mid = (lo + hi) / 2;
-    if (range < this->data[mid].min) {
+
+    // cpp thinks because this is a pointer, its just normal subscript
+    // cant overload subscript on pointer types zzzz
+    if (range < (*this)[mid].min) {
       hi = mid;
     } else {
       lo = mid + 1;
     }
   }
 
-  return range < this->data[hi].min ? lo : hi;
+  return range < ((*this)[hi].min) ? lo : hi;
 }

@@ -3,40 +3,44 @@
 #include <stdio.h>
 
 #include "chunk.h"
-#include "value.h"
+#include "value.cpp"
+
+#define VM_INTERPRET_ERRORS \
+  X(Success) \
+  X(CompileError) \
+  X(RuntimeError)
 
 enum class InterpretError {
-  Success,
-  CompileError,
-  RuntimeError,
+#define X(ID) ID,
+  VM_INTERPRET_ERRORS
+#undef X
 };
 
-auto static printInterpretError(InterpretError err) -> void {
+auto static errorToString(InterpretError err) -> const char* {
   switch (err) {
-    case InterpretError::CompileError: {
-      printf("InterpretError CompileError");
-      break;
-    }
-    case InterpretError::RuntimeError: {
-      printf("InterpretError RuntimeError");
-      break;
-    }
-    default: {
-      printf("InterpretError Success");
-    }
+#define X(ID) case InterpretError::ID: return #ID;
+    VM_INTERPRET_ERRORS
+#undef X
+
+  default: {
+    return "Success";
+  }
   }
 }
 
 #define VM_STACK_MAX 256
-struct VirtualMachine {
+class VirtualMachine {
+ public:
+  auto Init() -> void;
+  auto Deinit() -> void;
+  auto Interpret(Chunk *chunk) -> InterpretError;
+
+ private:
   Chunk* chunk = nullptr;
   u8* instructionPointer = 0;
   Value stack[VM_STACK_MAX];
   Value* stackTop;
 
-  auto init() -> void;
-  auto deinit() -> void;
-  auto interpret(Chunk *chunk) -> InterpretError;
-  auto push(Value value) -> void;
-  auto pop() -> Value;
+  auto Push(Value value) -> void;
+  auto Pop() -> Value;
 };
