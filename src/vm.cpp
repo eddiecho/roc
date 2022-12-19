@@ -36,8 +36,8 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
 // TODO(eddie) - this isnt good for operator overloading
 #define BINARY_OP(op) \
   do { \
-    double b = this->Pop(); \
-    double a = this->Pop(); \
+    double b = this->Pop().as.number; \
+    double a = this->Pop().as.number; \
     this->Push(a op b); \
   } while (0)
 
@@ -52,7 +52,7 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
 
     switch (instruction) {
       case OpCode::Return: {
-        PrintValue(this->Pop());
+        this->Pop().Print();
         printf("\n");
 
         return InterpretError::Success;
@@ -77,7 +77,7 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
       case OpCode::Multiply: { BINARY_OP(*); break; }
       case OpCode::Divide:   { BINARY_OP(/); break; }
       case OpCode::Negate: {
-        this->Push(-this->Pop());
+        this->Push(-this->Pop().as.number);
         break;
       }
       default: {

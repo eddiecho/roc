@@ -60,7 +60,7 @@ auto static SimpleInstruction(const char* name, int offset) -> int {
 auto static ConstantInstruction(const Chunk* chunk, int offset) -> int {
   u8 const_idx = (*chunk)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
-  PrintValue(chunk->constants[const_idx]);
+  chunk->constants[const_idx].Print();
   printf("\n");
 
   return offset + 2;
@@ -77,13 +77,13 @@ auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
   idx |= (two << 8);
   idx |= (thr);
 
-  PrintValue(chunk->constants[idx]);
+  chunk->constants[idx].Print();
   printf("\n");
 
   return offset + 4;
 }
 
-auto Chunk::PrintAtOffset(int offset) -> const int {
+auto Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
   u32 line_idx = this->lines.Search(offset);
@@ -125,7 +125,7 @@ auto Chunk::PrintAtOffset(int offset) -> const int {
   }
 }
 
-auto Chunk::Disassemble() -> const void {
+auto Chunk::Disassemble() const -> const void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->count;) {
     offset = this->PrintAtOffset(offset);

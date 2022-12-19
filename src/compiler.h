@@ -64,18 +64,18 @@ class Scanner {
 
  private:
   auto inline Match(char expected) -> bool;
-  auto constexpr inline IsEnd() -> bool;
+  auto constexpr inline IsEnd() const -> const bool;
   auto inline Pop() -> char;
-  auto inline MakeToken(Token::Lexeme type) -> const Token;
-  auto constexpr inline Peek() -> const char;
-  auto constexpr inline PeekNext() -> const char;
+  auto inline MakeToken(Token::Lexeme type) const -> const Token;
+  auto constexpr inline Peek() const -> const char;
+  auto constexpr inline PeekNext() const -> const char;
   auto SkipWhitespace() -> void;
-  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible)
+  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const
     -> const Token::Lexeme;
-  auto StringToken() -> Token;
-  auto NumberToken() -> Token;
-  auto IdentifierToken() -> Token;
-  auto IdentifierType() -> const Token::Lexeme;
+  auto StringToken() -> const Token;
+  auto NumberToken() -> const Token;
+  auto IdentifierToken() const -> const Token;
+  auto IdentifierType() const -> const Token::Lexeme;
 };
 
 struct Compiler;

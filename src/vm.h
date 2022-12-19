@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #include "chunk.h"
-#include "value.h"
+#include "value.cpp"
 
 #define VM_INTERPRET_ERRORS \
   X(Success) \

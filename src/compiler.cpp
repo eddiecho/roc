@@ -8,6 +8,7 @@
 
 #include "utils/utils.h"
 #include "common.h"
+#include "value.h"
 
 Token::Token() noexcept {
   this->type = Token::Lexeme::Eof;
@@ -43,7 +44,7 @@ auto Scanner::Init(const char* src) -> void {
   this->row = 0;
 }
 
-auto constexpr inline Scanner::IsEnd() -> bool {
+auto constexpr inline Scanner::IsEnd() const -> const bool {
   return *this->curr == '\0';
 }
 
@@ -53,7 +54,7 @@ auto inline Scanner::Pop() -> char {
   return this->curr[-1];
 }
 
-auto inline Scanner::MakeToken(Token::Lexeme type) -> const Token {
+auto inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   return Token {
     type,
     this->start,
@@ -69,11 +70,11 @@ auto inline Scanner::Match(char expected) -> bool {
   return true;
 }
 
-auto constexpr inline Scanner::Peek() -> const char {
+auto constexpr inline Scanner::Peek() const -> const char {
   return *this->curr;
 }
 
-auto constexpr inline Scanner::PeekNext() -> const char {
+auto constexpr inline Scanner::PeekNext() const -> const char {
   return this->IsEnd() ? '\0' : this->curr[1];
 }
 
@@ -97,7 +98,7 @@ auto Scanner::SkipWhitespace() -> void {
   }
 }
 
-auto Scanner::StringToken() -> Token {
+auto Scanner::StringToken() -> const Token {
   while (this->Peek() != '"' && !this->IsEnd()) {
     if (this->Peek() == '\n') this->line++;
     this->Pop();
@@ -109,7 +110,7 @@ auto Scanner::StringToken() -> Token {
   return this->MakeToken(Token::Lexeme::String);
 }
 
-auto Scanner::NumberToken() -> Token {
+auto Scanner::NumberToken() -> const Token {
   while (Utils::IsDigit(this->Peek())) this->Pop();
 
   // you get one .
@@ -123,7 +124,7 @@ auto Scanner::NumberToken() -> Token {
 }
 
 // @STDLIB
-auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible)
+auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const
   -> const Token::Lexeme {
   if (this->curr - this->start == start + length &&
       memcmp(this->start + start, rest, length) == 0) {
@@ -133,7 +134,7 @@ auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexem
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierType() -> const Token::Lexeme {
+auto Scanner::IdentifierType() const -> const Token::Lexeme {
   switch (*this->start) {
     case 'a': return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
     case 'e': return this->CheckKeyword(1, 3, "lse", Token::Lexeme::Else);
@@ -159,7 +160,7 @@ auto Scanner::IdentifierType() -> const Token::Lexeme {
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierToken() -> Token {
+auto Scanner::IdentifierToken() const -> const Token {
   return this->MakeToken(Token::Lexeme::Identifier);
 }
 
@@ -372,11 +373,10 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
   }
 }
 
-
 // @STDLIB
 auto Grammar::Number(Compiler* compiler) -> void {
   f64 value = strtod(compiler->parser->prev.start, NULL);
-  compiler->chunk->AddConstant(value, compiler->parser->prev.line);
+  compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
 }
 
 auto Grammar::Parenthesis(Compiler* compiler) -> void {

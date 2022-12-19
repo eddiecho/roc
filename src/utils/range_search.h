@@ -14,7 +14,7 @@ struct Range {
 template <typename T>
 class RangeArray : public DynamicArray<Range<T>> {
  public:
-  auto Search(u32 val) -> const u32;
+  auto Search(u32 val) const -> const u32;
 
   auto operator[](std::size_t idx) -> Range<T>& {
     return this->data[idx];
@@ -27,7 +27,7 @@ class RangeArray : public DynamicArray<Range<T>> {
 
 template <typename T>
 // returns the index of the Range struct
-auto RangeArray<T>::Search(u32 range) -> const u32 {
+auto RangeArray<T>::Search(u32 range) const -> const u32 {
   if (this->count == 0) {
     return 0xFFFFFFFF;
   }
