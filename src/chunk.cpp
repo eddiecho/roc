@@ -7,23 +7,23 @@
 
 Chunk::Chunk() noexcept {
   this->Init();
-  this->constants_.Init();
-  this->lines_.Init();
+  this->constants.Init();
+  this->lines.Init();
 }
 
 Chunk::~Chunk() noexcept {
-  this->lines_.Deinit();
-  this->constants_.Deinit();
+  this->lines.Deinit();
+  this->constants.Deinit();
   this->Deinit();
 }
 
 auto Chunk::AddLine(u32 line) -> void {
-  if (this->lines_.count_ == 0) {
-    this->lines_.Append({this->count_, line});
+  if (this->lines.count == 0) {
+    this->lines.Append({this->count, line});
   } else {
-    Range<u32> prev = this->lines_[this->lines_.count_ - 1];
+    Range<u32> prev = this->lines[this->lines.count - 1];
     if (prev.val != line) {
-      this->lines_.Append({this->count_, line});
+      this->lines.Append({this->count, line});
     }
   }
 }
@@ -37,19 +37,19 @@ auto Chunk::AddChunk(u8 byte, u32 line) -> void {
 auto Chunk::AddConstant(Value val, u32 line) -> void {
   this->AddLine(line);
 
-  if (this->constants_.count_ < SMALL_CONST_POOL_SIZE) {
+  if (this->constants.count < SMALL_CONST_POOL_SIZE) {
     this->Append(static_cast<u8>(OpCode::Constant));
-    this->Append((u8)this->constants_.count_);
+    this->Append((u8)this->constants.count);
   } else {
     this->Append(static_cast<u8>(OpCode::ConstantLong));
 
-    u32 count = this->constants_.count_;
+    u32 count = this->constants.count;
     this->Append(count >> 16);
     this->Append(count >> 8);
     this->Append(count);
   }
 
-  this->constants_.Append(val);
+  this->constants.Append(val);
 }
 
 auto static SimpleInstruction(const char* name, int offset) -> int {
@@ -58,18 +58,18 @@ auto static SimpleInstruction(const char* name, int offset) -> int {
 }
 
 auto static ConstantInstruction(const Chunk* chunk, int offset) -> int {
-  u8 const_idx = chunk->data_[offset + 1];
+  u8 const_idx = (*chunk)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
-  PrintValue(chunk->constants_.data_[const_idx]);
+  PrintValue(chunk->constants[const_idx]);
   printf("\n");
 
   return offset + 2;
 }
 
 auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
-  u8 one = chunk->data_[offset + 1];
-  u8 two = chunk->data_[offset + 2];
-  u8 thr = chunk->data_[offset + 3];
+  u8 one = (*chunk)[offset + 1];
+  u8 two = (*chunk)[offset + 2];
+  u8 thr = (*chunk)[offset + 3];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT_LONG", one, two, thr);
 
   u32 idx = 0;
@@ -77,7 +77,7 @@ auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
   idx |= (two << 8);
   idx |= (thr);
 
-  PrintValue(chunk->constants_.data_[idx]);
+  PrintValue(chunk->constants[idx]);
   printf("\n");
 
   return offset + 4;
@@ -86,11 +86,11 @@ auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
 auto Chunk::PrintAtOffset(int offset) -> const int {
   printf("%04d ", offset);
 
-  u32 line_idx = this->lines_.Search(offset);
-  u32 line = this->lines_[line_idx].val;
+  u32 line_idx = this->lines.Search(offset);
+  u32 line = this->lines[line_idx].val;
   printf("%4d ", line);
 
-  u8 byte = this->data_[offset];
+  u8 byte = (*this)[offset];
   OpCode instruction = static_cast<OpCode>(byte);
 
   switch (instruction) {
@@ -127,7 +127,7 @@ auto Chunk::PrintAtOffset(int offset) -> const int {
 
 auto Chunk::Disassemble() -> const void {
   printf("==========\n");
-  for (u32 offset = 0; offset < this->count_;) {
+  for (u32 offset = 0; offset < this->count;) {
     offset = this->PrintAtOffset(offset);
   }
 }

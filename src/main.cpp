@@ -24,6 +24,8 @@ auto static RunFile(const char* path) -> InterpretError {
 // @TODO(eddie) - it doesnt work because the Interpret() call doesnt work
 auto static Repl() -> void {
   char line[1024];
+  Chunk chunk;
+  InterpretError status;
 
   while (1) {
     printf("> ");
@@ -33,7 +35,12 @@ auto static Repl() -> void {
       break;
     }
 
-    VM.Interpret(line);
+    COMPILER.Init(line, &chunk);
+    COMPILER.Compile();
+    // @TODO(eddie) - do something with the status
+    status = VM.Interpret(&chunk);
+
+    chunk.Deinit();
   }
 }
 

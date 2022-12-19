@@ -27,19 +27,12 @@ auto VirtualMachine::Pop() -> Value {
   return *this->stackTop;
 }
 
-// @TODO(eddie) - all of it
-// needs to hold current state of the VM and then add to it with the new line
-auto VirtualMachine::Interpret(const char* src) -> InterpretError {
-  Chunk chunk;
-  return InterpretError::Success;
-}
-
 auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
   this->chunk = chunk;
-  this->instructionPointer = chunk->data_;
+  this->instructionPointer = chunk->data;
 
 #define READ_BYTE() (*this->instructionPointer++)
-#define READ_CONSTANT() (this->chunk->constants_.data_[READ_BYTE()])
+#define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
 // TODO(eddie) - this isnt good for operator overloading
 #define BINARY_OP(op) \
   do { \
@@ -51,7 +44,7 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
   u8 byte;
   while (1) {
 #ifdef DEBUG_TRACE_EXECUTION
-    this->chunk->PrintAtOffset(static_cast<int>(this->instructionPointer - this->chunk->data_));
+    this->chunk->PrintAtOffset(static_cast<int>(this->instructionPointer - this->chunk->data));
 #endif
 
     byte = READ_BYTE();
@@ -75,7 +68,7 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
         idx |= ((u8) READ_BYTE() << 8);
         idx |= (u8) READ_BYTE();
 
-        Value constant = this->chunk->constants_.data_[idx];
+        Value constant = this->chunk->constants[idx];
         this->Push(constant);
         break;
       }

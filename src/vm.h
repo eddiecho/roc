@@ -34,7 +34,6 @@ class VirtualMachine {
   auto Init() -> void;
   auto Deinit() -> void;
   auto Interpret(Chunk *chunk) -> InterpretError;
-  auto Interpret(const char* src) -> InterpretError;
 
  private:
   Chunk* chunk = nullptr;

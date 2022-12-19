@@ -13,45 +13,48 @@
 template <typename T>
 class DynamicArray {
  public:
-  u32 count_;
-  u32 capacity_;
-  T* data_;
+  u32 count;
+  T* data;
 
   auto Init() -> void;
   auto Append(T item) -> void;
   auto Deinit() -> void;
 
   auto operator[](std::size_t idx) -> T& {
-    return data_[idx];
+    return this->data[idx];
   }
   const T& operator[](std::size_t idx) const {
-    return data_[idx];
+    return this->data[idx];
   }
+
+ private:
+  u32 capacity_;
+
 };
 
 template <typename T>
 auto DynamicArray<T>::Init() -> void {
-  this->count_ = 0;
+  this->count = 0;
   this->capacity_ = 0;
-  this->data_ = NULL;
+  this->data = NULL;
 }
 
 template <typename T>
 auto DynamicArray<T>::Append(T item) -> void {
-  if (this->capacity_ < this->count_ + 1) {
+  if (this->capacity_ < this->count + 1) {
     int oldCapacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(oldCapacity);
     typedef T type;
-    this->data_ = GROW_ARRAY(type, this->data_, oldCapacity, this->capacity_);
+    this->data = GROW_ARRAY(type, this->data, oldCapacity, this->capacity_);
   }
 
-  this->data_[this->count_] = item;
-  this->count_++;
+  this->data[this->count] = item;
+  this->count++;
 }
 
 template <typename T>
 auto DynamicArray<T>::Deinit() -> void {
   typedef T type;
-  FREE_ARRAY(type, this->data_, this->capacity_);
+  FREE_ARRAY(type, this->data, this->capacity_);
   this->Init();
 }
