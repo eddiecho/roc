@@ -18,7 +18,5 @@ PrivDefer<F> DeferFunc(F f) {
 #define defer(code) auto DEFER_3(_defer_) = DeferFunc([&]() { code; })
 
 namespace Utils {
-
 auto ReadFile(const char* path) -> char*;
-
 }  // namespace Utils

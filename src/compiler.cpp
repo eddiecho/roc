@@ -1,10 +1,9 @@
 #include "compiler.h"
 
 #include <stdio.h>
-
-#include <cctype>
-#include <cstdarg>
-#include <cstring>
+#include <ctype.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include "common.h"
 #include "value.h"

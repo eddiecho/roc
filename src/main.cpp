@@ -21,7 +21,6 @@ auto static RunFile(const char* path) -> InterpretError {
   return VM.Interpret(&chunk);
 }
 
-// @TODO(eddie) - it doesnt work because the Interpret() call doesnt work
 auto static Repl() -> void {
   char line[1024];
   Chunk chunk;

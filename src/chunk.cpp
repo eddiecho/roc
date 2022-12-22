@@ -51,24 +51,24 @@ auto Chunk::AddConstant(Value val, u32 line) -> void {
   this->constants.Append(val);
 }
 
-auto static SimpleInstruction(const char* name, int offset) -> int {
+auto Chunk::SimpleInstruction(const char* name, int offset) const -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-auto static ConstantInstruction(const Chunk* chunk, int offset) -> int {
-  u8 const_idx = (*chunk)[offset + 1];
+auto Chunk::ConstantInstruction(int offset) const -> int {
+  u8 const_idx = (*this)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
-  chunk->constants[const_idx].Print();
+  this->constants[const_idx].Print();
   printf("\n");
 
   return offset + 2;
 }
 
-auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
-  u8 one = (*chunk)[offset + 1];
-  u8 two = (*chunk)[offset + 2];
-  u8 thr = (*chunk)[offset + 3];
+auto Chunk::ConstantLongInstruction(int offset) const -> int {
+  u8 one = (*this)[offset + 1];
+  u8 two = (*this)[offset + 2];
+  u8 thr = (*this)[offset + 3];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT_LONG", one, two, thr);
 
   u32 idx = 0;
@@ -76,7 +76,7 @@ auto static ConstantLongInstruction(const Chunk* chunk, int offset) -> int {
   idx |= (two << 8);
   idx |= (thr);
 
-  chunk->constants[idx].Print();
+  this->constants[idx].Print();
   printf("\n");
 
   return offset + 4;
@@ -94,46 +94,46 @@ auto Chunk::PrintAtOffset(int offset) const -> const int {
 
   switch (instruction) {
     case OpCode::Constant: {
-      return ConstantInstruction(this, offset);
+      return this->ConstantInstruction(offset);
     }
     case OpCode::ConstantLong: {
-      return ConstantLongInstruction(this, offset);
+      return this->ConstantLongInstruction(offset);
     }
     case OpCode::Negate: {
-      return SimpleInstruction("OP_NEGATE", offset);
+      return this->SimpleInstruction("OP_NEGATE", offset);
     }
     case OpCode::Add: {
-      return SimpleInstruction("OP_ADD", offset);
+      return this->SimpleInstruction("OP_ADD", offset);
     }
     case OpCode::Subtract: {
-      return SimpleInstruction("OP_SUBTRACT", offset);
+      return this->SimpleInstruction("OP_SUBTRACT", offset);
     }
     case OpCode::Multiply: {
-      return SimpleInstruction("OP_MULTIPLY", offset);
+      return this->SimpleInstruction("OP_MULTIPLY", offset);
     }
     case OpCode::Divide: {
-      return SimpleInstruction("OP_DIVIDE", offset);
+      return this->SimpleInstruction("OP_DIVIDE", offset);
     }
     case OpCode::True: {
-      return SimpleInstruction("LIT_TRUE", offset);
+      return this->SimpleInstruction("LIT_TRUE", offset);
     }
     case OpCode::False: {
-      return SimpleInstruction("LIT_FALSE", offset);
+      return this->SimpleInstruction("LIT_FALSE", offset);
     }
     case OpCode::Return: {
-      return SimpleInstruction("OP_RETURN", offset);
+      return this->SimpleInstruction("OP_RETURN", offset);
     }
     case OpCode::Not: {
-      return SimpleInstruction("OP_NOT", offset);
+      return this->SimpleInstruction("OP_NOT", offset);
     }
     case OpCode::Equality: {
-      return SimpleInstruction("OP_EQUAL", offset);
+      return this->SimpleInstruction("OP_EQUAL", offset);
     }
     case OpCode::Greater: {
-      return SimpleInstruction("OP_GREATER", offset);
+      return this->SimpleInstruction("OP_GREATER", offset);
     }
     case OpCode::Less: {
-      return SimpleInstruction("OP_LESS", offset);
+      return this->SimpleInstruction("OP_LESS", offset);
     }
     default: {
       printf("Unknown opcode %d\n", byte);

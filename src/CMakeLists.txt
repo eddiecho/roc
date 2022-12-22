@@ -4,7 +4,7 @@ file(GLOB_RECURSE SRCFILES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
 source_group(
   TREE "${PROJECT_SOURCE_DIR}/include"
   PREFIX "Header"
-  FILES ${HEADER_LIST}
+  FILES ${HDRFILES}
 )
 
 add_executable("${EXECUTABLE_NAME}" ${SRCFILES})
