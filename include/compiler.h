@@ -21,9 +21,9 @@
   X(Colon)                                                                   \
   X(Slash)                                                                   \
   X(Star) X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater)             \
-      X(GreaterEqual) X(Less) X(LessEqual) X(Identifier) X(String) X(Number) \
-          X(And) X(Else) X(False) X(For) X(Function) X(If) X(Or) X(Return)   \
-              X(Struct) X(True) X(Var) X(While)
+  X(GreaterEqual) X(Less) X(LessEqual) X(Identifier) X(String) X(Number)     \
+  X(And) X(Else) X(False) X(For) X(Function) X(If) X(Or) X(Return)           \
+  X(Struct) X(True) X(Var) X(While)
 
 struct Token {
   enum class Lexeme {
@@ -39,7 +39,7 @@ struct Token {
 
   Token() noexcept;
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
-  explicit Token(const char* error) noexcept;
+  Token(const char* error) noexcept;
 
   auto constexpr Type() -> const char* {
     switch (this->type) {
@@ -54,7 +54,7 @@ struct Token {
     }
   }
 
-  auto constexpr inline IsEnd() -> bool { return this->type == Lexeme::Eof; }
+  auto constexpr inline IsEnd() -> bool;
 };
 
 class Scanner {

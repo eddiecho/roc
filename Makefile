@@ -1,11 +1,8 @@
 build:
-	$(MAKE) --directory build
-
+	@$(MAKE) --directory build
 
 SOURCES = $(shell find src/ -name '*.cpp')
 HEADERS = $(shell find include/ -name '*.h')
-SRC_DIR := src
-INC_DIR := include
 
 fmt:
 	@for src in $(SOURCES) ; do \
@@ -68,4 +65,4 @@ tidy:
 	done
 	@echo "Done"
 
-.PHONY: style tidy
+.PHONY: build fmt tidy

@@ -29,6 +29,10 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
+auto constexpr inline Token::IsEnd() -> bool {
+  return this->type == Lexeme::Eof;
+}
+
 auto static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
