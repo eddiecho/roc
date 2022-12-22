@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "dynamic_array.h"
-#include "utils/range_search.h"
+#include "range_search.h"
 #include "value.h"
 
 enum class OpCode : u8 {
@@ -14,6 +14,12 @@ enum class OpCode : u8 {
   Divide,
   Negate,
   Return,
+  True,
+  False,
+  Not,
+  Equality,
+  Greater,
+  Less,
 };
 
 struct Chunk : public DynamicArray<u8> {

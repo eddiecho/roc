@@ -1,9 +1,10 @@
 #pragma once
 
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "chunk.h"
-#include "value.cpp"
+#include "value.h"
 
 #define VM_INTERPRET_ERRORS \
   X(Success) \
@@ -16,7 +17,7 @@ enum class InterpretError {
 #undef X
 };
 
-auto static errorToString(InterpretError err) -> const char* {
+auto static ErrorToString(InterpretError err) -> const char* {
   switch (err) {
 #define X(ID) case InterpretError::ID: return #ID;
     VM_INTERPRET_ERRORS
@@ -34,6 +35,8 @@ class VirtualMachine {
   auto Init() -> void;
   auto Deinit() -> void;
   auto Interpret(Chunk *chunk) -> InterpretError;
+  auto RuntimeError(const char* msg, ...) -> void;
+  auto Reset() -> void;
 
  private:
   Chunk* chunk = nullptr;
@@ -43,4 +46,7 @@ class VirtualMachine {
 
   auto Push(Value value) -> void;
   auto Pop() -> Value;
+  auto Peek(int dist) const -> Value;
 };
+
+

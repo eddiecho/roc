@@ -3,10 +3,10 @@
 #include "compiler.h"
 
 #include <stdio.h>
+#include <cctype>
 #include <cstdarg>
 #include <cstring>
 
-#include "utils/utils.h"
 #include "common.h"
 #include "value.h"
 
@@ -28,6 +28,15 @@ Token::Token(const char* error) noexcept {
   this->start = error;
   this->len = (u32)strlen(error);
   this->line = 0;
+}
+
+auto static constexpr IsDigit(char c) -> bool {
+  return c >= '0' && c <= '9';
+}
+
+// @STDLIB
+auto static IsIdentifier(char c) -> const bool {
+  return !ispunct(c);
 }
 
 Scanner::Scanner() noexcept {
@@ -111,13 +120,13 @@ auto Scanner::StringToken() -> const Token {
 }
 
 auto Scanner::NumberToken() -> const Token {
-  while (Utils::IsDigit(this->Peek())) this->Pop();
+  while (IsDigit(this->Peek())) this->Pop();
 
   // you get one .
-  if (this->Peek() == '.' && Utils::IsDigit(this->PeekNext())) {
+  if (this->Peek() == '.' && IsDigit(this->PeekNext())) {
     this->Pop();
 
-    while (Utils::IsDigit(this->Peek())) this->Pop();
+    while (IsDigit(this->Peek())) this->Pop();
   }
 
   return this->MakeToken(Token::Lexeme::Number);
@@ -229,11 +238,22 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
   {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
 
   {Token::Lexeme::Minus, ParseRule(&Grammar::Unary, &Grammar::Binary, Precedence::Term)},
+  {Token::Lexeme::Bang, ParseRule(&Grammar::Unary, nullptr, Precedence::None)},
   {Token::Lexeme::Plus, ParseRule(nullptr, &Grammar::Binary, Precedence::Term)},
   {Token::Lexeme::Slash, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
   {Token::Lexeme::Star, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
 
+  {Token::Lexeme::Greater, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+  {Token::Lexeme::GreaterEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+  {Token::Lexeme::Less, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+  {Token::Lexeme::LessEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+  {Token::Lexeme::BangEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+  {Token::Lexeme::EqualEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+
   {Token::Lexeme::Number, ParseRule(&Grammar::Number, nullptr, Precedence::None)},
+
+  {Token::Lexeme::False, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+  {Token::Lexeme::True, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
 
   // @TODO(eddie)
   {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -245,26 +265,17 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
   {Token::Lexeme::Dot, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Semicolon, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Bang, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::BangEqual, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::EqualEqual, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Greater, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::GreaterEqual, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Less, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::LessEqual, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::String, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::False, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Struct, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::True, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::Var, ParseRule(nullptr, nullptr, Precedence::None)},
   {Token::Lexeme::While, ParseRule(nullptr, nullptr, Precedence::None)},
 
@@ -394,6 +405,10 @@ auto Grammar::Unary(Compiler* compiler) -> void {
       compiler->Emit(OpCode::Negate);
       break;
     }
+    case Token::Lexeme::Bang: {
+      compiler->Emit(OpCode::Not);
+      break;
+    }
   }
 }
 
@@ -410,5 +425,26 @@ auto Grammar::Binary(Compiler* compiler) -> void {
     case Token::Lexeme::Minus: { compiler->Emit(OpCode::Subtract); break; }
     case Token::Lexeme::Star: { compiler->Emit(OpCode::Multiply); break; }
     case Token::Lexeme::Slash: { compiler->Emit(OpCode::Divide); break; }
+    case Token::Lexeme::BangEqual: { compiler->Emit(OpCode::Equality, OpCode::Not); break; }
+    case Token::Lexeme::EqualEqual: { compiler->Emit(OpCode::Equality); break; }
+    case Token::Lexeme::Greater: { compiler->Emit(OpCode::Greater); break; }
+    case Token::Lexeme::GreaterEqual: { compiler->Emit(OpCode::Greater, OpCode::Not); break; }
+    case Token::Lexeme::Less: { compiler->Emit(OpCode::Less); break; }
+    case Token::Lexeme::LessEqual: { compiler->Emit(OpCode::Less, OpCode::Not); break; }
+
+  }
+}
+
+auto Grammar::Literal(Compiler* compiler) -> void {
+  switch (compiler->parser->prev.type) {
+    default: return; // unreachable
+    case Token::Lexeme::False: {
+      compiler->Emit(OpCode::False);
+      break;
+    }
+    case Token::Lexeme::True: {
+      compiler->Emit(OpCode::True);
+      break;
+    }
   }
 }

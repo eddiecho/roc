@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../dynamic_array.h"
+#include "dynamic_array.h"
 
 template <typename T>
 struct Range {
@@ -16,10 +16,10 @@ class RangeArray : public DynamicArray<Range<T>> {
  public:
   auto Search(u32 val) const -> const u32;
 
-  auto operator[](std::size_t idx) -> Range<T>& {
+  auto operator[](size_t idx) -> Range<T>& {
     return this->data[idx];
   }
-  const Range<T>& operator[](std::size_t idx) const {
+  const Range<T>& operator[](size_t idx) const {
     return this->data[idx];
   }
 

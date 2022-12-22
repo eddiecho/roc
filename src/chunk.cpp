@@ -1,8 +1,9 @@
 #pragma once
 
+#include "chunk.h"
+
 #include <stdio.h>
 
-#include "chunk.h"
 #include "value.h"
 
 Chunk::Chunk() noexcept {
@@ -115,8 +116,26 @@ auto Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Divide: {
       return SimpleInstruction("OP_DIVIDE", offset);
     }
+    case OpCode::True: {
+      return SimpleInstruction("LIT_TRUE", offset);
+    }
+    case OpCode::False: {
+      return SimpleInstruction("LIT_FALSE", offset);
+    }
     case OpCode::Return: {
       return SimpleInstruction("OP_RETURN", offset);
+    }
+    case OpCode::Not: {
+      return SimpleInstruction("OP_NOT", offset);
+    }
+    case OpCode::Equality: {
+      return SimpleInstruction("OP_EQUAL", offset);
+    }
+    case OpCode::Greater: {
+      return SimpleInstruction("OP_GREATER", offset);
+    }
+    case OpCode::Less: {
+      return SimpleInstruction("OP_LESS", offset);
     }
     default: {
       printf("Unknown opcode %d\n", byte);

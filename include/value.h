@@ -28,6 +28,26 @@ struct Value {
     this->as.number = num;
   };
 
+  Value(bool boolean) noexcept {
+    this->type = ValueType::Boolean;
+    this->as.boolean = boolean;
+  }
+
+  bool operator==(const Value other) {
+    // @TODO(eddie) - type deduction
+    if (this->type != other.type) return false;
+
+    switch (this->type) {
+      default: return false;
+      case ValueType::Boolean: {
+        return this->as.boolean == other.as.boolean;
+      }
+      case ValueType::Number: {
+        return this->as.number == other.as.number;
+      }
+    }
+  }
+
   auto Print() const -> const void;
 };
 

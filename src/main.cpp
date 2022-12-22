@@ -1,11 +1,11 @@
 #include <iostream>
 
-#include "chunk.cpp"
+#include "chunk.h"
 #include "common.h"
-#include "compiler.cpp"
+#include "compiler.h"
 #include "roc_config.h"
-#include "utils/utils.h"
-#include "vm.cpp"
+#include "utils.h"
+#include "vm.h"
 
 static VirtualMachine VM;
 static Compiler COMPILER;

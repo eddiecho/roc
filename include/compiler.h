@@ -134,6 +134,7 @@ namespace Grammar {
   auto Parenthesis(Compiler* compiler) -> void;
   auto Unary(Compiler* compiler) -> void;
   auto Binary(Compiler* compiler) -> void;
+  auto Literal(Compiler* compiler) -> void;
 }
 
 struct Compiler {
@@ -155,8 +156,8 @@ struct Compiler {
   auto Emit(u8 byte) -> void;
   auto Emit(OpCode opcode) -> void;
 
-  template <typename... Types>
-  auto Emit(u8 byte, Types... bytes) -> void {
+  template <typename T, typename... Types>
+  auto Emit(T byte, Types... bytes) -> void {
     this->Emit(byte);
     if constexpr (sizeof...(bytes) != 0) this->Emit(bytes...);
   }

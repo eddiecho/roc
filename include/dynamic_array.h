@@ -20,10 +20,10 @@ class DynamicArray {
   auto Append(T item) -> void;
   auto Deinit() -> void;
 
-  auto operator[](std::size_t idx) -> T& {
+  auto operator[](size_t idx) -> T& {
     return this->data[idx];
   }
-  const T& operator[](std::size_t idx) const {
+  const T& operator[](size_t idx) const {
     return this->data[idx];
   }
 
