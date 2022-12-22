@@ -8,6 +8,7 @@ set(EXECUTABLE_NAME roc)
 
 project("${PROJECT_NAME}" VERSION 0.1)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS on)
+
 add_subdirectory(include)
 add_subdirectory(src)
-

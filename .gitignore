@@ -1,4 +1,5 @@
 *.rdbg
 .vs
+.cache
 out
 build

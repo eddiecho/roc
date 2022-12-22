@@ -35,5 +35,4 @@ struct Chunk : public DynamicArray<u8> {
  public:
   ConstData constants;
   RangeArray<u32> lines;
-
 };

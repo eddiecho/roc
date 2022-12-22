@@ -1,5 +1,3 @@
-#pragma once
-
 #include "utils.h"
 
 #include <stdio.h>
@@ -16,7 +14,7 @@ auto Utils::ReadFile(const char* path) -> char* {
   }
 #else
   file = fopen(path, "rb");
-  if (file == NULL) {
+  if (file == nullptr) {
     fprintf(stderr, "Could not open file \"%s\".\n", path);
     exit(75);
   }
@@ -25,13 +23,12 @@ auto Utils::ReadFile(const char* path) -> char* {
   defer(fclose(file));
 
   fseek(file, 0L, SEEK_END);
-  size_t fileSize = ftell(file);
+  size_t file_size = ftell(file);
   rewind(file);
 
-  char* buffer = reinterpret_cast<char*>(malloc(fileSize + 1));
-  size_t bytesRead = fread(buffer, sizeof(char), fileSize, file);
-  buffer[bytesRead] = '\0';
+  char* buffer = reinterpret_cast<char*>(malloc(file_size + 1));
+  size_t bytes_read = fread(buffer, sizeof(char), file_size, file);
+  buffer[bytes_read] = '\0';
 
   return buffer;
 }
-

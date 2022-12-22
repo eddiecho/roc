@@ -1,6 +1,7 @@
-#pragma once
-
 #include "vm.h"
+
+#include <stdarg.h>
+#include <stdlib.h>
 
 #include "common.h"
 
@@ -32,9 +33,7 @@ auto VirtualMachine::Peek(int dist) const -> Value {
   return this->stackTop[-1 - dist];
 }
 
-auto VirtualMachine::Reset() -> void {
-  this->stackTop = this->stack;
-}
+auto VirtualMachine::Reset() -> void { this->stackTop = this->stack; }
 
 auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
@@ -50,7 +49,7 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   this->Reset();
 }
 
-auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
+auto VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
   this->chunk = chunk;
   this->instructionPointer = chunk->data;
 
@@ -61,11 +60,11 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
   while (1) {
 #ifdef DEBUG_TRACE_EXECUTION
     this->chunk->PrintAtOffset(
-      static_cast<int>(this->instructionPointer - this->chunk->data));
+        static_cast<int>(this->instructionPointer - this->chunk->data));
 #endif
 
     byte = READ_BYTE();
-    OpCode instruction = static_cast<OpCode>(byte);
+    auto instruction = static_cast<OpCode>(byte);
 
     switch (instruction) {
       case OpCode::Return: {
@@ -81,15 +80,15 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
       }
       case OpCode::ConstantLong: {
         u32 idx = 0;
-        idx |= ((u8) READ_BYTE() << 16);
-        idx |= ((u8) READ_BYTE() << 8);
-        idx |= ((u8) READ_BYTE());
+        idx |= ((u8)READ_BYTE() << 16);
+        idx |= ((u8)READ_BYTE() << 8);
+        idx |= ((u8)READ_BYTE());
 
         Value constant = this->chunk->constants[idx];
         this->Push(constant);
         break;
       }
-      case OpCode::Add:      {
+      case OpCode::Add: {
         Value b = this->Pop();
         Value a = this->Pop();
 
@@ -110,7 +109,7 @@ auto VirtualMachine::Interpret(Chunk *chunk) -> InterpretError {
         this->Push(Value(a.as.number * b.as.number));
         break;
       }
-      case OpCode::Divide:   {
+      case OpCode::Divide: {
         Value b = this->Pop();
         Value a = this->Pop();
 

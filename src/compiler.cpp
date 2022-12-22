@@ -1,8 +1,7 @@
-#pragma once
-
 #include "compiler.h"
 
 #include <stdio.h>
+
 #include <cctype>
 #include <cstdarg>
 #include <cstring>
@@ -17,11 +16,11 @@ Token::Token() noexcept {
   this->line = 0;
 }
 
-Token::Token(Token::Lexeme type, const char* start, u32 len, u32 line) noexcept :
-  type{type}, start{start}, len{len}, line{line}
-{}
+Token::Token(Token::Lexeme type, const char* start, u32 len, u32 line) noexcept
+    : type{type}, start{start}, len{len}, line{line} {}
 
-// @TODO(eddie) - I don't like this. Should be able to point to where the error starts
+// @TODO(eddie) - I don't like this. Should be able to point to where the error
+// starts
 // @STDLIB
 Token::Token(const char* error) noexcept {
   this->type = Token::Lexeme::Error;
@@ -30,14 +29,12 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
-auto static constexpr IsDigit(char c) -> bool {
+auto static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
 
 // @STDLIB
-auto static IsIdentifier(char c) -> const bool {
-  return !ispunct(c);
-}
+auto static IsIdentifier(const char c) -> const bool { return !ispunct(c); }
 
 Scanner::Scanner() noexcept {
   this->start = nullptr;
@@ -64,11 +61,11 @@ auto inline Scanner::Pop() -> char {
 }
 
 auto inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
-  return Token {
-    type,
-    this->start,
-    (u32)(this->curr - this->start),
-    this->line,
+  return Token{
+      type,
+      this->start,
+      (u32)(this->curr - this->start),
+      this->line,
   };
 }
 
@@ -102,7 +99,8 @@ auto Scanner::SkipWhitespace() -> void {
         this->Pop();
         break;
       }
-      default: return;
+      default:
+        return;
     }
   }
 }
@@ -133,8 +131,9 @@ auto Scanner::NumberToken() -> const Token {
 }
 
 // @STDLIB
-auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const
-  -> const Token::Lexeme {
+auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
+                           Token::Lexeme possible) const
+    -> const Token::Lexeme {
   if (this->curr - this->start == start + length &&
       memcmp(this->start + start, rest, length) == 0) {
     return possible;
@@ -145,25 +144,37 @@ auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexem
 
 auto Scanner::IdentifierType() const -> const Token::Lexeme {
   switch (*this->start) {
-    case 'a': return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
-    case 'e': return this->CheckKeyword(1, 3, "lse", Token::Lexeme::Else);
+    case 'a':
+      return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
+    case 'e':
+      return this->CheckKeyword(1, 3, "lse", Token::Lexeme::Else);
     case 'f': {
       if (this->curr - this->start > 1) {
         switch (this->start[1]) {
-          case 'a': return this->CheckKeyword(2, 3, "lse", Token::Lexeme::False);
-          case 'o': return this->CheckKeyword(2, 1, "r", Token::Lexeme::For);
-          case 'u': return this->CheckKeyword(2, 1, "n", Token::Lexeme::Function);
+          case 'a':
+            return this->CheckKeyword(2, 3, "lse", Token::Lexeme::False);
+          case 'o':
+            return this->CheckKeyword(2, 1, "r", Token::Lexeme::For);
+          case 'u':
+            return this->CheckKeyword(2, 1, "n", Token::Lexeme::Function);
         }
       }
       break;
     }
-    case 'i': return this->CheckKeyword(1, 1, "f", Token::Lexeme::If);
-    case 'o': return this->CheckKeyword(1, 1, "r", Token::Lexeme::Or);
-    case 'r': return this->CheckKeyword(1, 5, "eturn", Token::Lexeme::Return);
-    case 's': return this->CheckKeyword(1, 5, "truct", Token::Lexeme::Struct);
-    case 't': return this->CheckKeyword(1, 3, "rue", Token::Lexeme::True);
-    case 'v': return this->CheckKeyword(1, 2, "ar", Token::Lexeme::Var);
-    case 'w': return this->CheckKeyword(1, 4, "hile", Token::Lexeme::While);
+    case 'i':
+      return this->CheckKeyword(1, 1, "f", Token::Lexeme::If);
+    case 'o':
+      return this->CheckKeyword(1, 1, "r", Token::Lexeme::Or);
+    case 'r':
+      return this->CheckKeyword(1, 5, "eturn", Token::Lexeme::Return);
+    case 's':
+      return this->CheckKeyword(1, 5, "truct", Token::Lexeme::Struct);
+    case 't':
+      return this->CheckKeyword(1, 3, "rue", Token::Lexeme::True);
+    case 'v':
+      return this->CheckKeyword(1, 2, "ar", Token::Lexeme::Var);
+    case 'w':
+      return this->CheckKeyword(1, 4, "hile", Token::Lexeme::While);
   }
 
   return Token::Lexeme::Identifier;
@@ -184,25 +195,40 @@ auto Scanner::ScanToken() -> Token {
 
   char c = this->Pop();
   switch (c) {
-    case '(': return this->MakeToken(Token::Lexeme::LeftParens);
-    case ')': return this->MakeToken(Token::Lexeme::RightParens);
-    case '{': return this->MakeToken(Token::Lexeme::LeftBrace);
-    case '}': return this->MakeToken(Token::Lexeme::RightBrace);
-    case ';': return this->MakeToken(Token::Lexeme::Semicolon);
-    case ':': return this->MakeToken(Token::Lexeme::Colon);
-    case ',': return this->MakeToken(Token::Lexeme::Colon);
-    case '.': return this->MakeToken(Token::Lexeme::Dot);
-    case '-': return this->MakeToken(Token::Lexeme::Minus);
-    case '+': return this->MakeToken(Token::Lexeme::Plus);
-    case '*': return this->MakeToken(Token::Lexeme::Star);
-    case '!': return this->MakeToken(
-                  this->Match('=') ? Token::Lexeme::BangEqual : Token::Lexeme::Bang);
-    case '=': return this->MakeToken(
-                  this->Match('=') ? Token::Lexeme::EqualEqual : Token::Lexeme::Equal);
-    case '<': return this->MakeToken(
-                  this->Match('=') ? Token::Lexeme::LessEqual : Token::Lexeme::Less);
-    case '>': return this->MakeToken(
-                  this->Match('=') ? Token::Lexeme::GreaterEqual : Token::Lexeme::Greater);
+    case '(':
+      return this->MakeToken(Token::Lexeme::LeftParens);
+    case ')':
+      return this->MakeToken(Token::Lexeme::RightParens);
+    case '{':
+      return this->MakeToken(Token::Lexeme::LeftBrace);
+    case '}':
+      return this->MakeToken(Token::Lexeme::RightBrace);
+    case ';':
+      return this->MakeToken(Token::Lexeme::Semicolon);
+    case ':':
+      return this->MakeToken(Token::Lexeme::Colon);
+    case ',':
+      return this->MakeToken(Token::Lexeme::Colon);
+    case '.':
+      return this->MakeToken(Token::Lexeme::Dot);
+    case '-':
+      return this->MakeToken(Token::Lexeme::Minus);
+    case '+':
+      return this->MakeToken(Token::Lexeme::Plus);
+    case '*':
+      return this->MakeToken(Token::Lexeme::Star);
+    case '!':
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::BangEqual
+                                              : Token::Lexeme::Bang);
+    case '=':
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::EqualEqual
+                                              : Token::Lexeme::Equal);
+    case '<':
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::LessEqual
+                                              : Token::Lexeme::Less);
+    case '>':
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::GreaterEqual
+                                              : Token::Lexeme::Greater);
     // @TODO(eddie) - Multiline comments
     case '/': {
       if (this->PeekNext() == '/') {
@@ -212,7 +238,8 @@ auto Scanner::ScanToken() -> Token {
         return this->MakeToken(Token::Lexeme::Slash);
       }
     }
-    case '"': return this->StringToken();
+    case '"':
+      return this->StringToken();
     case '0':
     case '1':
     case '2':
@@ -222,9 +249,11 @@ auto Scanner::ScanToken() -> Token {
     case '6':
     case '7':
     case '8':
-    case '9': return this->NumberToken();
+    case '9':
+      return this->NumberToken();
     // it's the wild west here baby
-    default: return this->IdentifierToken();
+    default:
+      return this->IdentifierToken();
   }
 }
 
@@ -234,50 +263,65 @@ Compiler::Compiler() noexcept {
 }
 
 std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
-  {Token::Lexeme::LeftParens, ParseRule(&Grammar::Parenthesis, nullptr, Precedence::None)},
-  {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::LeftParens,
+     ParseRule(&Grammar::Parenthesis, nullptr, Precedence::None)},
+    {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
 
-  {Token::Lexeme::Minus, ParseRule(&Grammar::Unary, &Grammar::Binary, Precedence::Term)},
-  {Token::Lexeme::Bang, ParseRule(&Grammar::Unary, nullptr, Precedence::None)},
-  {Token::Lexeme::Plus, ParseRule(nullptr, &Grammar::Binary, Precedence::Term)},
-  {Token::Lexeme::Slash, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
-  {Token::Lexeme::Star, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
+    {Token::Lexeme::Minus,
+     ParseRule(&Grammar::Unary, &Grammar::Binary, Precedence::Term)},
+    {Token::Lexeme::Bang,
+     ParseRule(&Grammar::Unary, nullptr, Precedence::None)},
+    {Token::Lexeme::Plus,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Term)},
+    {Token::Lexeme::Slash,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
+    {Token::Lexeme::Star,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
 
-  {Token::Lexeme::Greater, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-  {Token::Lexeme::GreaterEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-  {Token::Lexeme::Less, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-  {Token::Lexeme::LessEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-  {Token::Lexeme::BangEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
-  {Token::Lexeme::EqualEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+    {Token::Lexeme::Greater,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::GreaterEqual,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::Less,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::LessEqual,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::BangEqual,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+    {Token::Lexeme::EqualEqual,
+     ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
 
-  {Token::Lexeme::Number, ParseRule(&Grammar::Number, nullptr, Precedence::None)},
+    {Token::Lexeme::Number,
+     ParseRule(&Grammar::Number, nullptr, Precedence::None)},
 
-  {Token::Lexeme::False, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
-  {Token::Lexeme::True, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+    {Token::Lexeme::False,
+     ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+    {Token::Lexeme::True,
+     ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
 
-  // @TODO(eddie)
-  {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Comment, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Comma, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Dot, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Semicolon, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::String, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Struct, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::Var, ParseRule(nullptr, nullptr, Precedence::None)},
-  {Token::Lexeme::While, ParseRule(nullptr, nullptr, Precedence::None)},
+    // @TODO(eddie)
+    {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Comment, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Comma, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Dot, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Semicolon, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::String, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Struct, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Var, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::While, ParseRule(nullptr, nullptr, Precedence::None)},
 
 };
 
@@ -291,7 +335,6 @@ auto Compiler::Expression() -> void {
 }
 
 auto Compiler::Compile() -> bool {
-
   this->Advance();
   this->Expression();
   this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
@@ -358,9 +401,7 @@ auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   this->parser->ErrorAtCurr(message);
 }
 
-auto Compiler::EndCompilation() -> void {
-  this->Emit(OpCode::Return);
-}
+auto Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
 
 auto Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
   return &this->PARSE_RULES[token];
@@ -377,7 +418,8 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 
   rule->prefix(this);
 
-  while (precedence <= this->GetParseRule(this->parser->curr.type)->precedence) {
+  while (precedence <=
+         this->GetParseRule(this->parser->curr.type)->precedence) {
     this->Advance();
     ParseRule* prev_rule = this->GetParseRule(this->parser->prev.type);
     prev_rule->infix(this);
@@ -386,7 +428,7 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 
 // @STDLIB
 auto Grammar::Number(Compiler* compiler) -> void {
-  f64 value = strtod(compiler->parser->prev.start, NULL);
+  f64 value = strtod(compiler->parser->prev.start, nullptr);
   compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
 }
 
@@ -400,7 +442,8 @@ auto Grammar::Unary(Compiler* compiler) -> void {
   compiler->GetPrecedence(Precedence::Unary);
 
   switch (op) {
-    default: return;
+    default:
+      return;
     case Token::Lexeme::Minus: {
       compiler->Emit(OpCode::Negate);
       break;
@@ -416,28 +459,59 @@ auto Grammar::Binary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
-  Precedence next_higher = static_cast<Precedence>(higher);
+  auto next_higher = static_cast<Precedence>(higher);
   compiler->GetPrecedence(next_higher);
 
   switch (op) {
-    default: return;
-    case Token::Lexeme::Plus: { compiler->Emit(OpCode::Add); break; }
-    case Token::Lexeme::Minus: { compiler->Emit(OpCode::Subtract); break; }
-    case Token::Lexeme::Star: { compiler->Emit(OpCode::Multiply); break; }
-    case Token::Lexeme::Slash: { compiler->Emit(OpCode::Divide); break; }
-    case Token::Lexeme::BangEqual: { compiler->Emit(OpCode::Equality, OpCode::Not); break; }
-    case Token::Lexeme::EqualEqual: { compiler->Emit(OpCode::Equality); break; }
-    case Token::Lexeme::Greater: { compiler->Emit(OpCode::Greater); break; }
-    case Token::Lexeme::GreaterEqual: { compiler->Emit(OpCode::Greater, OpCode::Not); break; }
-    case Token::Lexeme::Less: { compiler->Emit(OpCode::Less); break; }
-    case Token::Lexeme::LessEqual: { compiler->Emit(OpCode::Less, OpCode::Not); break; }
-
+    default:
+      return;
+    case Token::Lexeme::Plus: {
+      compiler->Emit(OpCode::Add);
+      break;
+    }
+    case Token::Lexeme::Minus: {
+      compiler->Emit(OpCode::Subtract);
+      break;
+    }
+    case Token::Lexeme::Star: {
+      compiler->Emit(OpCode::Multiply);
+      break;
+    }
+    case Token::Lexeme::Slash: {
+      compiler->Emit(OpCode::Divide);
+      break;
+    }
+    case Token::Lexeme::BangEqual: {
+      compiler->Emit(OpCode::Equality, OpCode::Not);
+      break;
+    }
+    case Token::Lexeme::EqualEqual: {
+      compiler->Emit(OpCode::Equality);
+      break;
+    }
+    case Token::Lexeme::Greater: {
+      compiler->Emit(OpCode::Greater);
+      break;
+    }
+    case Token::Lexeme::GreaterEqual: {
+      compiler->Emit(OpCode::Greater, OpCode::Not);
+      break;
+    }
+    case Token::Lexeme::Less: {
+      compiler->Emit(OpCode::Less);
+      break;
+    }
+    case Token::Lexeme::LessEqual: {
+      compiler->Emit(OpCode::Less, OpCode::Not);
+      break;
+    }
   }
 }
 
 auto Grammar::Literal(Compiler* compiler) -> void {
   switch (compiler->parser->prev.type) {
-    default: return; // unreachable
+    default:
+      return;  // unreachable
     case Token::Lexeme::False: {
       compiler->Emit(OpCode::False);
       break;

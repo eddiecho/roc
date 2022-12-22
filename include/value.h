@@ -38,7 +38,8 @@ struct Value {
     if (this->type != other.type) return false;
 
     switch (this->type) {
-      default: return false;
+      default:
+        return false;
       case ValueType::Boolean: {
         return this->as.boolean == other.as.boolean;
       }

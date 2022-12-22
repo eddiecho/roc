@@ -45,9 +45,8 @@ auto static Repl() -> void {
 }
 
 int main(int argc, char** argv) {
-  std::cout << argv[0] << " Version "
-    << Roc_VERSION_MAJOR << "." << Roc_VERSION_MINOR
-    << std::endl;
+  std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
+            << Roc_VERSION_MINOR << std::endl;
 
   VM.Init();
   defer(VM.Deinit());
@@ -62,4 +61,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "memory.h"
 
 #include <stdlib.h>
@@ -8,10 +6,10 @@
 auto Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
   if (newSize == 0) {
     free(ptr);
-    return NULL;
+    return nullptr;
   }
 
   void* result = realloc(ptr, newSize);
-  if (result == NULL) exit(1);
+  if (result == nullptr) exit(1);
   return result;
 }

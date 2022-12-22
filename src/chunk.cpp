@@ -1,5 +1,3 @@
-#pragma once
-
 #include "chunk.h"
 
 #include <stdio.h>
@@ -92,7 +90,7 @@ auto Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%4d ", line);
 
   u8 byte = (*this)[offset];
-  OpCode instruction = static_cast<OpCode>(byte);
+  auto instruction = static_cast<OpCode>(byte);
 
   switch (instruction) {
     case OpCode::Constant: {

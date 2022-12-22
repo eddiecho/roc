@@ -1,5 +1,3 @@
-#pragma once
-
 #include "value.h"
 
 #include "common.h"

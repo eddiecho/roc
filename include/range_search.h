@@ -16,13 +16,8 @@ class RangeArray : public DynamicArray<Range<T>> {
  public:
   auto Search(u32 val) const -> const u32;
 
-  auto operator[](size_t idx) -> Range<T>& {
-    return this->data[idx];
-  }
-  const Range<T>& operator[](size_t idx) const {
-    return this->data[idx];
-  }
-
+  auto operator[](size_t idx) -> Range<T>& { return this->data[idx]; }
+  const Range<T>& operator[](size_t idx) const { return this->data[idx]; }
 };
 
 template <typename T>

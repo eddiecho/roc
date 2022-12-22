@@ -2,22 +2,28 @@
 
 #include <unordered_map>
 
-#include "common.h"
 #include "chunk.h"
+#include "common.h"
 
-#define VM_LEXEME_TYPE \
-  X(Eof) \
-  X(Error) \
-  X(Comment) \
-  X(LeftParens) X(RightParens) X(LeftBrace) X(RightBrace) \
-  X(Comma) X(Dot) X(Minus) X(Plus) \
-  X(Semicolon) X(Colon) X(Slash) X(Star) \
-  X(Bang) X(BangEqual) X(Equal) X(EqualEqual) \
-  X(Greater) X(GreaterEqual) X(Less) X(LessEqual) \
-  X(Identifier) X(String) X(Number) \
-  X(And) X(Else) X(False) X(For) \
-  X(Function) X(If) X(Or) X(Return) \
-  X(Struct) X(True) X(Var) X(While)
+#define VM_LEXEME_TYPE                                                       \
+  X(Eof)                                                                     \
+  X(Error)                                                                   \
+  X(Comment)                                                                 \
+  X(LeftParens)                                                              \
+  X(RightParens)                                                             \
+  X(LeftBrace)                                                               \
+  X(RightBrace)                                                              \
+  X(Comma)                                                                   \
+  X(Dot)                                                                     \
+  X(Minus)                                                                   \
+  X(Plus)                                                                    \
+  X(Semicolon)                                                               \
+  X(Colon)                                                                   \
+  X(Slash)                                                                   \
+  X(Star) X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater)             \
+      X(GreaterEqual) X(Less) X(LessEqual) X(Identifier) X(String) X(Number) \
+          X(And) X(Else) X(False) X(For) X(Function) X(If) X(Or) X(Return)   \
+              X(Struct) X(True) X(Var) X(While)
 
 struct Token {
   enum class Lexeme {
@@ -37,18 +43,18 @@ struct Token {
 
   auto constexpr Type() -> const char* {
     switch (this->type) {
-#define X(ID) case Lexeme::ID: return #ID;
-    VM_LEXEME_TYPE
+#define X(ID)      \
+  case Lexeme::ID: \
+    return #ID;
+      VM_LEXEME_TYPE
 #undef X
-    default: {
-      return "Eof";
-    }
+      default: {
+        return "Eof";
+      }
     }
   }
 
-  auto constexpr inline IsEnd() -> bool {
-    return this->type == Lexeme::Eof;
-  }
+  auto constexpr inline IsEnd() -> bool { return this->type == Lexeme::Eof; }
 };
 
 class Scanner {
@@ -70,8 +76,8 @@ class Scanner {
   auto constexpr inline Peek() const -> const char;
   auto constexpr inline PeekNext() const -> const char;
   auto SkipWhitespace() -> void;
-  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const
-    -> const Token::Lexeme;
+  auto CheckKeyword(u32 start, u32 length, const char* rest,
+                    Token::Lexeme possible) const -> const Token::Lexeme;
   auto StringToken() -> const Token;
   auto NumberToken() -> const Token;
   auto IdentifierToken() const -> const Token;
@@ -112,7 +118,8 @@ enum class Precedence : u8 {
   Primary
 };
 
-typedef void (*ParseFunction)(Compiler*);
+using ParseFunction = void (*)(Compiler*);
+
 struct ParseRule {
   ParseFunction prefix;
   ParseFunction infix;
@@ -124,18 +131,18 @@ struct ParseRule {
     this->precedence = Precedence::None;
   }
 
-  ParseRule(ParseFunction prefix, ParseFunction infix, Precedence precedence) noexcept :
-    prefix{prefix}, infix{infix}, precedence{precedence}
-  {}
+  ParseRule(ParseFunction prefix, ParseFunction infix,
+            Precedence precedence) noexcept
+      : prefix{prefix}, infix{infix}, precedence{precedence} {}
 };
 
 namespace Grammar {
-  auto Number(Compiler* compiler) -> void;
-  auto Parenthesis(Compiler* compiler) -> void;
-  auto Unary(Compiler* compiler) -> void;
-  auto Binary(Compiler* compiler) -> void;
-  auto Literal(Compiler* compiler) -> void;
-}
+auto Number(Compiler* compiler) -> void;
+auto Parenthesis(Compiler* compiler) -> void;
+auto Unary(Compiler* compiler) -> void;
+auto Binary(Compiler* compiler) -> void;
+auto Literal(Compiler* compiler) -> void;
+}  // namespace Grammar
 
 struct Compiler {
   Scanner* scanner;
@@ -165,7 +172,5 @@ struct Compiler {
  private:
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };
-
-
 
 #undef VM_LEXEME_TYPE
