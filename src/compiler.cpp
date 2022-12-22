@@ -362,7 +362,7 @@ auto Compiler::Advance() -> void {
     } else {
       printf("   | ");
     }
-    printf("%s '%.*s'\n", token.Type(), token.len, token.start);
+    printf("%s '%.*s'\n", token.Print(), token.len, token.start);
 
     if (this->parser->curr.type != Token::Lexeme::Error) return;
 
@@ -431,17 +431,17 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 }
 
 // @STDLIB
-auto Grammar::Number(Compiler* compiler) -> void {
+auto static Grammar::Number(Compiler* compiler) -> void {
   f64 value = strtod(compiler->parser->prev.start, nullptr);
   compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
 }
 
-auto Grammar::Parenthesis(Compiler* compiler) -> void {
+auto static Grammar::Parenthesis(Compiler* compiler) -> void {
   compiler->Expression();
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
-auto Grammar::Unary(Compiler* compiler) -> void {
+auto static Grammar::Unary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
@@ -459,7 +459,7 @@ auto Grammar::Unary(Compiler* compiler) -> void {
   }
 }
 
-auto Grammar::Binary(Compiler* compiler) -> void {
+auto static Grammar::Binary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
@@ -512,7 +512,7 @@ auto Grammar::Binary(Compiler* compiler) -> void {
   }
 }
 
-auto Grammar::Literal(Compiler* compiler) -> void {
+auto static Grammar::Literal(Compiler* compiler) -> void {
   switch (compiler->parser->prev.type) {
     default:
       return;  // unreachable

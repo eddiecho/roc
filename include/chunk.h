@@ -22,7 +22,8 @@ enum class OpCode : u8 {
   Less,
 };
 
-struct Chunk : public DynamicArray<u8> {
+class Chunk : public DynamicArray<u8> {
+ public:
   Chunk() noexcept;
   ~Chunk() noexcept;
 

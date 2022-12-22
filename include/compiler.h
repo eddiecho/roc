@@ -41,7 +41,7 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   Token(const char* error) noexcept;
 
-  auto constexpr Type() -> const char* {
+  auto constexpr Print() -> const char* {
     switch (this->type) {
 #define X(ID)      \
   case Lexeme::ID: \
@@ -84,8 +84,6 @@ class Scanner {
   auto IdentifierType() const -> const Token::Lexeme;
 };
 
-struct Compiler;
-
 struct Parser {
   Token curr;
   Token prev;
@@ -97,8 +95,6 @@ struct Parser {
     } state;
     u64 value = 0;
   };
-
-  friend Compiler;
 
   Parser() noexcept;
   auto ErrorAtCurr(const char* message) -> void;
@@ -118,6 +114,7 @@ enum class Precedence : u8 {
   Primary
 };
 
+class Compiler;
 using ParseFunction = void (*)(Compiler*);
 
 struct ParseRule {
@@ -136,19 +133,17 @@ struct ParseRule {
       : prefix{prefix}, infix{infix}, precedence{precedence} {}
 };
 
+// i would make these part of Compiler, but you can't take pointers
+// to member functions to build the parser table
 namespace Grammar {
-auto Number(Compiler* compiler) -> void;
-auto Parenthesis(Compiler* compiler) -> void;
-auto Unary(Compiler* compiler) -> void;
-auto Binary(Compiler* compiler) -> void;
-auto Literal(Compiler* compiler) -> void;
+auto static Number(Compiler* compiler) -> void;
+auto static Parenthesis(Compiler* compiler) -> void;
+auto static Unary(Compiler* compiler) -> void;
+auto static Binary(Compiler* compiler) -> void;
+auto static Literal(Compiler* compiler) -> void;
 }  // namespace Grammar
 
-struct Compiler {
-  Scanner* scanner;
-  Parser* parser;
-  Chunk* chunk = nullptr;
-
+class Compiler {
  public:
   Compiler() noexcept;
   auto Init(const char* src, Chunk* chunk) -> void;
@@ -169,7 +164,17 @@ struct Compiler {
     if constexpr (sizeof...(bytes) != 0) this->Emit(bytes...);
   }
 
+  auto friend Grammar::Number(Compiler* compiler) -> void;
+  auto friend Grammar::Parenthesis(Compiler* compiler) -> void;
+  auto friend Grammar::Unary(Compiler* compiler) -> void;
+  auto friend Grammar::Binary(Compiler* compiler) -> void;
+  auto friend Grammar::Literal(Compiler* compiler) -> void;
+
  private:
+  Scanner* scanner;
+  Parser* parser;
+  Chunk* chunk = nullptr;
+
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };
 

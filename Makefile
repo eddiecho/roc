@@ -1,5 +1,5 @@
 build:
-	@$(MAKE) --directory build
+	@$(MAKE) --no-print-directory --directory build
 
 SOURCES = $(shell find src/ -name '*.cpp')
 HEADERS = $(shell find include/ -name '*.h')
