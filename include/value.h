@@ -5,9 +5,13 @@
 #include "common.h"
 #include "dynamic_array.h"
 
+struct Object;
+struct ObjectString;
+
 enum class ValueType {
   Number,
   Boolean,
+  Object,
 };
 
 struct Value {
@@ -15,6 +19,7 @@ struct Value {
   union {
     bool boolean;
     f64 number;
+    Object* object;
   } as;
 
   Value() noexcept {
@@ -49,6 +54,7 @@ struct Value {
     }
   }
 
+  auto constexpr inline IsObject() -> bool;
   auto Print() const -> const void;
 };
 

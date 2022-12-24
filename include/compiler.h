@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "arena.h"
 #include "chunk.h"
 #include "common.h"
 
@@ -141,12 +142,13 @@ auto static Parenthesis(Compiler* compiler) -> void;
 auto static Unary(Compiler* compiler) -> void;
 auto static Binary(Compiler* compiler) -> void;
 auto static Literal(Compiler* compiler) -> void;
+auto static String(Compiler* compiler) -> void;
 }  // namespace Grammar
 
 class Compiler {
  public:
   Compiler() noexcept;
-  auto Init(const char* src, Chunk* chunk) -> void;
+  auto Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void;
   auto Advance() -> void;
   auto Consume(Token::Lexeme type, const char* message) -> void;
   auto Compile() -> bool;
@@ -169,11 +171,13 @@ class Compiler {
   auto friend Grammar::Unary(Compiler* compiler) -> void;
   auto friend Grammar::Binary(Compiler* compiler) -> void;
   auto friend Grammar::Literal(Compiler* compiler) -> void;
+  auto friend Grammar::String(Compiler* compiler) -> void;
 
  private:
   Scanner* scanner;
   Parser* parser;
   Chunk* chunk = nullptr;
+  Arena<char>* string_pool = nullptr;
 
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };

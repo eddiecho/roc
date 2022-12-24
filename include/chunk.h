@@ -20,6 +20,7 @@ enum class OpCode : u8 {
   Equality,
   Greater,
   Less,
+  String,
 };
 
 class VirtualMachine;

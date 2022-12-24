@@ -3,37 +3,36 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "arena.h"
 #include "common.h"
-
-#define DEBUG_TRACE_EXECUTION
 
 auto VirtualMachine::Init() -> void {
   // reset stack pointer
-  this->stackTop = this->stack;
+  this->stack_top = this->stack;
 }
 
 auto VirtualMachine::Deinit() -> void {}
 
 auto VirtualMachine::Push(Value value) -> void {
   // TODO(eddie) - this is bad error handling
-  if (this->stackTop - this->stack > VM_STACK_MAX) {
+  if (this->stack_top - this->stack > VM_STACK_MAX) {
     exit(1);
   }
 
-  *this->stackTop = value;
-  this->stackTop++;
+  *this->stack_top = value;
+  this->stack_top++;
 }
 
 auto VirtualMachine::Pop() -> Value {
-  this->stackTop--;
-  return *this->stackTop;
+  this->stack_top--;
+  return *this->stack_top;
 }
 
 auto VirtualMachine::Peek(int dist) const -> Value {
-  return this->stackTop[-1 - dist];
+  return this->stack_top[-1 - dist];
 }
 
-auto VirtualMachine::Reset() -> void { this->stackTop = this->stack; }
+auto VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
 
 auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
@@ -42,7 +41,7 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_end(args);
   fputs("\n", stderr);
 
-  size_t inst = this->instructionPointer - this->chunk->data - 1;
+  size_t inst = this->inst_ptr - this->chunk->data - 1;
   int line = this->chunk->lines[inst].val;
 
   fprintf(stderr, "[line %d] in file\n", line);
@@ -51,16 +50,16 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
 
 auto VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
   this->chunk = chunk;
-  this->instructionPointer = chunk->data;
+  this->inst_ptr = chunk->data;
 
-#define READ_BYTE() (*this->instructionPointer++)
+#define READ_BYTE() (*this->inst_ptr++)
 #define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
 
   u8 byte;
   while (1) {
 #ifdef DEBUG_TRACE_EXECUTION
     this->chunk->PrintAtOffset(
-        static_cast<int>(this->instructionPointer - this->chunk->data));
+        static_cast<int>(this->inst_ptr - this->chunk->data));
 #endif
 
     byte = READ_BYTE();

@@ -7,6 +7,9 @@
 #include "utils.h"
 #include "vm.h"
 
+#define DEBUG_TRACE_EXECUTION
+#undef DEBUG_TRACE_EXECUTION
+
 static VirtualMachine VM;
 static Compiler COMPILER;
 
@@ -15,7 +18,9 @@ auto static RunFile(const char* path) -> InterpretError {
   defer(free(src));
 
   Chunk chunk;
-  COMPILER.Init(src, &chunk);
+  Arena<char> string_pool;
+
+  COMPILER.Init(src, &chunk, &string_pool);
   COMPILER.Compile();
 
   return VM.Interpret(&chunk);
@@ -23,10 +28,11 @@ auto static RunFile(const char* path) -> InterpretError {
 
 auto static Repl() -> void {
   char line[1024];
-  Chunk chunk;
   InterpretError status;
+  Arena<char> string_pool;
 
   while (1) {
+    Chunk chunk;
     printf("> ");
 
     if (!fgets(line, sizeof(line), stdin)) {
@@ -34,12 +40,10 @@ auto static Repl() -> void {
       break;
     }
 
-    COMPILER.Init(line, &chunk);
+    COMPILER.Init(line, &chunk, &string_pool);
     COMPILER.Compile();
     // @TODO(eddie) - do something with the status
     status = VM.Interpret(&chunk);
-
-    chunk.Deinit();
   }
 }
 
@@ -50,7 +54,7 @@ int main(int argc, char** argv) {
   VM.Init();
   defer(VM.Deinit());
 
-  if (argc == 0) {
+  if (argc == 1) {
     Repl();
   } else if (argc == 2) {
     RunFile(argv[1]);

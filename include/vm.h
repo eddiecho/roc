@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "arena.h"
 #include "chunk.h"
 #include "value.h"
 
@@ -42,9 +43,10 @@ class VirtualMachine {
 
  private:
   Chunk* chunk = nullptr;
-  u8* instructionPointer = nullptr;
+  u8* inst_ptr = nullptr;
   Value stack[VM_STACK_MAX];
-  Value* stackTop;
+  Value* stack_top;
+  Arena<char>* string_pool;
 
   auto Push(Value value) -> void;
   auto Pop() -> Value;

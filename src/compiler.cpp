@@ -2,10 +2,11 @@
 
 #include <stdio.h>
 #include <ctype.h>
-#include <stdarg.h>
 #include <string.h>
 
+#include "arena.h"
 #include "common.h"
+#include "object.h"
 #include "value.h"
 
 Token::Token() noexcept {
@@ -301,6 +302,7 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
      ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
     {Token::Lexeme::True,
      ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+    {Token::Lexeme::String, ParseRule(&Grammar::String, nullptr, Precedence::None)},
 
     // @TODO(eddie)
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -314,7 +316,6 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::String, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -328,8 +329,9 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-auto Compiler::Init(const char* src, Chunk* chunk) -> void {
+auto Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void {
   this->chunk = chunk;
+  this->string_pool = string_pool;
   this->scanner->Init(src);
 }
 
@@ -355,6 +357,7 @@ auto Compiler::Advance() -> void {
     token = this->scanner->ScanToken();
     this->parser->curr = token;
 
+#ifdef DEBUG_TRACE_EXECUTION
     // output debug token info
     if (token.line != line) {
       printf("%4d ", token.line);
@@ -362,6 +365,7 @@ auto Compiler::Advance() -> void {
       printf("   | ");
     }
     printf("%s '%.*s'\n", token.Print(), token.len, token.start);
+#endif
 
     if (this->parser->curr.type != Token::Lexeme::Error) return;
 
@@ -524,4 +528,12 @@ auto static Grammar::Literal(Compiler* compiler) -> void {
       break;
     }
   }
+}
+
+auto static Grammar::String(Compiler* compiler) -> void {
+  char* start = const_cast<char *>(
+      compiler->parser->prev.start + 1);
+
+  compiler->string_pool->PushArray(start, compiler->parser->prev.len - 2);
+  // push an index into the vm stack + a length
 }
