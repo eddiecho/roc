@@ -42,8 +42,8 @@ class Arena {
     }
   };
 
-  auto Push(T&& entry) -> T*;
-  auto PushArray(T* entry, u32 len) -> T*;
+  auto Push(T&& entry) -> u32;
+  auto PushArray(T* entry, u32 len) -> u32;
   auto Position() const -> T*;
   auto AllocatedBytes() const -> u32;
   auto Clear() -> void;
@@ -51,32 +51,32 @@ class Arena {
 };
 
 template <typename T>
-auto Arena<T>::Push(T&& entry) -> T* {
+auto Arena<T>::Push(T&& entry) -> u32 {
   if (this->count == this->capacity) {
     if (this->next == nullptr) {
       // @FIXME(eddie) - does this work?
       this->next = new Arena<T>(this->capacity);
     }
 
-    return this->next->Push(entry);
+    return this->capacity + this->next->Push(entry);
   } else {
     this->data[this->count] = entry;
     this->count++;
 
-    return &this->data[this->count - 1];
+    return this->count - 1;
   }
 }
 
 // @STDLIB
 template <typename T>
-auto Arena<T>::PushArray(T* entry, u32 len) -> T* {
+auto Arena<T>::PushArray(T* entry, u32 len) -> u32 {
   using type = T;
 
   if (this->capacity - this->count >= len) {
     memcpy(this->data + this->count, entry, len * sizeof(type));
     this->count += len;
 
-    return &this->data[this->count - len];
+    return this->count - len;
   } else {
     if (this->next == nullptr) {
       u32 new_size = this->capacity < len
@@ -85,7 +85,7 @@ auto Arena<T>::PushArray(T* entry, u32 len) -> T* {
       this->next = new Arena<T>(new_size);
     }
 
-    return this->next->PushArray(entry, len);
+    return this->capacity + this->next->PushArray(entry, len);
   }
 }
 

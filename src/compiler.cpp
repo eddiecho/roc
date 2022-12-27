@@ -534,6 +534,18 @@ auto static Grammar::String(Compiler* compiler) -> void {
   char* start = const_cast<char *>(
       compiler->parser->prev.start + 1);
 
-  compiler->string_pool->PushArray(start, compiler->parser->prev.len - 2);
+  // @ALERT - hard limit of 2^24 bytes on string length
+  u32 length = compiler->parser->prev.len - 2;
+  u32 index = compiler->string_pool->PushArray(start, length);
   // push an index into the vm stack + a length
+
+  u8* length_bytes = reinterpret_cast<u8*>(length);
+  compiler->Emit(length_bytes[1]);
+  compiler->Emit(length_bytes[2]);
+  compiler->Emit(length_bytes[3]);
+
+  u8* index_bytes = reinterpret_cast<u8*>(index);
+  compiler->Emit(index_bytes[1]);
+  compiler->Emit(index_bytes[2]);
+  compiler->Emit(index_bytes[3]);
 }

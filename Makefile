@@ -1,6 +1,9 @@
 build:
 	@$(MAKE) --no-print-directory --directory build
 
+test:
+	ctest --test-dir build/test
+
 SOURCES = $(shell find src/ -name '*.cpp')
 HEADERS = $(shell find include/ -name '*.h')
 
@@ -65,4 +68,4 @@ tidy:
 	done
 	@echo "Done"
 
-.PHONY: build fmt tidy
+.PHONY: build fmt tidy test
