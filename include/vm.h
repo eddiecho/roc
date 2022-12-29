@@ -40,6 +40,8 @@ class VirtualMachine {
   auto Interpret(Chunk* chunk) -> InterpretError;
   auto RuntimeError(const char* msg, ...) -> void;
   auto Reset() -> void;
+  auto Peek() const -> Value;
+  auto Peek(int dist) const -> Value;
 
  private:
   Chunk* chunk = nullptr;
@@ -50,5 +52,4 @@ class VirtualMachine {
 
   auto Push(Value value) -> void;
   auto Pop() -> Value;
-  auto Peek(int dist) const -> Value;
 };

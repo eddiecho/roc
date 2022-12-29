@@ -22,6 +22,7 @@ auto static RunFile(const char* path) -> InterpretError {
 
   COMPILER.Init(src, &chunk, &string_pool);
   COMPILER.Compile();
+  VM.Init();
 
   return VM.Interpret(&chunk);
 }
@@ -47,7 +48,7 @@ auto static Repl() -> void {
   }
 }
 
-int main(int argc, char** argv) {
+auto main(int argc, char** argv) -> int {
   std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
             << Roc_VERSION_MINOR << std::endl;
 
