@@ -6,25 +6,26 @@
 #include "chunk.h"
 #include "common.h"
 
-#define VM_LEXEME_TYPE                                                       \
-  X(Eof)                                                                     \
-  X(Error)                                                                   \
-  X(Comment)                                                                 \
-  X(LeftParens)                                                              \
-  X(RightParens)                                                             \
-  X(LeftBrace)                                                               \
-  X(RightBrace)                                                              \
-  X(Comma)                                                                   \
-  X(Dot)                                                                     \
-  X(Minus)                                                                   \
-  X(Plus)                                                                    \
-  X(Semicolon)                                                               \
-  X(Colon)                                                                   \
-  X(Slash)                                                                   \
-  X(Star) X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater)             \
-  X(GreaterEqual) X(Less) X(LessEqual) X(Identifier) X(String) X(Number)     \
-  X(And) X(Else) X(False) X(For) X(Function) X(If) X(Or) X(Return)           \
-  X(Struct) X(True) X(Var) X(While)
+#define VM_LEXEME_TYPE                                                        \
+  X(Eof)                                                                      \
+  X(Error)                                                                    \
+  X(Comment)                                                                  \
+  X(LeftParens)                                                               \
+  X(RightParens)                                                              \
+  X(LeftBrace)                                                                \
+  X(RightBrace)                                                               \
+  X(Comma)                                                                    \
+  X(Dot)                                                                      \
+  X(Minus)                                                                    \
+  X(Plus)                                                                     \
+  X(Semicolon)                                                                \
+  X(Colon)                                                                    \
+  X(Slash)                                                                    \
+  X(Star)                                                                     \
+  X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual)      \
+      X(Less) X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else)   \
+          X(False) X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) \
+              X(Var) X(While)
 
 struct Token {
   enum class Lexeme {

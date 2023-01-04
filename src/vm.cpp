@@ -28,9 +28,7 @@ auto VirtualMachine::Pop() -> Value {
   return *this->stack_top;
 }
 
-auto VirtualMachine::Peek() const -> Value {
-  return *this->stack_top;
-}
+auto VirtualMachine::Peek() const -> Value { return *this->stack_top; }
 
 auto VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];

@@ -15,6 +15,5 @@ struct ObjectString : Object {
   u32 length;
   const char* start;
 
-  ObjectString(u32 length, const char* start) :
-    length(length), start(start) {};
+  ObjectString(u32 length, const char* start) : length(length), start(start){};
 };

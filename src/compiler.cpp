@@ -1,7 +1,7 @@
 #include "compiler.h"
 
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "arena.h"
@@ -302,7 +302,8 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
      ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
     {Token::Lexeme::True,
      ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
-    {Token::Lexeme::String, ParseRule(&Grammar::String, nullptr, Precedence::None)},
+    {Token::Lexeme::String,
+     ParseRule(&Grammar::String, nullptr, Precedence::None)},
 
     // @TODO(eddie)
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -329,7 +330,8 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-auto Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void {
+auto Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool)
+    -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
   this->scanner->Init(src);
@@ -531,8 +533,7 @@ auto static Grammar::Literal(Compiler* compiler) -> void {
 }
 
 auto static Grammar::String(Compiler* compiler) -> void {
-  char* start = const_cast<char *>(
-      compiler->parser->prev.start + 1);
+  char* start = const_cast<char*>(compiler->parser->prev.start + 1);
 
   // @ALERT - hard limit of 2^24 bytes on string length
   u32 length = compiler->parser->prev.len - 2;

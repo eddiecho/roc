@@ -6,6 +6,7 @@
 // @STDLIB
 auto Utils::ReadFile(const char* path) -> char* {
   FILE* file;
+
 #ifdef _WIN32
   errno_t err = fopen_s(&file, path, "rb");
   if (err != 0) {

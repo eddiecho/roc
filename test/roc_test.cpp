@@ -14,8 +14,10 @@
 #define TEST_DIR "../../test"
 #endif
 
-#define GetTestFilePath(buf, pp) \
-  std::snprintf((buf), 256, "%s/" pp, TEST_DIR)
+#define MAX_PATH_LEN 256
+
+#define GetTestFilePath(pp) \
+  std::snprintf(path, MAX_PATH_LEN, "%s/" pp, TEST_DIR)
 
 class VirtualMachineTest : public ::testing::Test {
  protected:
@@ -36,23 +38,25 @@ class VirtualMachineTest : public ::testing::Test {
 };
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
-  char path[256];
-  GetTestFilePath(path, "scripts/parser.roc");
+  char path[MAX_PATH_LEN];
+  GetTestFilePath("scripts/simple1.roc");
   char* src = Utils::ReadFile(path);
 
   compiler.Init(src, &chunk, &string_pool);
   compiler.Compile();
+
   InterpretError status = virtual_machine.Interpret(&chunk);
   EXPECT_EQ(status, InterpretError::Success);
+
   Value val = virtual_machine.Peek();
   EXPECT_EQ(val.type, ValueType::Number);
-  EXPECT_FLOAT_EQ(val.as.number, 7.0);
+  EXPECT_DOUBLE_EQ(val.as.number, 7.0);
 }
 
 TEST(HelloTest, BasicAssert) {
-  char path[256];
-  GetTestFilePath(path, "scripts/parser.roc");
-  char* src = Utils::ReadFile(path);
+  char path[MAX_PATH_LEN];
+  GetTestFilePath("scripts/simple1.roc");
 
+  char* src = Utils::ReadFile(path);
   EXPECT_EQ(src[0], '(');
 }

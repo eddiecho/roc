@@ -32,7 +32,7 @@ class Arena {
 
     this->count = 0;
     this->capacity = size;
-    this->data = reinterpret_cast<T*>(malloc(size  * sizeof(type)));
+    this->data = reinterpret_cast<T*>(malloc(size * sizeof(type)));
   };
 
   ~Arena() {
@@ -79,9 +79,7 @@ auto Arena<T>::PushArray(T* entry, u32 len) -> u32 {
     return this->count - len;
   } else {
     if (this->next == nullptr) {
-      u32 new_size = this->capacity < len
-        ? len
-        : this->capacity;
+      u32 new_size = this->capacity < len ? len : this->capacity;
       this->next = new Arena<T>(new_size);
     }
 
