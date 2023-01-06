@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-auto Value::Print() const -> const void {
+func Value::Print() const -> const void {
   switch (this->type) {
     default: {
       printf("Unknown type");

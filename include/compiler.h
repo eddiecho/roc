@@ -43,7 +43,7 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   Token(const char* error) noexcept;
 
-  auto constexpr Print() -> const char* {
+  func constexpr Print() -> const char* {
     switch (this->type) {
 #define X(ID)      \
   case Lexeme::ID: \
@@ -56,7 +56,7 @@ struct Token {
     }
   }
 
-  auto constexpr inline IsEnd() -> bool;
+  func constexpr inline IsEnd() -> bool;
 };
 
 class Scanner {
@@ -67,23 +67,23 @@ class Scanner {
 
  public:
   Scanner() noexcept;
-  auto Init(const char* src) -> void;
-  auto ScanToken() -> Token;
+  func Init(const char* src) -> void;
+  func ScanToken() -> Token;
 
  private:
-  auto inline Match(char expected) -> bool;
-  auto constexpr inline IsEnd() const -> const bool;
-  auto inline Pop() -> char;
-  auto inline MakeToken(Token::Lexeme type) const -> const Token;
-  auto constexpr inline Peek() const -> const char;
-  auto constexpr inline PeekNext() const -> const char;
-  auto SkipWhitespace() -> void;
-  auto CheckKeyword(u32 start, u32 length, const char* rest,
+  func inline Match(char expected) -> bool;
+  func constexpr inline IsEnd() const -> const bool;
+  func inline Pop() -> char;
+  func inline MakeToken(Token::Lexeme type) const -> const Token;
+  func constexpr inline Peek() const -> const char;
+  func constexpr inline PeekNext() const -> const char;
+  func SkipWhitespace() -> void;
+  func CheckKeyword(u32 start, u32 length, const char* rest,
                     Token::Lexeme possible) const -> const Token::Lexeme;
-  auto StringToken() -> const Token;
-  auto NumberToken() -> const Token;
-  auto IdentifierToken() const -> const Token;
-  auto IdentifierType() const -> const Token::Lexeme;
+  func StringToken() -> const Token;
+  func NumberToken() -> const Token;
+  func IdentifierToken() const -> const Token;
+  func IdentifierType() const -> const Token::Lexeme;
 };
 
 struct Parser {
@@ -99,7 +99,7 @@ struct Parser {
   };
 
   Parser() noexcept;
-  auto ErrorAtCurr(const char* message) -> void;
+  func ErrorAtCurr(const char* message) -> void;
 };
 
 enum class Precedence : u8 {
@@ -138,41 +138,41 @@ struct ParseRule {
 // i would make these part of Compiler, but you can't take pointers
 // to member functions to build the parser table
 namespace Grammar {
-auto static Number(Compiler* compiler) -> void;
-auto static Parenthesis(Compiler* compiler) -> void;
-auto static Unary(Compiler* compiler) -> void;
-auto static Binary(Compiler* compiler) -> void;
-auto static Literal(Compiler* compiler) -> void;
-auto static String(Compiler* compiler) -> void;
+func static Number(Compiler* compiler) -> void;
+func static Parenthesis(Compiler* compiler) -> void;
+func static Unary(Compiler* compiler) -> void;
+func static Binary(Compiler* compiler) -> void;
+func static Literal(Compiler* compiler) -> void;
+func static String(Compiler* compiler) -> void;
 }  // namespace Grammar
 
 class Compiler {
  public:
   Compiler() noexcept;
-  auto Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void;
-  auto Advance() -> void;
-  auto Consume(Token::Lexeme type, const char* message) -> void;
-  auto Compile() -> bool;
-  auto Expression() -> void;
-  auto EndCompilation() -> void;
-  auto GetPrecedence(Precedence prec) -> void;
-  auto GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
+  func Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void;
+  func Advance() -> void;
+  func Consume(Token::Lexeme type, const char* message) -> void;
+  func Compile() -> bool;
+  func Expression() -> void;
+  func EndCompilation() -> void;
+  func GetPrecedence(Precedence prec) -> void;
+  func GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
 
-  auto Emit(u8 byte) -> void;
-  auto Emit(OpCode opcode) -> void;
+  func Emit(u8 byte) -> void;
+  func Emit(OpCode opcode) -> void;
 
   template <typename T, typename... Types>
-  auto Emit(T byte, Types... bytes) -> void {
+  func Emit(T byte, Types... bytes) -> void {
     this->Emit(byte);
     if constexpr (sizeof...(bytes) != 0) this->Emit(bytes...);
   }
 
-  auto friend Grammar::Number(Compiler* compiler) -> void;
-  auto friend Grammar::Parenthesis(Compiler* compiler) -> void;
-  auto friend Grammar::Unary(Compiler* compiler) -> void;
-  auto friend Grammar::Binary(Compiler* compiler) -> void;
-  auto friend Grammar::Literal(Compiler* compiler) -> void;
-  auto friend Grammar::String(Compiler* compiler) -> void;
+  func friend Grammar::Number(Compiler* compiler) -> void;
+  func friend Grammar::Parenthesis(Compiler* compiler) -> void;
+  func friend Grammar::Unary(Compiler* compiler) -> void;
+  func friend Grammar::Binary(Compiler* compiler) -> void;
+  func friend Grammar::Literal(Compiler* compiler) -> void;
+  func friend Grammar::String(Compiler* compiler) -> void;
 
  private:
   Scanner* scanner;

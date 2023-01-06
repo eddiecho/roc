@@ -15,26 +15,35 @@ class DynamicArray {
   u32 count;
   T* data;
 
-  auto Init() -> void;
-  auto Append(T item) -> void;
-  auto Deinit() -> void;
+  func Init() -> void;
+  func Init(u64 size) -> void;
+  func Append(T item) -> void;
+  func Deinit() -> void;
 
-  auto operator[](size_t idx) -> T& { return this->data[idx]; }
-  const T& operator[](size_t idx) const { return this->data[idx]; }
+  func operator[](size_t idx) -> T& { return this->data[idx]; }
+  func operator[](size_t idx) const -> const T& { return this->data[idx]; }
 
  private:
   u32 capacity_;
 };
 
 template <typename T>
-auto DynamicArray<T>::Init() -> void {
+func DynamicArray<T>::Init() -> void {
   this->count = 0;
   this->capacity_ = 0;
   this->data = nullptr;
 }
 
 template <typename T>
-auto DynamicArray<T>::Append(T item) -> void {
+func DynamicArray<T>::Init(u64 size) -> void {
+  this->count = 0;
+  this->capacity_ = size;
+  using type = T;
+  this->data = GROW_ARRAY(type, nullptr, 0, size);
+}
+
+template <typename T>
+func DynamicArray<T>::Append(T item) -> void {
   if (this->capacity_ < this->count + 1) {
     int old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
@@ -47,7 +56,7 @@ auto DynamicArray<T>::Append(T item) -> void {
 }
 
 template <typename T>
-auto DynamicArray<T>::Deinit() -> void {
+func DynamicArray<T>::Deinit() -> void {
   using type = T;
   FREE_ARRAY(type, this->data, this->capacity_);
   this->Init();

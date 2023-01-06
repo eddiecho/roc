@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "common.h"
+
 // @STDLIB
-auto Utils::ReadFile(const char* path) -> char* {
+func Utils::ReadFile(const char* path) -> char* {
   FILE* file;
 
 #ifdef _WIN32

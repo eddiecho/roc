@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "common.h"
 #include "value.h"
 
 Chunk::Chunk() noexcept {
@@ -16,7 +17,7 @@ Chunk::~Chunk() noexcept {
   this->Deinit();
 }
 
-auto Chunk::AddLine(u32 line) -> void {
+func Chunk::AddLine(u32 line) -> void {
   if (this->lines.count == 0) {
     this->lines.Append({this->count, line});
   } else {
@@ -27,13 +28,13 @@ auto Chunk::AddLine(u32 line) -> void {
   }
 }
 
-auto Chunk::AddChunk(u8 byte, u32 line) -> void {
+func Chunk::AddChunk(u8 byte, u32 line) -> void {
   this->AddLine(line);
   this->Append(byte);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-auto Chunk::AddConstant(Value val, u32 line) -> void {
+func Chunk::AddConstant(Value val, u32 line) -> void {
   this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
@@ -51,12 +52,12 @@ auto Chunk::AddConstant(Value val, u32 line) -> void {
   this->constants.Append(val);
 }
 
-auto Chunk::SimpleInstruction(const char* name, int offset) const -> int {
+func Chunk::SimpleInstruction(const char* name, int offset) const -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-auto Chunk::ConstantInstruction(int offset) const -> int {
+func Chunk::ConstantInstruction(int offset) const -> int {
   u8 const_idx = (*this)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   this->constants[const_idx].Print();
@@ -65,7 +66,7 @@ auto Chunk::ConstantInstruction(int offset) const -> int {
   return offset + 2;
 }
 
-auto Chunk::ConstantLongInstruction(int offset) const -> int {
+func Chunk::ConstantLongInstruction(int offset) const -> int {
   u8 one = (*this)[offset + 1];
   u8 two = (*this)[offset + 2];
   u8 thr = (*this)[offset + 3];
@@ -82,7 +83,7 @@ auto Chunk::ConstantLongInstruction(int offset) const -> int {
   return offset + 4;
 }
 
-auto Chunk::PrintAtOffset(int offset) const -> const int {
+func Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
   u32 line_idx = this->lines.Search(offset);
@@ -142,9 +143,10 @@ auto Chunk::PrintAtOffset(int offset) const -> const int {
   }
 }
 
-auto Chunk::Disassemble() const -> const void {
+func Chunk::Disassemble() const -> const void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->count;) {
     offset = this->PrintAtOffset(offset);
   }
 }
+

@@ -6,7 +6,6 @@
 #include "dynamic_array.h"
 
 struct Object;
-struct ObjectString;
 
 enum class ValueType {
   Number,
@@ -26,19 +25,24 @@ struct Value {
     this->type = ValueType::Number;
     // @FIXME(eddie) - maybe make this a sentinel
     this->as.number = 0;
-  };
+  }
 
   Value(f64 num) noexcept {
     this->type = ValueType::Number;
     this->as.number = num;
-  };
+  }
 
   Value(bool boolean) noexcept {
     this->type = ValueType::Boolean;
     this->as.boolean = boolean;
   }
 
-  bool operator==(const Value other) {
+  Value(Object* object) noexcept {
+    this->type = ValueType::Object;
+    this->as.object = object;
+  }
+
+  auto operator==(const Value other) -> bool {
     // @TODO(eddie) - type deduction
     if (this->type != other.type) return false;
 
@@ -50,6 +54,9 @@ struct Value {
       }
       case ValueType::Number: {
         return this->as.number == other.as.number;
+      }
+      case ValueType::Object: {
+        return this->as.object == other.as.object;
       }
     }
   }

@@ -48,6 +48,13 @@ class Arena {
   auto AllocatedBytes() const -> u32;
   auto Clear() -> void;
   auto ClearEntries(u32 amount) -> void;
+
+  auto operator[](size_t idx) -> T& {
+  }
+
+  auto operator[](size_t idx) const -> const T& {
+
+  }
 };
 
 template <typename T>

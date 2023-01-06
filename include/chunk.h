@@ -32,16 +32,16 @@ class Chunk : public DynamicArray<u8> {
 
   friend VirtualMachine;
 
-  auto Disassemble() const -> const void;
-  auto AddChunk(u8 byte, u32 line) -> void;
-  auto AddLine(u32 line) -> void;
-  auto AddConstant(Value val, u32 line) -> void;
+  func Disassemble() const -> const void;
+  func AddChunk(u8 byte, u32 line) -> void;
+  func AddLine(u32 line) -> void;
+  func AddConstant(Value val, u32 line) -> void;
 
  private:
-  auto PrintAtOffset(int offset) const -> const int;
-  auto SimpleInstruction(const char* name, int offset) const -> int;
-  auto ConstantInstruction(int offset) const -> int;
-  auto ConstantLongInstruction(int offset) const -> int;
+  func PrintAtOffset(int offset) const -> const int;
+  func SimpleInstruction(const char* name, int offset) const -> int;
+  func ConstantInstruction(int offset) const -> int;
+  func ConstantLongInstruction(int offset) const -> int;
 
  private:
   ConstData constants;

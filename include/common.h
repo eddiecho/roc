@@ -9,3 +9,5 @@
 #define u64 uint64_t
 
 #define f64 double
+
+#define func auto

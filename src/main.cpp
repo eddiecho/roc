@@ -13,7 +13,7 @@
 static VirtualMachine VM;
 static Compiler COMPILER;
 
-auto static RunFile(const char* path) -> InterpretError {
+func static RunFile(const char* path) -> InterpretError {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
@@ -27,7 +27,7 @@ auto static RunFile(const char* path) -> InterpretError {
   return VM.Interpret(&chunk);
 }
 
-auto static Repl() -> void {
+func static Repl() -> void {
   char line[1024];
   InterpretError status;
   Arena<char> string_pool;
@@ -48,7 +48,7 @@ auto static Repl() -> void {
   }
 }
 
-auto main(int argc, char** argv) -> int {
+func main(int argc, char** argv) -> int {
   std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
             << Roc_VERSION_MINOR << std::endl;
 

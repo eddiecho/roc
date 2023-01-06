@@ -6,14 +6,14 @@
 #include "arena.h"
 #include "common.h"
 
-auto VirtualMachine::Init() -> void {
+func VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-auto VirtualMachine::Deinit() -> void {}
+func VirtualMachine::Deinit() -> void {}
 
-auto VirtualMachine::Push(Value value) -> void {
+func VirtualMachine::Push(Value value) -> void {
   // TODO(eddie) - this is bad error handling
   if (this->stack_top - this->stack > VM_STACK_MAX) {
     exit(1);
@@ -23,20 +23,20 @@ auto VirtualMachine::Push(Value value) -> void {
   this->stack_top++;
 }
 
-auto VirtualMachine::Pop() -> Value {
+func VirtualMachine::Pop() -> Value {
   this->stack_top--;
   return *this->stack_top;
 }
 
-auto VirtualMachine::Peek() const -> Value { return *this->stack_top; }
+func VirtualMachine::Peek() const -> Value { return *this->stack_top; }
 
-auto VirtualMachine::Peek(int dist) const -> Value {
+func VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
-auto VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
+func VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
 
-auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
+func VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
   va_start(args, msg);
   vfprintf(stderr, msg, args);
@@ -50,7 +50,7 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   this->Reset();
 }
 
-auto VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
+func VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
   this->chunk = chunk;
   this->inst_ptr = chunk->data;
 
@@ -88,6 +88,15 @@ auto VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
         Value constant = this->chunk->constants[idx];
         this->Push(constant);
         break;
+      }
+      case OpCode::String: {
+        u32 idx = 0;
+        idx |= ((u8)READ_BYTE() << 24);
+        idx |= ((u8)READ_BYTE() << 16);
+        idx |= ((u8)READ_BYTE() << 8);
+        idx |= ((u8)READ_BYTE());
+
+        Value constant = this->string_pool[]
       }
       case OpCode::Add: {
         Value b = this->Pop();

@@ -29,16 +29,16 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
-auto constexpr inline Token::IsEnd() -> bool {
+func constexpr inline Token::IsEnd() -> bool {
   return this->type == Lexeme::Eof;
 }
 
-auto static constexpr IsDigit(const char c) -> const bool {
+func static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
 
 // @STDLIB
-auto static IsIdentifier(const char c) -> const bool { return !ispunct(c); }
+func static IsIdentifier(const char c) -> const bool { return !ispunct(c); }
 
 Scanner::Scanner() noexcept {
   this->start = nullptr;
@@ -47,24 +47,24 @@ Scanner::Scanner() noexcept {
   this->row = 0;
 }
 
-auto Scanner::Init(const char* src) -> void {
+func Scanner::Init(const char* src) -> void {
   this->start = src;
   this->curr = src;
   this->line = 0;
   this->row = 0;
 }
 
-auto constexpr inline Scanner::IsEnd() const -> const bool {
+func constexpr inline Scanner::IsEnd() const -> const bool {
   return *this->curr == '\0';
 }
 
-auto inline Scanner::Pop() -> char {
+func inline Scanner::Pop() -> char {
   this->curr++;
   this->row++;
   return this->curr[-1];
 }
 
-auto inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
+func inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   return Token{
       type,
       this->start,
@@ -73,22 +73,22 @@ auto inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   };
 }
 
-auto inline Scanner::Match(char expected) -> bool {
+func inline Scanner::Match(char expected) -> bool {
   if (this->IsEnd()) return false;
   if (*this->curr != expected) return false;
   this->curr++;
   return true;
 }
 
-auto constexpr inline Scanner::Peek() const -> const char {
+func constexpr inline Scanner::Peek() const -> const char {
   return *this->curr;
 }
 
-auto constexpr inline Scanner::PeekNext() const -> const char {
+func constexpr inline Scanner::PeekNext() const -> const char {
   return this->IsEnd() ? '\0' : this->curr[1];
 }
 
-auto Scanner::SkipWhitespace() -> void {
+func Scanner::SkipWhitespace() -> void {
   while (1) {
     switch (this->Peek()) {
       case ' ':
@@ -109,7 +109,7 @@ auto Scanner::SkipWhitespace() -> void {
   }
 }
 
-auto Scanner::StringToken() -> const Token {
+func Scanner::StringToken() -> const Token {
   while (this->Peek() != '"' && !this->IsEnd()) {
     if (this->Peek() == '\n') this->line++;
     this->Pop();
@@ -121,7 +121,7 @@ auto Scanner::StringToken() -> const Token {
   return this->MakeToken(Token::Lexeme::String);
 }
 
-auto Scanner::NumberToken() -> const Token {
+func Scanner::NumberToken() -> const Token {
   while (IsDigit(this->Peek())) this->Pop();
 
   // you get one .
@@ -135,7 +135,7 @@ auto Scanner::NumberToken() -> const Token {
 }
 
 // @STDLIB
-auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
+func Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
                            Token::Lexeme possible) const
     -> const Token::Lexeme {
   if (this->curr - this->start == start + length &&
@@ -146,7 +146,7 @@ auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierType() const -> const Token::Lexeme {
+func Scanner::IdentifierType() const -> const Token::Lexeme {
   switch (*this->start) {
     case 'a':
       return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
@@ -184,11 +184,11 @@ auto Scanner::IdentifierType() const -> const Token::Lexeme {
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierToken() const -> const Token {
+func Scanner::IdentifierToken() const -> const Token {
   return this->MakeToken(Token::Lexeme::Identifier);
 }
 
-auto Scanner::ScanToken() -> Token {
+func Scanner::ScanToken() -> Token {
   this->start = this->curr;
 
   this->SkipWhitespace();
@@ -330,18 +330,18 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-auto Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool)
+func Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool)
     -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
   this->scanner->Init(src);
 }
 
-auto Compiler::Expression() -> void {
+func Compiler::Expression() -> void {
   this->GetPrecedence(Precedence::Assignment);
 }
 
-auto Compiler::Compile() -> bool {
+func Compiler::Compile() -> bool {
   this->Advance();
   this->Expression();
   this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
@@ -350,7 +350,7 @@ auto Compiler::Compile() -> bool {
   return !this->parser->state.error;
 }
 
-auto Compiler::Advance() -> void {
+func Compiler::Advance() -> void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->parser->prev = this->parser->curr;
@@ -380,7 +380,7 @@ Parser::Parser() noexcept {
   this->prev = Token();
 }
 
-auto Parser::ErrorAtCurr(const char* message) -> void {
+func Parser::ErrorAtCurr(const char* message) -> void {
   if (this->state.panic) return;
 
   fprintf(stderr, "[line %d] Error", this->curr.line);
@@ -391,16 +391,16 @@ auto Parser::ErrorAtCurr(const char* message) -> void {
   this->state.error = 1;
 }
 
-auto Compiler::Emit(u8 byte) -> void {
+func Compiler::Emit(u8 byte) -> void {
   this->chunk->AddChunk(byte, this->parser->prev.line);
 }
 
-auto Compiler::Emit(OpCode op) -> void {
+func Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
   this->chunk->AddChunk(byte, this->parser->prev.line);
 }
 
-auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
+func Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   if (this->parser->curr.type == type) {
     this->Advance();
 
@@ -410,13 +410,13 @@ auto Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   this->parser->ErrorAtCurr(message);
 }
 
-auto Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
+func Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
 
-auto Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
+func Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
   return &this->PARSE_RULES[token];
 }
 
-auto Compiler::GetPrecedence(Precedence precedence) -> void {
+func Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
   ParseRule* rule = this->GetParseRule(this->parser->prev.type);
 
@@ -436,17 +436,17 @@ auto Compiler::GetPrecedence(Precedence precedence) -> void {
 }
 
 // @STDLIB
-auto static Grammar::Number(Compiler* compiler) -> void {
+func static Grammar::Number(Compiler* compiler) -> void {
   f64 value = strtod(compiler->parser->prev.start, nullptr);
   compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
 }
 
-auto static Grammar::Parenthesis(Compiler* compiler) -> void {
+func static Grammar::Parenthesis(Compiler* compiler) -> void {
   compiler->Expression();
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
-auto static Grammar::Unary(Compiler* compiler) -> void {
+func static Grammar::Unary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
@@ -464,7 +464,7 @@ auto static Grammar::Unary(Compiler* compiler) -> void {
   }
 }
 
-auto static Grammar::Binary(Compiler* compiler) -> void {
+func static Grammar::Binary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
@@ -517,7 +517,7 @@ auto static Grammar::Binary(Compiler* compiler) -> void {
   }
 }
 
-auto static Grammar::Literal(Compiler* compiler) -> void {
+func static Grammar::Literal(Compiler* compiler) -> void {
   switch (compiler->parser->prev.type) {
     default:
       return;  // unreachable
@@ -532,20 +532,17 @@ auto static Grammar::Literal(Compiler* compiler) -> void {
   }
 }
 
-auto static Grammar::String(Compiler* compiler) -> void {
+func static Grammar::String(Compiler* compiler) -> void {
   char* start = const_cast<char*>(compiler->parser->prev.start + 1);
+  u32 length = compiler->parser->prev.len - 1;
 
-  // @ALERT - hard limit of 2^24 bytes on string length
-  u32 length = compiler->parser->prev.len - 2;
-  u32 index = compiler->string_pool->PushArray(start, length);
-  // push an index into the vm stack + a length
+  u32 index = compiler->string_pool->PushArray(reinterpret_cast<char *>(length), 4);
+  compiler->string_pool->PushArray(start, length);
+  // push an index into the vm stack
 
-  u8* length_bytes = reinterpret_cast<u8*>(length);
-  compiler->Emit(length_bytes[1]);
-  compiler->Emit(length_bytes[2]);
-  compiler->Emit(length_bytes[3]);
-
+  compiler->Emit(OpCode::String);
   u8* index_bytes = reinterpret_cast<u8*>(index);
+  compiler->Emit(index_bytes[0]);
   compiler->Emit(index_bytes[1]);
   compiler->Emit(index_bytes[2]);
   compiler->Emit(index_bytes[3]);
