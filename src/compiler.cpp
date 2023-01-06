@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "arena.h"
 #include "common.h"
 #include "object.h"
 #include "value.h"
@@ -330,7 +329,7 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-func Compiler::Init(const char* src, Chunk* chunk, Arena<char>* string_pool)
+func Compiler::Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool)
     -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
@@ -393,6 +392,10 @@ func Parser::ErrorAtCurr(const char* message) -> void {
 
 func Compiler::Emit(u8 byte) -> void {
   this->chunk->AddChunk(byte, this->parser->prev.line);
+}
+
+func Compiler::Emit(u8* bytes, u32 count) -> void {
+  this->chunk->AddChunk(bytes, count, this->parser->prev.line);
 }
 
 func Compiler::Emit(OpCode op) -> void {
@@ -491,7 +494,8 @@ func static Grammar::Binary(Compiler* compiler) -> void {
       break;
     }
     case Token::Lexeme::BangEqual: {
-      compiler->Emit(OpCode::Equality, OpCode::Not);
+      compiler->Emit(OpCode::Equality);
+      compiler->Emit(OpCode::Not);
       break;
     }
     case Token::Lexeme::EqualEqual: {
@@ -503,7 +507,8 @@ func static Grammar::Binary(Compiler* compiler) -> void {
       break;
     }
     case Token::Lexeme::GreaterEqual: {
-      compiler->Emit(OpCode::Greater, OpCode::Not);
+      compiler->Emit(OpCode::Greater);
+      compiler->Emit(OpCode::Not);
       break;
     }
     case Token::Lexeme::Less: {
@@ -511,7 +516,8 @@ func static Grammar::Binary(Compiler* compiler) -> void {
       break;
     }
     case Token::Lexeme::LessEqual: {
-      compiler->Emit(OpCode::Less, OpCode::Not);
+      compiler->Emit(OpCode::Less);
+      compiler->Emit(OpCode::Not);
       break;
     }
   }
@@ -533,17 +539,17 @@ func static Grammar::Literal(Compiler* compiler) -> void {
 }
 
 func static Grammar::String(Compiler* compiler) -> void {
-  char* start = const_cast<char*>(compiler->parser->prev.start + 1);
-  u32 length = compiler->parser->prev.len - 1;
+  // skip the closing quote
+  u32 length = compiler->parser->prev.len - 2;
+  char* length_bytes = static_cast<char *>(static_cast<void *>(&length));
+  u32 index = compiler->string_pool->Append((char *)length_bytes, 4);
 
-  u32 index = compiler->string_pool->PushArray(reinterpret_cast<char *>(length), 4);
-  compiler->string_pool->PushArray(start, length);
+  char* start = const_cast<char*>(compiler->parser->prev.start + 1);
+  compiler->string_pool->Append(start, length);
+  compiler->string_pool->Append(0);
   // push an index into the vm stack
 
   compiler->Emit(OpCode::String);
-  u8* index_bytes = reinterpret_cast<u8*>(index);
-  compiler->Emit(index_bytes[0]);
-  compiler->Emit(index_bytes[1]);
-  compiler->Emit(index_bytes[2]);
-  compiler->Emit(index_bytes[3]);
+  u8* index_bytes = static_cast<u8*>(static_cast<void*>(&index));
+  compiler->Emit(index_bytes, 4);
 }

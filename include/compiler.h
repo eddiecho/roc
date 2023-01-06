@@ -2,9 +2,9 @@
 
 #include <unordered_map>
 
-#include "arena.h"
 #include "chunk.h"
 #include "common.h"
+#include "dynamic_array.h"
 
 #define VM_LEXEME_TYPE                                                        \
   X(Eof)                                                                      \
@@ -149,7 +149,7 @@ func static String(Compiler* compiler) -> void;
 class Compiler {
  public:
   Compiler() noexcept;
-  func Init(const char* src, Chunk* chunk, Arena<char>* string_pool) -> void;
+  func Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool) -> void;
   func Advance() -> void;
   func Consume(Token::Lexeme type, const char* message) -> void;
   func Compile() -> bool;
@@ -159,13 +159,8 @@ class Compiler {
   func GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
 
   func Emit(u8 byte) -> void;
+  func Emit(u8* bytes, u32 count) -> void;
   func Emit(OpCode opcode) -> void;
-
-  template <typename T, typename... Types>
-  func Emit(T byte, Types... bytes) -> void {
-    this->Emit(byte);
-    if constexpr (sizeof...(bytes) != 0) this->Emit(bytes...);
-  }
 
   func friend Grammar::Number(Compiler* compiler) -> void;
   func friend Grammar::Parenthesis(Compiler* compiler) -> void;
@@ -178,7 +173,7 @@ class Compiler {
   Scanner* scanner;
   Parser* parser;
   Chunk* chunk = nullptr;
-  Arena<char>* string_pool = nullptr;
+  DynamicArray<char>* string_pool = nullptr;
 
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };

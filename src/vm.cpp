@@ -3,15 +3,19 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "arena.h"
 #include "common.h"
+#include "dynamic_array.h"
+#include "object.h"
 
 func VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-func VirtualMachine::Deinit() -> void {}
+func VirtualMachine::Deinit() -> void {
+  this->string_pool->Deinit();
+  this->chunk->Deinit();
+}
 
 func VirtualMachine::Push(Value value) -> void {
   // TODO(eddie) - this is bad error handling
@@ -50,9 +54,10 @@ func VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   this->Reset();
 }
 
-func VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
+func VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError {
   this->chunk = chunk;
   this->inst_ptr = chunk->data;
+  this->string_pool = string_pool;
 
 #define READ_BYTE() (*this->inst_ptr++)
 #define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
@@ -96,7 +101,13 @@ func VirtualMachine::Interpret(Chunk* chunk) -> InterpretError {
         idx |= ((u8)READ_BYTE() << 8);
         idx |= ((u8)READ_BYTE());
 
-        Value constant = this->string_pool[]
+        char* start = &(*this->string_pool)[idx];
+        u32 len = reinterpret_cast<u32*>(start)[0];
+
+        Object::String str = Object::String(len, start + 4);
+        Value constant = Value(&str);
+        this->Push(constant);
+        break;
       }
       case OpCode::Add: {
         Value b = this->Pop();

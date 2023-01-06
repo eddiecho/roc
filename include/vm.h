@@ -3,8 +3,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "arena.h"
 #include "chunk.h"
+#include "dynamic_array.h"
 #include "value.h"
 
 #define VM_INTERPRET_ERRORS \
@@ -18,7 +18,7 @@ enum class InterpretError {
 #undef X
 };
 
-auto static ErrorToString(InterpretError err) -> const char* {
+func static ErrorToString(InterpretError err) -> const char* {
   switch (err) {
 #define X(ID)              \
   case InterpretError::ID: \
@@ -35,21 +35,21 @@ auto static ErrorToString(InterpretError err) -> const char* {
 #define VM_STACK_MAX 256
 class VirtualMachine {
  public:
-  auto Init() -> void;
-  auto Deinit() -> void;
-  auto Interpret(Chunk* chunk) -> InterpretError;
-  auto RuntimeError(const char* msg, ...) -> void;
-  auto Reset() -> void;
-  auto Peek() const -> Value;
-  auto Peek(int dist) const -> Value;
+  func Init() -> void;
+  func Deinit() -> void;
+  func Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError;
+  func RuntimeError(const char* msg, ...) -> void;
+  func Reset() -> void;
+  func Peek() const -> Value;
+  func Peek(int dist) const -> Value;
 
  private:
   Chunk* chunk = nullptr;
   u8* inst_ptr = nullptr;
   Value stack[VM_STACK_MAX];
   Value* stack_top;
-  Arena<char>* string_pool;
+  DynamicArray<char>* string_pool = nullptr;
 
-  auto Push(Value value) -> void;
-  auto Pop() -> Value;
+  func Push(Value value) -> void;
+  func Pop() -> Value;
 };

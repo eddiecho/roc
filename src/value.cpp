@@ -1,6 +1,7 @@
 #include "value.h"
 
 #include "common.h"
+#include "object.h"
 
 func Value::Print() const -> const void {
   switch (this->type) {
@@ -14,6 +15,11 @@ func Value::Print() const -> const void {
     }
     case ValueType::Number: {
       printf("%f", this->as.number);
+      return;
+    }
+    case ValueType::Object: {
+      printf("Object: ");
+      this->as.object->Print();
       return;
     }
   }

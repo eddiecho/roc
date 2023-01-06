@@ -34,6 +34,7 @@ class Chunk : public DynamicArray<u8> {
 
   func Disassemble() const -> const void;
   func AddChunk(u8 byte, u32 line) -> void;
+  func AddChunk(u8* bytes, u32 count, u32 line) -> void;
   func AddLine(u32 line) -> void;
   func AddConstant(Value val, u32 line) -> void;
 

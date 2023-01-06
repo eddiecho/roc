@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 #include "common.h"
 #include "memory.h"
 
@@ -16,15 +18,16 @@ class DynamicArray {
   T* data;
 
   func Init() -> void;
-  func Init(u64 size) -> void;
-  func Append(T item) -> void;
+  func Init(u32 size) -> void;
+  func Append(T item) -> u32;
+  func Append(T* items, u32 size) -> u32;
   func Deinit() -> void;
 
   func operator[](size_t idx) -> T& { return this->data[idx]; }
   func operator[](size_t idx) const -> const T& { return this->data[idx]; }
 
  private:
-  u32 capacity_;
+  u64 capacity_;
 };
 
 template <typename T>
@@ -35,7 +38,7 @@ func DynamicArray<T>::Init() -> void {
 }
 
 template <typename T>
-func DynamicArray<T>::Init(u64 size) -> void {
+func DynamicArray<T>::Init(u32 size) -> void {
   this->count = 0;
   this->capacity_ = size;
   using type = T;
@@ -43,7 +46,7 @@ func DynamicArray<T>::Init(u64 size) -> void {
 }
 
 template <typename T>
-func DynamicArray<T>::Append(T item) -> void {
+func DynamicArray<T>::Append(T item) -> u32 {
   if (this->capacity_ < this->count + 1) {
     int old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
@@ -53,6 +56,25 @@ func DynamicArray<T>::Append(T item) -> void {
 
   this->data[this->count] = item;
   this->count++;
+
+  return this->count - 1;
+}
+
+template <typename T>
+func DynamicArray<T>::Append(T* items, u32 size) -> u32 {
+  using type = T;
+
+  while (this->capacity_ < this->count + size) {
+    int old_capacity = this->capacity_;
+    this->capacity_ = GROW_CAPACITY(old_capacity);
+
+    this->data = GROW_ARRAY(type, this->data, old_capacity, this->capacity_);
+  }
+
+  std::memcpy(&this->data[this->count], items, sizeof(type) * size);
+  this->count += size;
+
+  return this->count - size;
 }
 
 template <typename T>

@@ -33,6 +33,11 @@ func Chunk::AddChunk(u8 byte, u32 line) -> void {
   this->Append(byte);
 }
 
+func Chunk::AddChunk(u8* bytes, u32 count, u32 line) -> void {
+  this->AddLine(line);
+  this->Append(bytes, count);
+}
+
 #define SMALL_CONST_POOL_SIZE 256
 func Chunk::AddConstant(Value val, u32 line) -> void {
   this->AddLine(line);

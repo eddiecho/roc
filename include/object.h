@@ -5,6 +5,8 @@
 
 #include "common.h"
 
+#define DEFAULT_INIT_STR_POOL_SIZE 1024 * 1024
+
 enum class ObjectType {
   String,
 };

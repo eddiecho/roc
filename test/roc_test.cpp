@@ -1,9 +1,10 @@
 #include <cstdio>
 #include <gtest/gtest.h>
 
-#include "arena.h"
 #include "chunk.h"
 #include "compiler.h"
+#include "dynamic_array.h"
+#include "object.h"
 #include "utils.h"
 #include "value.h"
 #include "vm.h"
@@ -22,19 +23,20 @@
 class VirtualMachineTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    string_pool.Init(1024);
     virtual_machine.Init();
   }
 
   void TearDown() override {
     chunk.Deinit();
-    string_pool.Clear();
+    string_pool.Deinit();
     virtual_machine.Deinit();
   }
 
   VirtualMachine virtual_machine;
   Compiler compiler;
   Chunk chunk;
-  Arena<char> string_pool;
+  DynamicArray<char> string_pool;
 };
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
@@ -45,12 +47,27 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   compiler.Init(src, &chunk, &string_pool);
   compiler.Compile();
 
-  InterpretError status = virtual_machine.Interpret(&chunk);
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
   EXPECT_EQ(val.type, ValueType::Number);
   EXPECT_DOUBLE_EQ(val.as.number, 7.0);
+}
+
+TEST_F(VirtualMachineTest, BasicString) {
+  char path[MAX_PATH_LEN];
+  GetTestFilePath("scripts/simple_string1.roc");
+  char* src = Utils::ReadFile(path);
+
+  compiler.Init(src, &chunk, &string_pool);
+  compiler.Compile();
+
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool);
+  EXPECT_EQ(status, InterpretError::Success);
+
+  Value val = virtual_machine.Peek();
+  EXPECT_EQ(val.type, ValueType::Object);
 }
 
 TEST(HelloTest, BasicAssert) {

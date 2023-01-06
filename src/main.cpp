@@ -3,6 +3,7 @@
 #include "chunk.h"
 #include "common.h"
 #include "compiler.h"
+#include "dynamic_array.h"
 #include "roc_config.h"
 #include "utils.h"
 #include "vm.h"
@@ -18,19 +19,19 @@ func static RunFile(const char* path) -> InterpretError {
   defer(free(src));
 
   Chunk chunk;
-  Arena<char> string_pool;
+  DynamicArray<char> string_pool;
 
   COMPILER.Init(src, &chunk, &string_pool);
   COMPILER.Compile();
   VM.Init();
 
-  return VM.Interpret(&chunk);
+  return VM.Interpret(&chunk, &string_pool);
 }
 
 func static Repl() -> void {
   char line[1024];
   InterpretError status;
-  Arena<char> string_pool;
+  DynamicArray<char> string_pool;
 
   while (1) {
     Chunk chunk;
@@ -44,7 +45,7 @@ func static Repl() -> void {
     COMPILER.Init(line, &chunk, &string_pool);
     COMPILER.Compile();
     // @TODO(eddie) - do something with the status
-    status = VM.Interpret(&chunk);
+    status = VM.Interpret(&chunk, &string_pool);
   }
 }
 
