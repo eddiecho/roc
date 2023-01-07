@@ -4,8 +4,7 @@
 
 #include "common.h"
 #include "dynamic_array.h"
-
-struct Object;
+#include "object.h"
 
 enum class ValueType {
   Number,

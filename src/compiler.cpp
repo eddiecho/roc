@@ -541,8 +541,9 @@ func static Grammar::Literal(Compiler* compiler) -> void {
 func static Grammar::String(Compiler* compiler) -> void {
   // skip the closing quote
   u32 length = compiler->parser->prev.len - 2;
-  char* length_bytes = static_cast<char *>(static_cast<void *>(&length));
-  u32 index = compiler->string_pool->Append((char *)length_bytes, 4);
+  // char* length_bytes = static_cast<char *>(static_cast<void *>(&length));
+  char* length_bytes = reinterpret_cast<char *>(&length);
+  u32 index = compiler->string_pool->Append(length_bytes, 4);
 
   char* start = const_cast<char*>(compiler->parser->prev.start + 1);
   compiler->string_pool->Append(start, length);
@@ -550,6 +551,6 @@ func static Grammar::String(Compiler* compiler) -> void {
   // push an index into the vm stack
 
   compiler->Emit(OpCode::String);
-  u8* index_bytes = static_cast<u8*>(static_cast<void*>(&index));
+  u8* index_bytes = reinterpret_cast<u8*>(&index);
   compiler->Emit(index_bytes, 4);
 }

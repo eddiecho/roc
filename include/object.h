@@ -11,24 +11,21 @@ enum class ObjectType {
   String,
 };
 
-struct Object {
-  ObjectType type;
+class Object {
+ public:
 
-  struct String;
+  class String;
+
+  ObjectType type;
+  Object* next = nullptr;
 
   func virtual Print() -> void = 0;
-
-  func operator==(const Object* other) -> bool {
-    if (this->type != other->type) return false;
-
-    return this == other;
-  }
+  // @WTF - cant use auto or func here, because cpp doesnt let you
+  bool virtual operator==(const Object* o) = 0;
 };
 
-struct Object::String : Object {
-  u32 length;
-  const char* start;
-
+class Object::String : public Object {
+ public:
   String(u32 length, const char* start) noexcept {
     this->type = ObjectType::String;
     this->length = length;
@@ -41,12 +38,36 @@ struct Object::String : Object {
     this->start = str.c_str();
   };
 
-  func Print() -> void override;
-
   // @STDLIB
-  func operator==(const String* other) -> bool {
+  func operator==(const Object* o) -> bool override {
+    if (o->type != ObjectType::String) return false;
+
+    auto other = static_cast<const String*>(o);
+
     if (this->length != other->length) return false;
 
     return std::memcmp(this->start, other->start, this->length) == 0;
   }
+
+  func Print() -> void override;
+
+ public:
+  u32 length;
+
+ private:
+  const char* start;
+};
+
+// @TODO - investigate a free list style pool arena implementation
+// kinda need to be able to know how big an object is
+class ObjectArena {
+ public:
+  func Init();
+  func Deinit();
+
+  func Push(u64 size, void* obj);
+  func Clear();
+
+ private:
+  void* area;
 };

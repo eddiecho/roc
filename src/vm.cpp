@@ -15,6 +15,13 @@ func VirtualMachine::Init() -> void {
 func VirtualMachine::Deinit() -> void {
   this->string_pool->Deinit();
   this->chunk->Deinit();
+
+  Object* obj = this->obj_list;
+  while (obj != nullptr) {
+    Object* next = obj->next;
+    free(obj);
+    obj = next;
+  }
 }
 
 func VirtualMachine::Push(Value value) -> void {
@@ -104,8 +111,13 @@ func VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) ->
         char* start = &(*this->string_pool)[idx];
         u32 len = reinterpret_cast<u32*>(start)[0];
 
-        Object::String str = Object::String(len, start + 4);
-        Value constant = Value(&str);
+        // @TODO - no new/malloc here
+        // @TODO - wrapper to automate inserting into list
+        Object::String* str = new Object::String(len, start + 4);
+        str->next = this->obj_list;
+        this->obj_list = str;
+
+        Value constant = Value(str);
         this->Push(constant);
         break;
       }

@@ -9,3 +9,4 @@
 func Object::String::Print() -> void {
   printf("String: %s", this->start);
 }
+

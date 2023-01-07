@@ -50,6 +50,8 @@ class VirtualMachine {
   Value* stack_top;
   DynamicArray<char>* string_pool = nullptr;
 
+  Object* obj_list = nullptr;
+
   func Push(Value value) -> void;
   func Pop() -> Value;
 };
