@@ -14,7 +14,7 @@
 static VirtualMachine VM;
 static Compiler COMPILER;
 
-func static RunFile(const char* path) -> InterpretError {
+fnc static RunFile(const char* path) -> InterpretError {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
@@ -28,7 +28,7 @@ func static RunFile(const char* path) -> InterpretError {
   return VM.Interpret(&chunk, &string_pool);
 }
 
-func static Repl() -> void {
+fnc static Repl() -> void {
   char line[1024];
   InterpretError status;
   DynamicArray<char> string_pool;
@@ -49,7 +49,7 @@ func static Repl() -> void {
   }
 }
 
-func main(int argc, char** argv) -> int {
+fnc main(int argc, char** argv) -> int {
   std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
             << Roc_VERSION_MINOR << std::endl;
 

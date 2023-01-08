@@ -23,6 +23,7 @@ target_include_directories(
 target_link_libraries(
   roc_test
   GTest::gtest_main
+  ${THIRD_PARTY_LIB}
 )
 
 include(GoogleTest)

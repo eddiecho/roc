@@ -10,4 +10,4 @@
 
 #define f64 double
 
-#define func auto
+#define fnc auto

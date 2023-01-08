@@ -7,4 +7,4 @@
 #define ALLOCATE(type, count) \
   (type*)Reallocate(nullptr, 0, sizeof(type) * (count))
 
-func Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void*;
+fnc Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void*;

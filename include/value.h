@@ -41,7 +41,7 @@ struct Value {
     this->as.object = object;
   }
 
-  auto operator==(const Value other) -> bool {
+  fnc operator==(const Value other) -> bool {
     // @TODO(eddie) - type deduction
     if (this->type != other.type) return false;
 
@@ -60,8 +60,8 @@ struct Value {
     }
   }
 
-  auto constexpr inline IsObject() -> bool;
-  auto Print() const -> const void;
+  fnc constexpr inline IsObject() -> bool;
+  fnc Print() const -> const void;
 };
 
 struct ConstData : DynamicArray<Value> {};

@@ -17,7 +17,7 @@ Chunk::~Chunk() noexcept {
   this->Deinit();
 }
 
-func Chunk::AddLine(u32 line) -> void {
+fnc Chunk::AddLine(u32 line) -> void {
   if (this->lines.count == 0) {
     this->lines.Append({this->count, line});
   } else {
@@ -28,18 +28,18 @@ func Chunk::AddLine(u32 line) -> void {
   }
 }
 
-func Chunk::AddChunk(u8 byte, u32 line) -> void {
+fnc Chunk::AddChunk(u8 byte, u32 line) -> void {
   this->AddLine(line);
   this->Append(byte);
 }
 
-func Chunk::AddChunk(u8* bytes, u32 count, u32 line) -> void {
+fnc Chunk::AddChunk(u8* bytes, u32 count, u32 line) -> void {
   this->AddLine(line);
   this->Append(bytes, count);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-func Chunk::AddConstant(Value val, u32 line) -> void {
+fnc Chunk::AddConstant(Value val, u32 line) -> void {
   this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
@@ -57,12 +57,12 @@ func Chunk::AddConstant(Value val, u32 line) -> void {
   this->constants.Append(val);
 }
 
-func Chunk::SimpleInstruction(const char* name, int offset) const -> int {
+fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-func Chunk::ConstantInstruction(int offset) const -> int {
+fnc Chunk::ConstantInstruction(int offset) const -> int {
   u8 const_idx = (*this)[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   this->constants[const_idx].Print();
@@ -71,7 +71,7 @@ func Chunk::ConstantInstruction(int offset) const -> int {
   return offset + 2;
 }
 
-func Chunk::ConstantLongInstruction(int offset) const -> int {
+fnc Chunk::ConstantLongInstruction(int offset) const -> int {
   u8 one = (*this)[offset + 1];
   u8 two = (*this)[offset + 2];
   u8 thr = (*this)[offset + 3];
@@ -88,7 +88,7 @@ func Chunk::ConstantLongInstruction(int offset) const -> int {
   return offset + 4;
 }
 
-func Chunk::PrintAtOffset(int offset) const -> const int {
+fnc Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
   u32 line_idx = this->lines.Search(offset);
@@ -148,7 +148,7 @@ func Chunk::PrintAtOffset(int offset) const -> const int {
   }
 }
 
-func Chunk::Disassemble() const -> const void {
+fnc Chunk::Disassemble() const -> const void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->count;) {
     offset = this->PrintAtOffset(offset);

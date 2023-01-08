@@ -3,28 +3,25 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "absl/container/flat_hash_set.h"
+
 #include "common.h"
 #include "dynamic_array.h"
 #include "object.h"
 
-func VirtualMachine::Init() -> void {
+fnc VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-func VirtualMachine::Deinit() -> void {
+fnc VirtualMachine::Deinit() -> void {
   this->string_pool->Deinit();
   this->chunk->Deinit();
 
-  Object* obj = this->obj_list;
-  while (obj != nullptr) {
-    Object* next = obj->next;
-    free(obj);
-    obj = next;
-  }
+  this->object_pool->Clear();
 }
 
-func VirtualMachine::Push(Value value) -> void {
+fnc VirtualMachine::Push(Value value) -> void {
   // TODO(eddie) - this is bad error handling
   if (this->stack_top - this->stack > VM_STACK_MAX) {
     exit(1);
@@ -34,20 +31,20 @@ func VirtualMachine::Push(Value value) -> void {
   this->stack_top++;
 }
 
-func VirtualMachine::Pop() -> Value {
+fnc VirtualMachine::Pop() -> Value {
   this->stack_top--;
   return *this->stack_top;
 }
 
-func VirtualMachine::Peek() const -> Value { return *this->stack_top; }
+fnc VirtualMachine::Peek() const -> Value { return *this->stack_top; }
 
-func VirtualMachine::Peek(int dist) const -> Value {
+fnc VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
-func VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
+fnc VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
 
-func VirtualMachine::RuntimeError(const char* msg, ...) -> void {
+fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
   va_start(args, msg);
   vfprintf(stderr, msg, args);
@@ -61,7 +58,7 @@ func VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   this->Reset();
 }
 
-func VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError {
+fnc VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError {
   this->chunk = chunk;
   this->inst_ptr = chunk->data;
   this->string_pool = string_pool;
@@ -108,15 +105,19 @@ func VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) ->
         idx |= ((u8)READ_BYTE() << 8);
         idx |= ((u8)READ_BYTE());
 
-        char* start = &(*this->string_pool)[idx];
-        u32 len = reinterpret_cast<u32*>(start)[0];
+        char* ptr = &(*this->string_pool)[idx];
+        u32 len = reinterpret_cast<u32*>(ptr)[0];
+        char* start = ptr + sizeof(u32);
 
-        // @TODO - no new/malloc here
-        // @TODO - wrapper to automate inserting into list
-        Object::String* str = new Object::String(len, start + 4);
-        str->next = this->obj_list;
-        this->obj_list = str;
+        Object* obj = this->object_pool->Alloc();
+        Object::String* str = static_cast<Object::String*>(obj);
+        str->Init(len, start);
 
+        if (this->string_table.contains(*str)) {
+          break;
+        }
+
+        this->string_table.emplace(*str);
         Value constant = Value(str);
         this->Push(constant);
         break;

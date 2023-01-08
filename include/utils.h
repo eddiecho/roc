@@ -10,15 +10,16 @@ struct PrivDefer {
 };
 
 template <typename F>
-PrivDefer<F> DeferFunc(F f) {
+PrivDefer<F> Deferfnc(F f) {
   return PrivDefer<F>(f);
 }
 
 #define DEFER_1(x, y) x##y
 #define DEFER_2(x, y) DEFER_1(x, y)
 #define DEFER_3(x) DEFER_2(x, __COUNTER__)
-#define defer(code) func DEFER_3(_defer_) = DeferFunc([&]() { code; })
+#define defer(code) fnc DEFER_3(_defer_) = Deferfnc([&]() { code; })
 
 namespace Utils {
-func ReadFile(const char* path) -> char*;
+fnc ReadFile(const char* path) -> char*;
+fnc HashString(const char* str, u32 length) -> u32;
 }  // namespace Utils

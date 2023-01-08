@@ -24,7 +24,7 @@
   X(Star)                                                                     \
   X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual)      \
       X(Less) X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else)   \
-          X(False) X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) \
+          X(False) X(For) X(fnction) X(If) X(Or) X(Return) X(Struct) X(True) \
               X(Var) X(While)
 
 struct Token {
@@ -43,7 +43,7 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   Token(const char* error) noexcept;
 
-  func constexpr Print() -> const char* {
+  fnc constexpr Print() -> const char* {
     switch (this->type) {
 #define X(ID)      \
   case Lexeme::ID: \
@@ -56,7 +56,7 @@ struct Token {
     }
   }
 
-  func constexpr inline IsEnd() -> bool;
+  fnc constexpr inline IsEnd() -> bool;
 };
 
 class Scanner {
@@ -67,23 +67,23 @@ class Scanner {
 
  public:
   Scanner() noexcept;
-  func Init(const char* src) -> void;
-  func ScanToken() -> Token;
+  fnc Init(const char* src) -> void;
+  fnc ScanToken() -> Token;
 
  private:
-  func inline Match(char expected) -> bool;
-  func constexpr inline IsEnd() const -> const bool;
-  func inline Pop() -> char;
-  func inline MakeToken(Token::Lexeme type) const -> const Token;
-  func constexpr inline Peek() const -> const char;
-  func constexpr inline PeekNext() const -> const char;
-  func SkipWhitespace() -> void;
-  func CheckKeyword(u32 start, u32 length, const char* rest,
+  fnc inline Match(char expected) -> bool;
+  fnc constexpr inline IsEnd() const -> const bool;
+  fnc inline Pop() -> char;
+  fnc inline MakeToken(Token::Lexeme type) const -> const Token;
+  fnc constexpr inline Peek() const -> const char;
+  fnc constexpr inline PeekNext() const -> const char;
+  fnc SkipWhitespace() -> void;
+  fnc CheckKeyword(u32 start, u32 length, const char* rest,
                     Token::Lexeme possible) const -> const Token::Lexeme;
-  func StringToken() -> const Token;
-  func NumberToken() -> const Token;
-  func IdentifierToken() const -> const Token;
-  func IdentifierType() const -> const Token::Lexeme;
+  fnc StringToken() -> const Token;
+  fnc NumberToken() -> const Token;
+  fnc IdentifierToken() const -> const Token;
+  fnc IdentifierType() const -> const Token::Lexeme;
 };
 
 struct Parser {
@@ -99,7 +99,7 @@ struct Parser {
   };
 
   Parser() noexcept;
-  func ErrorAtCurr(const char* message) -> void;
+  fnc ErrorAtCurr(const char* message) -> void;
 };
 
 enum class Precedence : u8 {
@@ -117,11 +117,11 @@ enum class Precedence : u8 {
 };
 
 class Compiler;
-using ParseFunction = void (*)(Compiler*);
+using Parsefnction = void (*)(Compiler*);
 
 struct ParseRule {
-  ParseFunction prefix;
-  ParseFunction infix;
+  Parsefnction prefix;
+  Parsefnction infix;
   Precedence precedence;
 
   ParseRule() noexcept {
@@ -130,44 +130,44 @@ struct ParseRule {
     this->precedence = Precedence::None;
   }
 
-  ParseRule(ParseFunction prefix, ParseFunction infix,
+  ParseRule(Parsefnction prefix, Parsefnction infix,
             Precedence precedence) noexcept
       : prefix{prefix}, infix{infix}, precedence{precedence} {}
 };
 
 // i would make these part of Compiler, but you can't take pointers
-// to member functions to build the parser table
+// to member fnctions to build the parser table
 namespace Grammar {
-func static Number(Compiler* compiler) -> void;
-func static Parenthesis(Compiler* compiler) -> void;
-func static Unary(Compiler* compiler) -> void;
-func static Binary(Compiler* compiler) -> void;
-func static Literal(Compiler* compiler) -> void;
-func static String(Compiler* compiler) -> void;
+fnc static Number(Compiler* compiler) -> void;
+fnc static Parenthesis(Compiler* compiler) -> void;
+fnc static Unary(Compiler* compiler) -> void;
+fnc static Binary(Compiler* compiler) -> void;
+fnc static Literal(Compiler* compiler) -> void;
+fnc static String(Compiler* compiler) -> void;
 }  // namespace Grammar
 
 class Compiler {
  public:
   Compiler() noexcept;
-  func Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool) -> void;
-  func Advance() -> void;
-  func Consume(Token::Lexeme type, const char* message) -> void;
-  func Compile() -> bool;
-  func Expression() -> void;
-  func EndCompilation() -> void;
-  func GetPrecedence(Precedence prec) -> void;
-  func GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
+  fnc Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool) -> void;
+  fnc Advance() -> void;
+  fnc Consume(Token::Lexeme type, const char* message) -> void;
+  fnc Compile() -> bool;
+  fnc Expression() -> void;
+  fnc EndCompilation() -> void;
+  fnc GetPrecedence(Precedence prec) -> void;
+  fnc GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
 
-  func Emit(u8 byte) -> void;
-  func Emit(u8* bytes, u32 count) -> void;
-  func Emit(OpCode opcode) -> void;
+  fnc Emit(u8 byte) -> void;
+  fnc Emit(u8* bytes, u32 count) -> void;
+  fnc Emit(OpCode opcode) -> void;
 
-  func friend Grammar::Number(Compiler* compiler) -> void;
-  func friend Grammar::Parenthesis(Compiler* compiler) -> void;
-  func friend Grammar::Unary(Compiler* compiler) -> void;
-  func friend Grammar::Binary(Compiler* compiler) -> void;
-  func friend Grammar::Literal(Compiler* compiler) -> void;
-  func friend Grammar::String(Compiler* compiler) -> void;
+  fnc friend Grammar::Number(Compiler* compiler) -> void;
+  fnc friend Grammar::Parenthesis(Compiler* compiler) -> void;
+  fnc friend Grammar::Unary(Compiler* compiler) -> void;
+  fnc friend Grammar::Binary(Compiler* compiler) -> void;
+  fnc friend Grammar::Literal(Compiler* compiler) -> void;
+  fnc friend Grammar::String(Compiler* compiler) -> void;
 
  private:
   Scanner* scanner;

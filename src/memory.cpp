@@ -5,7 +5,7 @@
 #include "common.h"
 
 // @STDLIB
-func Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
+fnc Reallocate(void* ptr, size_t oldSize, size_t newSize) -> void* {
   if (newSize == 0) {
     free(ptr);
     return nullptr;

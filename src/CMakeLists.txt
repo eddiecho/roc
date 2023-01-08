@@ -11,3 +11,8 @@ add_executable("${EXECUTABLE_NAME}" ${SRCFILES})
 target_include_directories("${EXECUTABLE_NAME}" PUBLIC
   "${PROJECT_BINARY_DIR}/include"
   "${PROJECT_SOURCE_DIR}/include")
+
+target_link_libraries(
+  "${EXECUTABLE_NAME}"
+  ${THIRD_PARTY_LIB}
+)

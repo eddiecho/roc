@@ -28,16 +28,16 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
-func constexpr inline Token::IsEnd() -> bool {
+fnc constexpr inline Token::IsEnd() -> bool {
   return this->type == Lexeme::Eof;
 }
 
-func static constexpr IsDigit(const char c) -> const bool {
+fnc static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
 
 // @STDLIB
-func static IsIdentifier(const char c) -> const bool { return !ispunct(c); }
+fnc static IsIdentifier(const char c) -> const bool { return !ispunct(c); }
 
 Scanner::Scanner() noexcept {
   this->start = nullptr;
@@ -46,24 +46,24 @@ Scanner::Scanner() noexcept {
   this->row = 0;
 }
 
-func Scanner::Init(const char* src) -> void {
+fnc Scanner::Init(const char* src) -> void {
   this->start = src;
   this->curr = src;
   this->line = 0;
   this->row = 0;
 }
 
-func constexpr inline Scanner::IsEnd() const -> const bool {
+fnc constexpr inline Scanner::IsEnd() const -> const bool {
   return *this->curr == '\0';
 }
 
-func inline Scanner::Pop() -> char {
+fnc inline Scanner::Pop() -> char {
   this->curr++;
   this->row++;
   return this->curr[-1];
 }
 
-func inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
+fnc inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   return Token{
       type,
       this->start,
@@ -72,22 +72,22 @@ func inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   };
 }
 
-func inline Scanner::Match(char expected) -> bool {
+fnc inline Scanner::Match(char expected) -> bool {
   if (this->IsEnd()) return false;
   if (*this->curr != expected) return false;
   this->curr++;
   return true;
 }
 
-func constexpr inline Scanner::Peek() const -> const char {
+fnc constexpr inline Scanner::Peek() const -> const char {
   return *this->curr;
 }
 
-func constexpr inline Scanner::PeekNext() const -> const char {
+fnc constexpr inline Scanner::PeekNext() const -> const char {
   return this->IsEnd() ? '\0' : this->curr[1];
 }
 
-func Scanner::SkipWhitespace() -> void {
+fnc Scanner::SkipWhitespace() -> void {
   while (1) {
     switch (this->Peek()) {
       case ' ':
@@ -108,7 +108,7 @@ func Scanner::SkipWhitespace() -> void {
   }
 }
 
-func Scanner::StringToken() -> const Token {
+fnc Scanner::StringToken() -> const Token {
   while (this->Peek() != '"' && !this->IsEnd()) {
     if (this->Peek() == '\n') this->line++;
     this->Pop();
@@ -120,7 +120,7 @@ func Scanner::StringToken() -> const Token {
   return this->MakeToken(Token::Lexeme::String);
 }
 
-func Scanner::NumberToken() -> const Token {
+fnc Scanner::NumberToken() -> const Token {
   while (IsDigit(this->Peek())) this->Pop();
 
   // you get one .
@@ -134,7 +134,7 @@ func Scanner::NumberToken() -> const Token {
 }
 
 // @STDLIB
-func Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
+fnc Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
                            Token::Lexeme possible) const
     -> const Token::Lexeme {
   if (this->curr - this->start == start + length &&
@@ -145,7 +145,7 @@ func Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
   return Token::Lexeme::Identifier;
 }
 
-func Scanner::IdentifierType() const -> const Token::Lexeme {
+fnc Scanner::IdentifierType() const -> const Token::Lexeme {
   switch (*this->start) {
     case 'a':
       return this->CheckKeyword(1, 2, "nd", Token::Lexeme::And);
@@ -159,7 +159,7 @@ func Scanner::IdentifierType() const -> const Token::Lexeme {
           case 'o':
             return this->CheckKeyword(2, 1, "r", Token::Lexeme::For);
           case 'u':
-            return this->CheckKeyword(2, 1, "n", Token::Lexeme::Function);
+            return this->CheckKeyword(2, 1, "n", Token::Lexeme::fnction);
         }
       }
       break;
@@ -183,11 +183,11 @@ func Scanner::IdentifierType() const -> const Token::Lexeme {
   return Token::Lexeme::Identifier;
 }
 
-func Scanner::IdentifierToken() const -> const Token {
+fnc Scanner::IdentifierToken() const -> const Token {
   return this->MakeToken(Token::Lexeme::Identifier);
 }
 
-func Scanner::ScanToken() -> Token {
+fnc Scanner::ScanToken() -> Token {
   this->start = this->curr;
 
   this->SkipWhitespace();
@@ -319,7 +319,7 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::fnction, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -329,18 +329,18 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-func Compiler::Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool)
+fnc Compiler::Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool)
     -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
   this->scanner->Init(src);
 }
 
-func Compiler::Expression() -> void {
+fnc Compiler::Expression() -> void {
   this->GetPrecedence(Precedence::Assignment);
 }
 
-func Compiler::Compile() -> bool {
+fnc Compiler::Compile() -> bool {
   this->Advance();
   this->Expression();
   this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
@@ -349,7 +349,7 @@ func Compiler::Compile() -> bool {
   return !this->parser->state.error;
 }
 
-func Compiler::Advance() -> void {
+fnc Compiler::Advance() -> void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->parser->prev = this->parser->curr;
@@ -379,7 +379,7 @@ Parser::Parser() noexcept {
   this->prev = Token();
 }
 
-func Parser::ErrorAtCurr(const char* message) -> void {
+fnc Parser::ErrorAtCurr(const char* message) -> void {
   if (this->state.panic) return;
 
   fprintf(stderr, "[line %d] Error", this->curr.line);
@@ -390,20 +390,20 @@ func Parser::ErrorAtCurr(const char* message) -> void {
   this->state.error = 1;
 }
 
-func Compiler::Emit(u8 byte) -> void {
+fnc Compiler::Emit(u8 byte) -> void {
   this->chunk->AddChunk(byte, this->parser->prev.line);
 }
 
-func Compiler::Emit(u8* bytes, u32 count) -> void {
+fnc Compiler::Emit(u8* bytes, u32 count) -> void {
   this->chunk->AddChunk(bytes, count, this->parser->prev.line);
 }
 
-func Compiler::Emit(OpCode op) -> void {
+fnc Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
   this->chunk->AddChunk(byte, this->parser->prev.line);
 }
 
-func Compiler::Consume(Token::Lexeme type, const char* message) -> void {
+fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   if (this->parser->curr.type == type) {
     this->Advance();
 
@@ -413,13 +413,13 @@ func Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   this->parser->ErrorAtCurr(message);
 }
 
-func Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
+fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
 
-func Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
+fnc Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
   return &this->PARSE_RULES[token];
 }
 
-func Compiler::GetPrecedence(Precedence precedence) -> void {
+fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
   ParseRule* rule = this->GetParseRule(this->parser->prev.type);
 
@@ -439,17 +439,17 @@ func Compiler::GetPrecedence(Precedence precedence) -> void {
 }
 
 // @STDLIB
-func static Grammar::Number(Compiler* compiler) -> void {
+fnc static Grammar::Number(Compiler* compiler) -> void {
   f64 value = strtod(compiler->parser->prev.start, nullptr);
   compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
 }
 
-func static Grammar::Parenthesis(Compiler* compiler) -> void {
+fnc static Grammar::Parenthesis(Compiler* compiler) -> void {
   compiler->Expression();
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
-func static Grammar::Unary(Compiler* compiler) -> void {
+fnc static Grammar::Unary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
@@ -467,7 +467,7 @@ func static Grammar::Unary(Compiler* compiler) -> void {
   }
 }
 
-func static Grammar::Binary(Compiler* compiler) -> void {
+fnc static Grammar::Binary(Compiler* compiler) -> void {
   Token::Lexeme op = compiler->parser->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
@@ -523,7 +523,7 @@ func static Grammar::Binary(Compiler* compiler) -> void {
   }
 }
 
-func static Grammar::Literal(Compiler* compiler) -> void {
+fnc static Grammar::Literal(Compiler* compiler) -> void {
   switch (compiler->parser->prev.type) {
     default:
       return;  // unreachable
@@ -538,7 +538,7 @@ func static Grammar::Literal(Compiler* compiler) -> void {
   }
 }
 
-func static Grammar::String(Compiler* compiler) -> void {
+fnc static Grammar::String(Compiler* compiler) -> void {
   // skip the closing quote
   u32 length = compiler->parser->prev.len - 2;
   // char* length_bytes = static_cast<char *>(static_cast<void *>(&length));

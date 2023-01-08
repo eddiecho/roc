@@ -3,8 +3,13 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "absl/container/flat_hash_set.h"
+
+#include "arena.h"
 #include "chunk.h"
+#include "common.h"
 #include "dynamic_array.h"
+#include "object.h"
 #include "value.h"
 
 #define VM_INTERPRET_ERRORS \
@@ -18,7 +23,7 @@ enum class InterpretError {
 #undef X
 };
 
-func static ErrorToString(InterpretError err) -> const char* {
+fnc static ErrorToString(InterpretError err) -> const char* {
   switch (err) {
 #define X(ID)              \
   case InterpretError::ID: \
@@ -35,23 +40,26 @@ func static ErrorToString(InterpretError err) -> const char* {
 #define VM_STACK_MAX 256
 class VirtualMachine {
  public:
-  func Init() -> void;
-  func Deinit() -> void;
-  func Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError;
-  func RuntimeError(const char* msg, ...) -> void;
-  func Reset() -> void;
-  func Peek() const -> Value;
-  func Peek(int dist) const -> Value;
+  fnc Init() -> void;
+  fnc Deinit() -> void;
+  fnc Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError;
+  fnc RuntimeError(const char* msg, ...) -> void;
+  fnc Reset() -> void;
+  fnc Peek() const -> Value;
+  fnc Peek(int dist) const -> Value;
 
  private:
   Chunk* chunk = nullptr;
   u8* inst_ptr = nullptr;
   Value stack[VM_STACK_MAX];
   Value* stack_top;
+
+  // this stores the actual string characters
   DynamicArray<char>* string_pool = nullptr;
+  // this is used for interning and lookup
+  absl::flat_hash_set<Object::String> string_table;
+  Arena<Object>* object_pool = new Arena<Object>();
 
-  Object* obj_list = nullptr;
-
-  func Push(Value value) -> void;
-  func Pop() -> Value;
+  fnc Push(Value value) -> void;
+  fnc Pop() -> Value;
 };
