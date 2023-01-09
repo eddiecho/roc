@@ -17,7 +17,6 @@ fnc VirtualMachine::Init() -> void {
 fnc VirtualMachine::Deinit() -> void {
   this->string_pool->Deinit();
   this->chunk->Deinit();
-
   this->object_pool->Clear();
 }
 
@@ -58,10 +57,15 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   this->Reset();
 }
 
-fnc VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError {
+fnc VirtualMachine::Interpret(
+  Chunk* chunk,
+  StringPool* string_pool,
+  Arena<Object>* object_pool
+) -> InterpretError {
   this->chunk = chunk;
   this->inst_ptr = chunk->data;
   this->string_pool = string_pool;
+  this->object_pool = object_pool;
 
 #define READ_BYTE() (*this->inst_ptr++)
 #define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
@@ -105,19 +109,7 @@ fnc VirtualMachine::Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> 
         idx |= ((u8)READ_BYTE() << 8);
         idx |= ((u8)READ_BYTE());
 
-        char* ptr = &(*this->string_pool)[idx];
-        u32 len = reinterpret_cast<u32*>(ptr)[0];
-        char* start = ptr + sizeof(u32);
-
-        Object* obj = this->object_pool->Alloc();
-        Object::String* str = static_cast<Object::String*>(obj);
-        str->Init(len, start);
-
-        if (this->string_table.contains(*str)) {
-          break;
-        }
-
-        this->string_table.emplace(*str);
+        auto str = this->string_pool->Nth(idx);
         Value constant = Value(str);
         this->Push(constant);
         break;

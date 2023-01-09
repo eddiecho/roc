@@ -1,10 +1,12 @@
 #include <cstdio>
 #include <gtest/gtest.h>
 
+#include "arena.h"
 #include "chunk.h"
 #include "compiler.h"
 #include "dynamic_array.h"
 #include "object.h"
+#include "string_pool.h"
 #include "utils.h"
 #include "value.h"
 #include "vm.h"
@@ -23,12 +25,13 @@
 class VirtualMachineTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    string_pool.Init(1024);
+    string_pool.Init(&string_object_pool);
     virtual_machine.Init();
   }
 
   void TearDown() override {
     chunk.Deinit();
+    object_pool.Clear();
     string_pool.Deinit();
     virtual_machine.Deinit();
   }
@@ -36,7 +39,9 @@ class VirtualMachineTest : public ::testing::Test {
   VirtualMachine virtual_machine;
   Compiler compiler;
   Chunk chunk;
-  DynamicArray<char> string_pool;
+  StringPool string_pool;
+  Arena<Object> string_object_pool;
+  Arena<Object> object_pool;
 };
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
@@ -47,7 +52,7 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   compiler.Init(src, &chunk, &string_pool);
   compiler.Compile();
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool);
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
@@ -63,7 +68,7 @@ TEST_F(VirtualMachineTest, BasicString) {
   compiler.Init(src, &chunk, &string_pool);
   compiler.Compile();
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool);
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();

@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "object.h"
+#include "string_pool.h"
 #include "value.h"
 
 Token::Token() noexcept {
@@ -329,7 +330,7 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
 
 };
 
-fnc Compiler::Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool)
+fnc Compiler::Init(const char* src, Chunk* chunk, StringPool* string_pool)
     -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
@@ -541,14 +542,9 @@ fnc static Grammar::Literal(Compiler* compiler) -> void {
 fnc static Grammar::String(Compiler* compiler) -> void {
   // skip the closing quote
   u32 length = compiler->parser->prev.len - 2;
-  // char* length_bytes = static_cast<char *>(static_cast<void *>(&length));
-  char* length_bytes = reinterpret_cast<char *>(&length);
-  u32 index = compiler->string_pool->Append(length_bytes, 4);
-
   char* start = const_cast<char*>(compiler->parser->prev.start + 1);
-  compiler->string_pool->Append(start, length);
-  compiler->string_pool->Append(0);
-  // push an index into the vm stack
+
+  u32 index = compiler->string_pool->Alloc(length, start);
 
   compiler->Emit(OpCode::String);
   u8* index_bytes = reinterpret_cast<u8*>(&index);

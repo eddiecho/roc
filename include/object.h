@@ -22,14 +22,13 @@ class Object {
   fnc Print() -> void;
 
   template <typename H>
-  friend H AbslHashValue(H h, const Object& s) {
-    return H::combine(std::move(h), s.hash);
-  }
+  friend H AbslHashValue(H h, const Object& s);
 
  public:
   ObjectType type;
   Object* next = nullptr;
 
+ private:
   u32 hash;
 
   union {
@@ -42,21 +41,24 @@ class Object {
 
 class Object::String : public Object {
  public:
-  String(u32 length, const char* start) noexcept {
-    this->type = ObjectType::String;
-    this->hash = Utils::HashString(start, length);
+  String() noexcept;
+  String(u32 length, const char* start) noexcept;
+  String(std::string str) noexcept;
+  String(Object::String& str) noexcept;
+  String(const Object::String&& str) noexcept;
 
-    this->as.string.length = length;
-    this->as.string.start = start;
-  };
+  template <typename H>
+  friend H AbslHashValue(H h, const Object& s) {
+    return H::combine(std::move(h),
+                      s.hash,
+                      std::string(s.as.string.start, s.as.string.length));
+  }
 
-  String(std::string str) noexcept {
-    this->type = ObjectType::String;
-    this->hash = Utils::HashString(str.c_str(), str.length());
+  operator std::string() const {
+    std::string ret{this->as.string.start, this->as.string.length};
 
-    this->as.string.length = str.length();
-    this->as.string.start = str.c_str();
-  };
+    return ret;
+  }
 
   // @STDLIB
   fnc operator==(const Object* o) const -> bool override {
@@ -68,13 +70,20 @@ class Object::String : public Object {
     return std::memcmp(this->as.string.start, other->as.string.start, this->as.string.length) == 0;
   }
 
-  fnc operator==(const Object::String o) const -> bool {
+  fnc operator==(Object::String o) const -> bool {
     if (this->hash != o.hash) return false;
     if (this->as.string.length != o.as.string.length) return false;
 
     return std::memcmp(this->as.string.start, o.as.string.start, this->as.string.length) == 0;
   }
 
+  fnc operator==(std::string str) const -> bool {
+    if (this->as.string.length != str.length()) return false;
+
+    return std::memcmp(this->as.string.start, str.c_str(), this->as.string.length) == 0;
+  }
+
   fnc Print() -> void;
   fnc Init(u32 length, const char* start) -> void;
+  fnc Init(const Object::String&& str) -> void;
 };

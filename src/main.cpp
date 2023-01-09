@@ -1,10 +1,12 @@
 #include <iostream>
 
+#include "arena.h"
 #include "chunk.h"
 #include "common.h"
 #include "compiler.h"
 #include "dynamic_array.h"
 #include "roc_config.h"
+#include "object.h"
 #include "utils.h"
 #include "vm.h"
 
@@ -19,19 +21,21 @@ fnc static RunFile(const char* path) -> InterpretError {
   defer(free(src));
 
   Chunk chunk;
-  DynamicArray<char> string_pool;
+  StringPool string_pool;
+  Arena<Object> object_pool;
 
   COMPILER.Init(src, &chunk, &string_pool);
   COMPILER.Compile();
   VM.Init();
 
-  return VM.Interpret(&chunk, &string_pool);
+  return VM.Interpret(&chunk, &string_pool, &object_pool);
 }
 
 fnc static Repl() -> void {
   char line[1024];
   InterpretError status;
-  DynamicArray<char> string_pool;
+  StringPool string_pool;
+  Arena<Object> object_pool;
 
   while (1) {
     Chunk chunk;
@@ -45,7 +49,7 @@ fnc static Repl() -> void {
     COMPILER.Init(line, &chunk, &string_pool);
     COMPILER.Compile();
     // @TODO(eddie) - do something with the status
-    status = VM.Interpret(&chunk, &string_pool);
+    status = VM.Interpret(&chunk, &string_pool, &object_pool);
   }
 }
 

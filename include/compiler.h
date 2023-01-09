@@ -5,6 +5,7 @@
 #include "chunk.h"
 #include "common.h"
 #include "dynamic_array.h"
+#include "string_pool.h"
 
 #define VM_LEXEME_TYPE                                                        \
   X(Eof)                                                                      \
@@ -149,7 +150,7 @@ fnc static String(Compiler* compiler) -> void;
 class Compiler {
  public:
   Compiler() noexcept;
-  fnc Init(const char* src, Chunk* chunk, DynamicArray<char>* string_pool) -> void;
+  fnc Init(const char* src, Chunk* chunk, StringPool* string_pool) -> void;
   fnc Advance() -> void;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
   fnc Compile() -> bool;
@@ -173,7 +174,7 @@ class Compiler {
   Scanner* scanner;
   Parser* parser;
   Chunk* chunk = nullptr;
-  DynamicArray<char>* string_pool = nullptr;
+  StringPool* string_pool = nullptr;
 
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };

@@ -46,18 +46,19 @@ class Arena {
     }
   };
 
-  fnc Alloc() -> T*;
-  fnc Alloc(u32 len) -> T*;
+  fnc Alloc() -> u32;
+  fnc Alloc(u32 len) -> u32;
   fnc Free(T* entry) -> void;
   fnc Clear() -> void;
   fnc AllocatedBytes() const -> u32;
+  fnc Nth(u32 idx) -> T*;
 
  private:
-  fnc Push() -> T*;
+  fnc Push() -> u32;
 };
 
 template <Nodeable T>
-fnc Arena<T>::Push() -> T* {
+fnc Arena<T>::Push() -> u32 {
   if (this->count == this->capacity) {
     if (this->next == nullptr) {
       // @FIXME(eddie) - does this work?
@@ -68,7 +69,7 @@ fnc Arena<T>::Push() -> T* {
   } else {
     this->count++;
 
-    return &this->data[this->count - 1];
+    return this->count - 1;
   }
 }
 
@@ -84,11 +85,12 @@ fnc Arena<T>::Clear() -> void {
 }
 
 template <Nodeable T>
-fnc Arena<T>::Alloc() -> T* {
+fnc Arena<T>::Alloc() -> u32 {
   T* result = this->first_free;
   if (result != nullptr) {
     this->first_free = this->first_free->next;
-    return result;
+
+    return result - this->data;
   }
 
   return this->Push();
@@ -100,4 +102,9 @@ fnc Arena<T>::Free(T* entry) -> void {
   this->first_free = entry;
 
   this->count--;
+}
+
+template <Nodeable T>
+fnc Arena<T>::Nth(u32 idx) -> T* {
+  return &this->data[idx];
 }

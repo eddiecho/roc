@@ -11,11 +11,12 @@
       Reallocate(ptr, sizeof(type) * (oldC), sizeof(type) * (newC)))
 #define FREE_ARRAY(type, ptr, count) Reallocate(ptr, sizeof(type) * count, 0)
 
+#define DEFAULT_SIZE 1024
+
 template <typename T>
 class DynamicArray {
  public:
-  u32 count;
-  T* data;
+  DynamicArray<T>() noexcept;
 
   fnc Init() -> void;
   fnc Init(u32 size) -> void;
@@ -26,9 +27,20 @@ class DynamicArray {
   fnc operator[](size_t idx) -> T& { return this->data[idx]; }
   fnc operator[](size_t idx) const -> const T& { return this->data[idx]; }
 
+ public:
+  u32 count;
+  T* data = nullptr;
+
  private:
   u64 capacity_;
 };
+
+template <typename T>
+DynamicArray<T>::DynamicArray() noexcept {
+  this->count = 0;
+  this->capacity_ = 0;
+  this->data = nullptr;
+}
 
 template <typename T>
 fnc DynamicArray<T>::Init() -> void {

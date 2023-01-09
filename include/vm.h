@@ -10,6 +10,7 @@
 #include "common.h"
 #include "dynamic_array.h"
 #include "object.h"
+#include "string_pool.h"
 #include "value.h"
 
 #define VM_INTERPRET_ERRORS \
@@ -42,11 +43,20 @@ class VirtualMachine {
  public:
   fnc Init() -> void;
   fnc Deinit() -> void;
-  fnc Interpret(Chunk* chunk, DynamicArray<char>* string_pool) -> InterpretError;
+  fnc Interpret(
+    Chunk* chunk,
+    StringPool* string_pool,
+    Arena<Object>* object_pool
+  ) -> InterpretError;
+
   fnc RuntimeError(const char* msg, ...) -> void;
   fnc Reset() -> void;
   fnc Peek() const -> Value;
   fnc Peek(int dist) const -> Value;
+
+ private:
+  fnc Push(Value value) -> void;
+  fnc Pop() -> Value;
 
  private:
   Chunk* chunk = nullptr;
@@ -54,12 +64,7 @@ class VirtualMachine {
   Value stack[VM_STACK_MAX];
   Value* stack_top;
 
-  // this stores the actual string characters
-  DynamicArray<char>* string_pool = nullptr;
-  // this is used for interning and lookup
-  absl::flat_hash_set<Object::String> string_table;
-  Arena<Object>* object_pool = new Arena<Object>();
-
-  fnc Push(Value value) -> void;
-  fnc Pop() -> Value;
+  // @NOTE(eddie) - the string_pool manages its own Objects for strings
+  StringPool* string_pool = nullptr;
+  Arena<Object>* object_pool = nullptr;
 };
