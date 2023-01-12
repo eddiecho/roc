@@ -29,9 +29,6 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
-fnc constexpr inline Token::IsEnd() -> bool {
-  return this->type == Lexeme::Eof;
-}
 
 fnc static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
@@ -160,7 +157,7 @@ fnc Scanner::IdentifierType() const -> const Token::Lexeme {
           case 'o':
             return this->CheckKeyword(2, 1, "r", Token::Lexeme::For);
           case 'u':
-            return this->CheckKeyword(2, 1, "n", Token::Lexeme::fnction);
+            return this->CheckKeyword(2, 1, "n", Token::Lexeme::Function);
         }
       }
       break;
@@ -261,10 +258,7 @@ fnc Scanner::ScanToken() -> Token {
   }
 }
 
-Compiler::Compiler() noexcept {
-  this->scanner = new Scanner();
-  this->parser = new Parser();
-}
+Compiler::Compiler() noexcept {}
 
 std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftParens,
@@ -320,7 +314,7 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::fnction, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -334,7 +328,7 @@ fnc Compiler::Init(const char* src, Chunk* chunk, StringPool* string_pool)
     -> void {
   this->chunk = chunk;
   this->string_pool = string_pool;
-  this->scanner->Init(src);
+  this->scanner.Init(src);
 }
 
 fnc Compiler::Expression() -> void {
@@ -347,17 +341,17 @@ fnc Compiler::Compile() -> bool {
   this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
   this->EndCompilation();
 
-  return !this->parser->state.error;
+  return !this->state.error;
 }
 
 fnc Compiler::Advance() -> void {
   u32 line = 0xFFFFFFFF;
   Token token;
-  this->parser->prev = this->parser->curr;
+  this->prev = this->curr;
 
   while (1) {
-    token = this->scanner->ScanToken();
-    this->parser->curr = token;
+    token = this->scanner.ScanToken();
+    this->curr = token;
 
 #ifdef DEBUG_TRACE_EXECUTION
     // output debug token info
@@ -369,18 +363,13 @@ fnc Compiler::Advance() -> void {
     printf("%s '%.*s'\n", token.Print(), token.len, token.start);
 #endif
 
-    if (this->parser->curr.type != Token::Lexeme::Error) return;
+    if (this->curr.type != Token::Lexeme::Error) return;
 
-    this->parser->ErrorAtCurr(this->parser->curr.start);
+    this->ErrorAtCurr(this->curr.start);
   }
 }
 
-Parser::Parser() noexcept {
-  this->curr = Token();
-  this->prev = Token();
-}
-
-fnc Parser::ErrorAtCurr(const char* message) -> void {
+fnc Compiler::ErrorAtCurr(const char* message) -> void {
   if (this->state.panic) return;
 
   fprintf(stderr, "[line %d] Error", this->curr.line);
@@ -392,26 +381,26 @@ fnc Parser::ErrorAtCurr(const char* message) -> void {
 }
 
 fnc Compiler::Emit(u8 byte) -> void {
-  this->chunk->AddChunk(byte, this->parser->prev.line);
+  this->chunk->AddChunk(byte, this->prev.line);
 }
 
 fnc Compiler::Emit(u8* bytes, u32 count) -> void {
-  this->chunk->AddChunk(bytes, count, this->parser->prev.line);
+  this->chunk->AddChunk(bytes, count, this->prev.line);
 }
 
 fnc Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
-  this->chunk->AddChunk(byte, this->parser->prev.line);
+  this->chunk->AddChunk(byte, this->prev.line);
 }
 
 fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
-  if (this->parser->curr.type == type) {
+  if (this->curr.type == type) {
     this->Advance();
 
     return;
   }
 
-  this->parser->ErrorAtCurr(message);
+  this->ErrorAtCurr(message);
 }
 
 fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
@@ -422,27 +411,27 @@ fnc Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
 
 fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
-  ParseRule* rule = this->GetParseRule(this->parser->prev.type);
+  ParseRule* rule = this->GetParseRule(this->prev.type);
 
   if (rule->prefix == nullptr) {
-    this->parser->ErrorAtCurr("Expected expression");
+    this->ErrorAtCurr("Expected expression");
     return;
   }
 
   rule->prefix(this);
 
   while (precedence <=
-         this->GetParseRule(this->parser->curr.type)->precedence) {
+         this->GetParseRule(this->curr.type)->precedence) {
     this->Advance();
-    ParseRule* prev_rule = this->GetParseRule(this->parser->prev.type);
+    ParseRule* prev_rule = this->GetParseRule(this->prev.type);
     prev_rule->infix(this);
   }
 }
 
 // @STDLIB
 fnc static Grammar::Number(Compiler* compiler) -> void {
-  f64 value = strtod(compiler->parser->prev.start, nullptr);
-  compiler->chunk->AddConstant(Value(value), compiler->parser->prev.line);
+  f64 value = strtod(compiler->prev.start, nullptr);
+  compiler->chunk->AddConstant(Value(value), compiler->prev.line);
 }
 
 fnc static Grammar::Parenthesis(Compiler* compiler) -> void {
@@ -451,7 +440,7 @@ fnc static Grammar::Parenthesis(Compiler* compiler) -> void {
 }
 
 fnc static Grammar::Unary(Compiler* compiler) -> void {
-  Token::Lexeme op = compiler->parser->prev.type;
+  Token::Lexeme op = compiler->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
   switch (op) {
@@ -469,7 +458,7 @@ fnc static Grammar::Unary(Compiler* compiler) -> void {
 }
 
 fnc static Grammar::Binary(Compiler* compiler) -> void {
-  Token::Lexeme op = compiler->parser->prev.type;
+  Token::Lexeme op = compiler->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
   auto next_higher = static_cast<Precedence>(higher);
@@ -525,7 +514,7 @@ fnc static Grammar::Binary(Compiler* compiler) -> void {
 }
 
 fnc static Grammar::Literal(Compiler* compiler) -> void {
-  switch (compiler->parser->prev.type) {
+  switch (compiler->prev.type) {
     default:
       return;  // unreachable
     case Token::Lexeme::False: {
@@ -541,8 +530,8 @@ fnc static Grammar::Literal(Compiler* compiler) -> void {
 
 fnc static Grammar::String(Compiler* compiler) -> void {
   // skip the closing quote
-  u32 length = compiler->parser->prev.len - 2;
-  char* start = const_cast<char*>(compiler->parser->prev.start + 1);
+  u32 length = compiler->prev.len - 2;
+  char* start = const_cast<char*>(compiler->prev.start + 1);
 
   u32 index = compiler->string_pool->Alloc(length, start);
 

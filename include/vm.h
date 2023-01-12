@@ -50,7 +50,6 @@ class VirtualMachine {
   ) -> InterpretError;
 
   fnc RuntimeError(const char* msg, ...) -> void;
-  fnc Reset() -> void;
   fnc Peek() const -> Value;
   fnc Peek(int dist) const -> Value;
 

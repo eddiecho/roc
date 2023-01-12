@@ -15,6 +15,7 @@ fnc VirtualMachine::Init() -> void {
 }
 
 fnc VirtualMachine::Deinit() -> void {
+  this->stack_top = this->stack;
   this->string_pool->Deinit();
   this->chunk->Deinit();
   this->object_pool->Clear();
@@ -41,8 +42,6 @@ fnc VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
-fnc VirtualMachine::Reset() -> void { this->stack_top = this->stack; }
-
 fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
   va_start(args, msg);
@@ -54,7 +53,8 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   int line = this->chunk->lines[inst].val;
 
   fprintf(stderr, "[line %d] in file\n", line);
-  this->Reset();
+  // reset stack pointer
+  this->stack_top = this->stack;
 }
 
 fnc VirtualMachine::Interpret(

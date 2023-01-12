@@ -25,7 +25,7 @@
   X(Star)                                                                     \
   X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual)      \
       X(Less) X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else)   \
-          X(False) X(For) X(fnction) X(If) X(Or) X(Return) X(Struct) X(True) \
+          X(False) X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) \
               X(Var) X(While)
 
 struct Token {
@@ -44,7 +44,7 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   Token(const char* error) noexcept;
 
-  fnc constexpr Print() -> const char* {
+  fnc constexpr Print() const -> const char* {
     switch (this->type) {
 #define X(ID)      \
   case Lexeme::ID: \
@@ -56,16 +56,9 @@ struct Token {
       }
     }
   }
-
-  fnc constexpr inline IsEnd() -> bool;
 };
 
 class Scanner {
-  const char* start;
-  const char* curr;
-  u32 line;
-  u32 row;
-
  public:
   Scanner() noexcept;
   fnc Init(const char* src) -> void;
@@ -85,22 +78,12 @@ class Scanner {
   fnc NumberToken() -> const Token;
   fnc IdentifierToken() const -> const Token;
   fnc IdentifierType() const -> const Token::Lexeme;
-};
 
-struct Parser {
-  Token curr;
-  Token prev;
-
-  union {
-    struct {
-      u64 error : 1;
-      u64 panic : 1;
-    } state;
-    u64 value = 0;
-  };
-
-  Parser() noexcept;
-  fnc ErrorAtCurr(const char* message) -> void;
+ private:
+  const char* start;
+  const char* curr;
+  u32 line;
+  u32 row;
 };
 
 enum class Precedence : u8 {
@@ -151,11 +134,14 @@ class Compiler {
  public:
   Compiler() noexcept;
   fnc Init(const char* src, Chunk* chunk, StringPool* string_pool) -> void;
+  fnc Compile() -> bool;
+
+ private:
   fnc Advance() -> void;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
-  fnc Compile() -> bool;
   fnc Expression() -> void;
   fnc EndCompilation() -> void;
+  fnc ErrorAtCurr(const char* message) -> void;
   fnc GetPrecedence(Precedence prec) -> void;
   fnc GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
 
@@ -171,8 +157,18 @@ class Compiler {
   fnc friend Grammar::String(Compiler* compiler) -> void;
 
  private:
-  Scanner* scanner;
-  Parser* parser;
+  Token curr;
+  Token prev;
+
+  union {
+    struct {
+      u64 error : 1;
+      u64 panic : 1;
+    } state;
+    u64 value = 0;
+  };
+
+  Scanner scanner;
   Chunk* chunk = nullptr;
   StringPool* string_pool = nullptr;
 

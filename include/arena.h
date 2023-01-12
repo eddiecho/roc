@@ -15,13 +15,6 @@ concept Nodeable = requires {
 
 template <Nodeable T>
 class Arena {
-  u32 capacity;
-  u32 count;
-  T* data;
-  // @TODO(eddie) - unique_ptr
-  Arena* next = nullptr;
-  T* first_free = nullptr;
-
  public:
   Arena() {
     using type = T;
@@ -55,6 +48,15 @@ class Arena {
 
  private:
   fnc Push() -> u32;
+
+ private:
+  u32 capacity;
+  u32 count;
+  T* data;
+  // @TODO(eddie) - unique_ptr
+  Arena* next = nullptr;
+  T* first_free = nullptr;
+
 };
 
 template <Nodeable T>
@@ -106,5 +108,7 @@ fnc Arena<T>::Free(T* entry) -> void {
 
 template <Nodeable T>
 fnc Arena<T>::Nth(u32 idx) -> T* {
+  if (idx > this->capacity) return this->next->Nth(idx - this->capacity);
+
   return &this->data[idx];
 }
