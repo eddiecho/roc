@@ -5,6 +5,7 @@
 #include "chunk.h"
 #include "common.h"
 #include "dynamic_array.h"
+#include "global_pool.h"
 #include "string_pool.h"
 
 #define VM_LEXEME_TYPE                                                        \
@@ -76,8 +77,8 @@ class Scanner {
                     Token::Lexeme possible) const -> const Token::Lexeme;
   fnc StringToken() -> const Token;
   fnc NumberToken() -> const Token;
-  fnc IdentifierToken() const -> const Token;
-  fnc IdentifierType() const -> const Token::Lexeme;
+  fnc IdentifierToken() -> const Token;
+  fnc IdentifierType() -> const Token::Lexeme;
 
  private:
   const char* start;
@@ -101,11 +102,11 @@ enum class Precedence : u8 {
 };
 
 class Compiler;
-using Parsefnction = void (*)(Compiler*);
+using ParseFunction = void (*)(Compiler*, bool);
 
 struct ParseRule {
-  Parsefnction prefix;
-  Parsefnction infix;
+  ParseFunction prefix;
+  ParseFunction infix;
   Precedence precedence;
 
   ParseRule() noexcept {
@@ -114,7 +115,7 @@ struct ParseRule {
     this->precedence = Precedence::None;
   }
 
-  ParseRule(Parsefnction prefix, Parsefnction infix,
+  ParseRule(ParseFunction prefix, ParseFunction infix,
             Precedence precedence) noexcept
       : prefix{prefix}, infix{infix}, precedence{precedence} {}
 };
@@ -122,39 +123,52 @@ struct ParseRule {
 // i would make these part of Compiler, but you can't take pointers
 // to member fnctions to build the parser table
 namespace Grammar {
-fnc static Number(Compiler* compiler) -> void;
-fnc static Parenthesis(Compiler* compiler) -> void;
-fnc static Unary(Compiler* compiler) -> void;
-fnc static Binary(Compiler* compiler) -> void;
-fnc static Literal(Compiler* compiler) -> void;
-fnc static String(Compiler* compiler) -> void;
+fnc static Number(Compiler* compiler, bool assign) -> void;
+fnc static Parenthesis(Compiler* compiler, bool assign) -> void;
+fnc static Unary(Compiler* compiler, bool assign) -> void;
+fnc static Binary(Compiler* compiler, bool assign) -> void;
+fnc static Literal(Compiler* compiler, bool assign) -> void;
+fnc static String(Compiler* compiler, bool assign) -> void;
+fnc static Variable(Compiler* compiler, bool assign) -> void;
 }  // namespace Grammar
 
 class Compiler {
  public:
   Compiler() noexcept;
-  fnc Init(const char* src, Chunk* chunk, StringPool* string_pool) -> void;
+  fnc Init(const char* src,
+           Chunk* chunk,
+           StringPool* string_pool,
+           GlobalPool* global_pool) -> void;
   fnc Compile() -> bool;
 
  private:
   fnc Advance() -> void;
+  fnc inline Match(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
+  fnc Declaration() -> void;
   fnc Expression() -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtCurr(const char* message) -> void;
   fnc GetPrecedence(Precedence prec) -> void;
   fnc GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
+  fnc Statement() -> void;
+  fnc SyncOnError() -> void;
+
+  fnc VariableDeclaration() -> void;
+  fnc LoadVariable(bool assignment) -> void;
+  fnc Identifier(const char* err) -> u32;
 
   fnc Emit(u8 byte) -> void;
   fnc Emit(u8* bytes, u32 count) -> void;
   fnc Emit(OpCode opcode) -> void;
 
-  fnc friend Grammar::Number(Compiler* compiler) -> void;
-  fnc friend Grammar::Parenthesis(Compiler* compiler) -> void;
-  fnc friend Grammar::Unary(Compiler* compiler) -> void;
-  fnc friend Grammar::Binary(Compiler* compiler) -> void;
-  fnc friend Grammar::Literal(Compiler* compiler) -> void;
-  fnc friend Grammar::String(Compiler* compiler) -> void;
+  fnc friend Grammar::Number(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::Parenthesis(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::Unary(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::Binary(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::Literal(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::String(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::Variable(Compiler* compiler, bool assign) -> void;
 
  private:
   Token curr;
@@ -171,6 +185,7 @@ class Compiler {
   Scanner scanner;
   Chunk* chunk = nullptr;
   StringPool* string_pool = nullptr;
+  GlobalPool* global_pool = nullptr;
 
   static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };

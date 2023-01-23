@@ -21,6 +21,9 @@ enum class OpCode : u8 {
   Greater,
   Less,
   String,
+  Pop,
+  SetGlobal,
+  LoadGlobal,
 };
 
 class VirtualMachine;

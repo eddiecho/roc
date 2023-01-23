@@ -49,6 +49,7 @@ fnc Chunk::AddConstant(Value val, u32 line) -> void {
     this->Append(static_cast<u8>(OpCode::ConstantLong));
 
     u32 count = this->constants.count;
+    this->Append(count >> 24);
     this->Append(count >> 16);
     this->Append(count >> 8);
     this->Append(count);
@@ -140,6 +141,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     }
     case OpCode::Less: {
       return this->SimpleInstruction("OP_LESS", offset);
+    }
+    case OpCode::Pop: {
+      return this->SimpleInstruction("OP_POP", offset);
     }
     default: {
       printf("Unknown opcode %d\n", byte);

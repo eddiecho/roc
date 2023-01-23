@@ -5,8 +5,9 @@
 #include "common.h"
 #include "compiler.h"
 #include "dynamic_array.h"
-#include "roc_config.h"
+#include "global_pool.h"
 #include "object.h"
+#include "roc_config.h"
 #include "utils.h"
 #include "vm.h"
 
@@ -23,8 +24,10 @@ fnc static RunFile(const char* path) -> InterpretError {
   Chunk chunk;
   StringPool string_pool;
   Arena<Object> object_pool;
+  GlobalPool global_pool;
+  global_pool.Init(&object_pool);
 
-  COMPILER.Init(src, &chunk, &string_pool);
+  COMPILER.Init(src, &chunk, &string_pool, &global_pool);
   COMPILER.Compile();
   VM.Init();
 
@@ -36,6 +39,8 @@ fnc static Repl() -> void {
   InterpretError status;
   StringPool string_pool;
   Arena<Object> object_pool;
+  GlobalPool global_pool;
+  global_pool.Init(&object_pool);
 
   while (1) {
     Chunk chunk;
@@ -46,7 +51,7 @@ fnc static Repl() -> void {
       break;
     }
 
-    COMPILER.Init(line, &chunk, &string_pool);
+    COMPILER.Init(line, &chunk, &string_pool, &global_pool);
     COMPILER.Compile();
     // @TODO(eddie) - do something with the status
     status = VM.Interpret(&chunk, &string_pool, &object_pool);

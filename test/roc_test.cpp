@@ -5,6 +5,7 @@
 #include "chunk.h"
 #include "compiler.h"
 #include "dynamic_array.h"
+#include "global_pool.h"
 #include "object.h"
 #include "string_pool.h"
 #include "utils.h"
@@ -26,6 +27,7 @@ class VirtualMachineTest : public ::testing::Test {
  protected:
   void SetUp() override {
     string_pool.Init(&string_object_pool);
+    global_pool.Init(&object_pool);
     virtual_machine.Init();
   }
 
@@ -42,6 +44,7 @@ class VirtualMachineTest : public ::testing::Test {
   StringPool string_pool;
   Arena<Object> string_object_pool;
   Arena<Object> object_pool;
+  GlobalPool global_pool;
 };
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
@@ -49,7 +52,7 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   GetTestFilePath("scripts/simple1.roc");
   char* src = Utils::ReadFile(path);
 
-  compiler.Init(src, &chunk, &string_pool);
+  compiler.Init(src, &chunk, &string_pool, &global_pool);
   compiler.Compile();
 
   InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
@@ -65,7 +68,7 @@ TEST_F(VirtualMachineTest, BasicString) {
   GetTestFilePath("scripts/simple_string1.roc");
   char* src = Utils::ReadFile(path);
 
-  compiler.Init(src, &chunk, &string_pool);
+  compiler.Init(src, &chunk, &string_pool, &global_pool);
   compiler.Compile();
 
   InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
@@ -73,6 +76,18 @@ TEST_F(VirtualMachineTest, BasicString) {
 
   Value val = virtual_machine.Peek();
   EXPECT_EQ(val.type, ValueType::Object);
+}
+
+TEST_F(VirtualMachineTest, BasicAssignment) {
+  char path[MAX_PATH_LEN];
+  GetTestFilePath("scripts/simple_assignment.roc");
+  char* src = Utils::ReadFile(path);
+
+  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  compiler.Compile();
+
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  EXPECT_EQ(status, InterpretError::Success);
 }
 
 TEST(HelloTest, BasicAssert) {

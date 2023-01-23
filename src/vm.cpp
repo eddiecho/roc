@@ -68,6 +68,7 @@ fnc VirtualMachine::Interpret(
   this->object_pool = object_pool;
 
 #define READ_BYTE() (*this->inst_ptr++)
+#define READ_INT() *(u32*)(this->inst_ptr); this->inst_ptr += sizeof(u32)
 #define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
 
   u8 byte;
@@ -82,7 +83,8 @@ fnc VirtualMachine::Interpret(
 
     switch (instruction) {
       case OpCode::Return: {
-        this->Pop().Print();
+        Value val = this->Pop();
+        val.Print();
         printf("\n");
 
         return InterpretError::Success;
@@ -93,21 +95,14 @@ fnc VirtualMachine::Interpret(
         break;
       }
       case OpCode::ConstantLong: {
-        u32 idx = 0;
-        idx |= ((u8)READ_BYTE() << 16);
-        idx |= ((u8)READ_BYTE() << 8);
-        idx |= ((u8)READ_BYTE());
+        u32 idx = READ_INT();
 
         Value constant = this->chunk->constants[idx];
         this->Push(constant);
         break;
       }
       case OpCode::String: {
-        u32 idx = 0;
-        idx |= ((u8)READ_BYTE() << 24);
-        idx |= ((u8)READ_BYTE() << 16);
-        idx |= ((u8)READ_BYTE() << 8);
-        idx |= ((u8)READ_BYTE());
+        u32 idx = READ_INT();
 
         auto str = this->string_pool->Nth(idx);
         Value constant = Value(str);
@@ -177,6 +172,22 @@ fnc VirtualMachine::Interpret(
         this->Push(Value(a.as.number < b.as.number));
         break;
       }
+      case OpCode::Pop: {
+        this->Pop();
+        break;
+      }
+      case OpCode::SetGlobal: {
+        u32 idx = READ_INT();
+        Value val = this->Pop();
+        Object* slot = this->object_pool->Nth(idx);
+        slot = std::move(val.as.object);
+        break;
+      }
+      case OpCode::LoadGlobal: {
+        u32 idx = READ_INT();
+        this->Push(Value(this->object_pool->Nth(idx)));
+        break;
+      }
       default: {
         break;
       }
@@ -184,6 +195,7 @@ fnc VirtualMachine::Interpret(
   }
 
 #undef READ_BYTE
+#undef READ_INT
 #undef READ_CONSTANT
 
   return InterpretError::Success;
