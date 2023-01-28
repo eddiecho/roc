@@ -1,6 +1,19 @@
 cmake:
 	cmake -S . -B build
 
+WIN_DIR = /Documents/code/roc-win64
+FULL_WIN_DIR := $(join ${WIN_HOME_DIR}, $(WIN_DIR))
+TOP_LEVEL = $(shell find . -maxdepth 1 -type f)
+SRC_DIRS = cmake include src test
+
+sync:
+	@for ff in $(TOP_LEVEL) ; do \
+		cp $$ff $(FULL_WIN_DIR) ; \
+	done
+	@for dd in $(SRC_DIRS) ; do \
+		rsync -rvhP $$dd $(FULL_WIN_DIR) ; \
+	done
+
 build:
 	@$(MAKE) --no-print-directory --directory build
 
@@ -71,4 +84,4 @@ tidy:
 	done
 	@echo "Done"
 
-.PHONY: build fmt tidy test cmake
+.PHONY: build fmt sync tidy test cmake
