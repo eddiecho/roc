@@ -16,9 +16,9 @@ fnc GlobalPool::Deinit() -> void {
 
 fnc GlobalPool::Alloc(u32 length, const char* start) -> u32 {
   std::string str {start, length};
-  auto it = this->index.find(str);
-  if (it != this->index.end()) {
-    return it->second;
+  u32 idx = this->Find(length, start);
+  if (idx != GlobalPool::INVALID_INDEX) {
+    return idx;
   }
 
   auto obj_idx = this->object_pool->Alloc();
@@ -31,7 +31,7 @@ fnc GlobalPool::Find(u32 length, const char* start) -> u32 {
   std::string str {start, length};
   auto it = this->index.find(str);
   if (it == this->index.end()) {
-    return 0xFFFFFFFF;
+    return GlobalPool::INVALID_INDEX;
   }
 
   return it->second;

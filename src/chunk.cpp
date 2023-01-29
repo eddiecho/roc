@@ -89,6 +89,12 @@ fnc Chunk::ConstantLongInstruction(int offset) const -> int {
   return offset + 4;
 }
 
+fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
+  u8 idx = this->data[offset + 1];
+  printf("%-16s %4d\n", name, idx);
+  return offset + 2;
+}
+
 fnc Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
@@ -144,6 +150,14 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     }
     case OpCode::Pop: {
       return this->SimpleInstruction("OP_POP", offset);
+    }
+    case OpCode::SetGlobal: {}
+    case OpCode::GetGlobal: {}
+    case OpCode::SetLocal: {
+      return this->ByteInstruction("OP_SETLOCAL", offset);
+    }
+    case OpCode::GetLocal: {
+      return this->ByteInstruction("OP_GETLOCAL", offset);
     }
     default: {
       printf("Unknown opcode %d\n", byte);

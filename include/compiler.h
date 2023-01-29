@@ -45,6 +45,7 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   Token(const char* error) noexcept;
 
+  fnc IdentifiersEqual(Token other) const -> bool;
   fnc constexpr Print() const -> const char* {
     switch (this->type) {
 #define X(ID)      \
@@ -99,6 +100,11 @@ enum class Precedence : u8 {
   Unary,
   Invoke,
   Primary
+};
+
+struct Local {
+  Token id;
+  u32 depth;
 };
 
 class Compiler;
@@ -157,6 +163,11 @@ class Compiler {
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
   fnc Identifier(const char* err) -> u32;
+  fnc BeginScope() -> void;
+  fnc EndScope() -> void;
+  fnc CodeBlock() -> void;
+  fnc AddLocal(Token id) -> void;
+  fnc FindLocal(Token id) -> u32;
 
   fnc Emit(u8 byte) -> void;
   fnc Emit(u8* bytes, u32 count) -> void;
@@ -171,6 +182,11 @@ class Compiler {
   fnc friend Grammar::Variable(Compiler* compiler, bool assign) -> void;
 
  private:
+  static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
+  constexpr static u32 MAX_LOCALS_COUNT = 256;
+  constexpr static u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
+
+ private:
   Token curr;
   Token prev;
 
@@ -182,12 +198,15 @@ class Compiler {
     u64 value = 0;
   };
 
+  Local locals[Compiler::MAX_LOCALS_COUNT];
+  u32 locals_count = 0;
+  u32 scope_depth = 0;
+
   Scanner scanner;
   Chunk* chunk = nullptr;
   StringPool* string_pool = nullptr;
   GlobalPool* global_pool = nullptr;
 
-  static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
 };
 
 #undef VM_LEXEME_TYPE

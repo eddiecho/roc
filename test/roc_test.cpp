@@ -90,6 +90,18 @@ TEST_F(VirtualMachineTest, BasicAssignment) {
   EXPECT_EQ(status, InterpretError::Success);
 }
 
+TEST_F(VirtualMachineTest, LocalAssignment) {
+  char path[MAX_PATH_LEN];
+  GetTestFilePath("scripts/local_assignment.roc");
+  char* src = Utils::ReadFile(path);
+
+  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  compiler.Compile();
+
+  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  EXPECT_EQ(status, InterpretError::Success);
+}
+
 TEST(HelloTest, BasicAssert) {
   char path[MAX_PATH_LEN];
   GetTestFilePath("scripts/simple1.roc");

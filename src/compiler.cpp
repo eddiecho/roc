@@ -30,6 +30,12 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
+fnc Token::IdentifiersEqual(Token other) const -> bool {
+  if (this->len != other.len) return false;
+
+  return memcmp(this->start, other.start, this->len);
+}
+
 fnc static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
@@ -197,9 +203,8 @@ fnc Scanner::IdentifierToken() -> const Token {
 }
 
 fnc Scanner::ScanToken() -> Token {
-  this->start = this->curr;
-
   this->SkipWhitespace();
+  this->start = this->curr;
 
   if (this->IsEnd()) {
     return Token();
@@ -348,10 +353,6 @@ fnc Compiler::Init(const char* src,
 
 fnc Compiler::Compile() -> bool {
   this->Advance();
-  /*
-  this->Expression();
-  this->Consume(Token::Lexeme::Eof, "End of file, expected expression");
-    */
 
   while (!this->Match(Token::Lexeme::Eof)) {
     this->Declaration();
@@ -384,13 +385,18 @@ fnc Compiler::Statement() -> void {
     // "expression statements"
     // basically just calling a function and discarding the return value
     this->Expression();
-    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
-//    this->Emit(OpCode::Pop);
   }
 }
 
 fnc Compiler::Expression() -> void {
-  this->GetPrecedence(Precedence::Assignment);
+  if (this->Match(Token::Lexeme::LeftBrace)) {
+    this->BeginScope();
+    this->CodeBlock();
+    this->EndScope();
+  } else {
+    this->GetPrecedence(Precedence::Assignment);
+    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
+  }
 }
 
 fnc Compiler::SyncOnError() -> void {
@@ -414,6 +420,29 @@ fnc Compiler::SyncOnError() -> void {
 
     this->Advance();
   }
+}
+
+fnc Compiler::BeginScope() -> void {
+  this->scope_depth++;
+}
+
+fnc Compiler::EndScope() -> void {
+  this->scope_depth--;
+
+  while (this->locals_count > 0
+    && this->locals[this->locals_count - 1].depth > this->scope_depth) {
+    this->Emit(OpCode::Pop);
+    this->locals_count--;
+  }
+}
+
+fnc Compiler::CodeBlock() -> void {
+  while (this->curr.type != Token::Lexeme::RightBrace
+    && this->curr.type != Token::Lexeme::Eof) {
+    this->Declaration();
+  }
+
+  this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
 }
 
 fnc Compiler::Advance() -> void {
@@ -462,41 +491,66 @@ fnc Compiler::ErrorAtCurr(const char* message) -> void {
 }
 
 fnc Compiler::VariableDeclaration() -> void {
-  u32 global_var_idx = this->Identifier("Expected variable name");
+  this->Consume(Token::Lexeme::Identifier, "Expected variable name");
+  if (this->scope_depth == 0) {
+    this->AddLocal(this->prev);
+  } else {
+    this->global_pool->Alloc(this->prev.len, this->prev.start);
+  }
 
   if (this->Match(Token::Lexeme::Equal)) {
     this->Expression();
   }
 
   this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
-
-  this->Emit(OpCode::SetGlobal);
-  this->Emit(reinterpret_cast<u8*>(&global_var_idx), 4);
 }
 
-fnc Compiler::Identifier(const char* err) -> u32 {
-  this->Consume(Token::Lexeme::Identifier, err);
+fnc Compiler::AddLocal(Token id) -> void {
+  // @TODO(eddie) - this sucks
+  if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
+    this->ErrorAtCurr("Too many locals in current scope");
+  }
 
-  // @TODO(eddie) - globals only for now
-  return this->global_pool->Alloc(this->prev.len, this->prev.start);
+  Local* local = &this->locals[this->locals_count++];
+  local->id = id;
+  local->depth = this->scope_depth;
+}
+
+fnc Compiler::FindLocal(Token id) -> u32 {
+  for (u32 i = this->locals_count - 1; i >= 0; i--) {
+    Local* local = &this->locals[i];
+    if (local->id.IdentifiersEqual(id)) {
+      return i;
+    }
+  }
+
+  return Compiler::LOCALS_INVALID_IDX;
 }
 
 fnc Compiler::LoadVariable(bool assignment) -> void {
-  u32 global_var_idx = this->Identifier("Expected variable name");
+  OpCode get = OpCode::GetLocal;
+  OpCode set = OpCode::SetLocal;
+
+  u32 idx = this->FindLocal(this->prev);
+  if (idx == Compiler::LOCALS_INVALID_IDX) {
+    idx = this->global_pool->Find(this->prev.len, this->prev.start);
+    if (idx == GlobalPool::INVALID_INDEX) {
+      this->ErrorAtCurr("Undefined global variable");
+    }
+
+    get = OpCode::GetGlobal;
+    set = OpCode::SetGlobal;
+  }
 
   if (this->Match(Token::Lexeme::Equal) && assignment) {
     this->Expression();
 
-    this->Emit(OpCode::SetGlobal);
-    this->Emit(reinterpret_cast<u8*>(&global_var_idx), 4);
+    this->Emit(set);
   } else {
-    if (global_var_idx == GlobalPool::INVALID_INDEX) {
-      this->ErrorAtCurr("Undefined global variable");
-    } else {
-      this->Emit(OpCode::LoadGlobal);
-      this->Emit(reinterpret_cast<u8*>(&global_var_idx), 4);
-    }
+    this->Emit(get);
   }
+
+  this->Emit(reinterpret_cast<u8*>(&idx), 4);
 }
 
 fnc Compiler::Emit(u8 byte) -> void {

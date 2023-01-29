@@ -23,7 +23,9 @@ enum class OpCode : u8 {
   String,
   Pop,
   SetGlobal,
-  LoadGlobal,
+  GetGlobal,
+  SetLocal,
+  GetLocal,
 };
 
 class VirtualMachine;
@@ -46,6 +48,7 @@ class Chunk : public DynamicArray<u8> {
   fnc SimpleInstruction(const char* name, int offset) const -> int;
   fnc ConstantInstruction(int offset) const -> int;
   fnc ConstantLongInstruction(int offset) const -> int;
+  fnc ByteInstruction(const char* name, int offset) const -> int;
 
  private:
   ConstData constants;

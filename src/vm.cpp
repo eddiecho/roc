@@ -183,12 +183,23 @@ fnc VirtualMachine::Interpret(
         slot = std::move(val.as.object);
         break;
       }
-      case OpCode::LoadGlobal: {
+      case OpCode::GetGlobal: {
         u32 idx = READ_INT();
         this->Push(Value(this->object_pool->Nth(idx)));
         break;
       }
+      case OpCode::SetLocal: {
+        u32 idx = READ_INT();
+        this->stack[idx] = this->Peek();
+        break;
+      }
+      case OpCode::GetLocal: {
+        u32 idx = READ_INT();
+        this->Push(this->stack[idx]);
+        break;
+      }
       default: {
+        printf("Unimplemented OpCode reached???");
         break;
       }
     }

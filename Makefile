@@ -8,10 +8,10 @@ SRC_DIRS = cmake include src test
 
 sync:
 	@for ff in $(TOP_LEVEL) ; do \
-		cp $$ff $(FULL_WIN_DIR) ; \
+		rsync -ruvhP $$ff $(FULL_WIN_DIR) ; \
 	done
 	@for dd in $(SRC_DIRS) ; do \
-		rsync -rvhP $$dd $(FULL_WIN_DIR) ; \
+		rsync -ruvhP $$dd $(FULL_WIN_DIR) ; \
 	done
 
 build:

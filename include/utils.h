@@ -21,5 +21,5 @@ PrivDefer<F> Deferfnc(F f) {
 
 namespace Utils {
 fnc ReadFile(const char* path) -> char*;
-fnc HashString(const char* str, u32 length) -> u32;
+fnc HashString(const char* str, u64 length) -> u32;
 }  // namespace Utils
