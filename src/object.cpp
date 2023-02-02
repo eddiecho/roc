@@ -6,7 +6,6 @@
 #include "common.h"
 #include "memory.h"
 #include "utils.h"
-#include "value.h"
 
 fnc Object::Print() -> void {
   switch(this->type) {
@@ -18,6 +17,16 @@ fnc Object::Print() -> void {
       static_cast<Object::String*>(this)->Print();
       return;
     };
+  }
+}
+
+fnc Object::IsTruthy() -> bool {
+  switch (this->type) {
+    default:
+      return true;
+    case ObjectType::String: {
+      return static_cast<Object::String*>(this)->as.string.length > 0;
+    }
   }
 }
 
@@ -79,3 +88,4 @@ fnc Object::String::Init(const Object::String&& str) -> void {
   this->as.string.length = str.as.string.length;
   this->as.string.start = str.as.string.start;
 }
+

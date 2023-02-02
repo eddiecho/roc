@@ -24,3 +24,16 @@ fnc Value::Print() const -> const void {
     }
   }
 }
+
+fnc Value::IsTruthy() const -> bool {
+  switch (this->type) {
+    default:
+      return false;
+    case ValueType::Boolean:
+      return this->as.boolean;
+    case ValueType::Number:
+      return this->as.number != 0.0;
+    case ValueType::Object:
+      return this->as.object->IsTruthy();
+  }
+}

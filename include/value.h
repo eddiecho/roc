@@ -4,7 +4,8 @@
 
 #include "common.h"
 #include "dynamic_array.h"
-#include "object.h"
+
+class Object;
 
 enum class ValueType {
   Number,
@@ -62,6 +63,7 @@ struct Value {
 
   fnc constexpr inline IsObject() -> bool;
   fnc Print() const -> const void;
+  fnc IsTruthy() const -> bool;
 };
 
 struct ConstData : DynamicArray<Value> {};

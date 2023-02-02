@@ -198,6 +198,32 @@ fnc VirtualMachine::Interpret(
         this->Push(this->stack[idx]);
         break;
       }
+      case OpCode::Jump: {
+        u32 offset = READ_INT();
+        this->inst_ptr += offset;
+        break;
+      }
+      case OpCode::JumpFalse: {
+        u32 offset = READ_INT();
+        Value condition = this->Peek();
+        if (!condition.IsTruthy()) {
+          this->inst_ptr += offset;
+        }
+        break;
+      }
+      case OpCode::JumpTrue: {
+        u32 offset = READ_INT();
+        Value condition = this->Peek();
+        if (condition.IsTruthy()) {
+          this->inst_ptr += offset;
+        }
+        break;
+      }
+      case OpCode::Loop: {
+        u32 offset = READ_INT();
+        this->inst_ptr -= offset;
+        break;
+      }
       default: {
         printf("Unimplemented OpCode reached???");
         break;

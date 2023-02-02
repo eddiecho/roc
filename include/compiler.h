@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 
 #include "chunk.h"
 #include "common.h"
@@ -27,7 +28,7 @@
   X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual)      \
       X(Less) X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else)   \
           X(False) X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) \
-              X(Var) X(While)
+              X(Var) X(While) X(In)
 
 struct Token {
   enum class Lexeme {
@@ -136,6 +137,8 @@ fnc static Binary(Compiler* compiler, bool assign) -> void;
 fnc static Literal(Compiler* compiler, bool assign) -> void;
 fnc static String(Compiler* compiler, bool assign) -> void;
 fnc static Variable(Compiler* compiler, bool assign) -> void;
+fnc static AndOp(Compiler* compiler, bool assign) -> void;
+fnc static OrOp(Compiler* compiler, bool assign) -> void;
 }  // namespace Grammar
 
 class Compiler {
@@ -156,7 +159,7 @@ class Compiler {
   fnc EndCompilation() -> void;
   fnc ErrorAtCurr(const char* message) -> void;
   fnc GetPrecedence(Precedence prec) -> void;
-  fnc GetParseRule(Token::Lexeme lexeme) -> ParseRule*;
+  fnc GetParseRule(Token::Lexeme lexeme) -> const ParseRule*;
   fnc Statement() -> void;
   fnc SyncOnError() -> void;
 
@@ -169,6 +172,10 @@ class Compiler {
   fnc AddLocal(Token id) -> void;
   fnc FindLocal(Token id) -> u32;
 
+  fnc Jump(OpCode opcode) -> u32;
+  fnc PatchJump(u32 jump_idx) -> void;
+  fnc Loop(u32 loop_idx) -> void;
+
   fnc Emit(u8 byte) -> void;
   fnc Emit(u8* bytes, u32 count) -> void;
   fnc Emit(OpCode opcode) -> void;
@@ -180,11 +187,13 @@ class Compiler {
   fnc friend Grammar::Literal(Compiler* compiler, bool assign) -> void;
   fnc friend Grammar::String(Compiler* compiler, bool assign) -> void;
   fnc friend Grammar::Variable(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::AndOp(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::OrOp(Compiler* compiler, bool assign) -> void;
 
  private:
-  static std::unordered_map<Token::Lexeme, ParseRule> PARSE_RULES;
   constexpr static u32 MAX_LOCALS_COUNT = 256;
   constexpr static u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
+  const static absl::flat_hash_map<Token::Lexeme, ParseRule> PARSE_RULES;
 
  private:
   Token curr;

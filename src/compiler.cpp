@@ -179,7 +179,14 @@ fnc Scanner::IdentifierType() -> const Token::Lexeme {
       break;
     }
     case 'i':
-      return this->CheckKeyword(1, 1, "f", Token::Lexeme::If);
+      if (this->curr - this->start > 1) {
+        switch (this->start[1]) {
+          case 'f':
+            return this->CheckKeyword(2, 0, "", Token::Lexeme::If);
+          case 'n':
+            return this->CheckKeyword(2, 0, "", Token::Lexeme::In);
+        }
+      }
     case 'o':
       return this->CheckKeyword(1, 1, "r", Token::Lexeme::Or);
     case 'r':
@@ -276,7 +283,7 @@ fnc Scanner::ScanToken() -> Token {
 
 Compiler::Compiler() noexcept {}
 
-std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
+const absl::flat_hash_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftParens,
      ParseRule(&Grammar::Parenthesis, nullptr, Precedence::None)},
     {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -315,10 +322,13 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::String,
      ParseRule(&Grammar::String, nullptr, Precedence::None)},
 
-    // @TODO(eddie)
+    {Token::Lexeme::And, ParseRule(nullptr, &Grammar::AndOp, Precedence::And)},
+    {Token::Lexeme::Or, ParseRule(nullptr, &Grammar::OrOp, Precedence::Or)},
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
+
+    // @TODO(eddie)
     {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Comment, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Comma, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -327,12 +337,10 @@ std::unordered_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
     {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::And, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::If, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::Or, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Return, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Struct, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Var, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -389,7 +397,52 @@ fnc Compiler::Statement() -> void {
 }
 
 fnc Compiler::Expression() -> void {
-  if (this->Match(Token::Lexeme::LeftBrace)) {
+  if (this->Match(Token::Lexeme::If)) {
+    // this is the condition
+    // @FIXME(eddie) - uhm, does this mean nested if expressions work?
+    this->Expression();
+
+    u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
+    this->Emit(OpCode::Pop);
+
+    // this is the block after
+    this->Statement();
+
+    u32 else_jump_idx = this->Jump(OpCode::Jump);
+    this->PatchJump(if_jump_idx);
+    this->Emit(OpCode::Pop);
+
+    if (this->Match(Token::Lexeme::Else)) {
+      this->Statement();
+    }
+    this->PatchJump(else_jump_idx);
+  } else if (this->Match(Token::Lexeme::While)) {
+    u32 loop_start = this->chunk->count;
+
+    this->Expression();
+
+    u32 exit_jump = this->Jump(OpCode::JumpFalse);
+    this->Emit(OpCode::Pop);
+
+    this->Statement();
+
+    this->Loop(loop_start);
+
+    this->PatchJump(exit_jump);
+    this->Emit(OpCode::Pop);
+
+  // @TODO(eddie) - we need range generators and iterators
+  // @TODO(eddie) - continue and break statements
+  } else if (this->Match(Token::Lexeme::For)) {
+    this->BeginScope();
+
+    this->VariableDeclaration();
+
+    // the block
+    this->Expression();
+
+    this->EndScope();
+  } else if (this->Match(Token::Lexeme::LeftBrace)) {
     this->BeginScope();
     this->CodeBlock();
     this->EndScope();
@@ -397,6 +450,29 @@ fnc Compiler::Expression() -> void {
     this->GetPrecedence(Precedence::Assignment);
     this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
   }
+}
+
+fnc Compiler::Jump(OpCode kind) -> u32 {
+  this->Emit(kind);
+  this->Emit((u8*)0xFFFFFFFF, 4);
+
+  return this->chunk->count - 4;
+}
+
+fnc Compiler::PatchJump(u32 offset) -> void {
+  u32 jump = this->chunk->count - offset - 2;
+
+  this->chunk->data[offset] = (jump >> 24) & 0xFF;
+  this->chunk->data[offset + 1] = (jump >> 16) & 0xFF;
+  this->chunk->data[offset + 2] = (jump >> 8) & 0xFF;
+  this->chunk->data[offset + 3] = jump & 0xFF;
+}
+
+fnc Compiler::Loop(u32 loop_start) -> void {
+  this->Emit(OpCode::Loop);
+  u32 offset = this->chunk->count - loop_start + 2;
+
+  this->Emit((u8*)(&offset), 4);
 }
 
 fnc Compiler::SyncOnError() -> void {
@@ -491,6 +567,8 @@ fnc Compiler::ErrorAtCurr(const char* message) -> void {
 }
 
 fnc Compiler::VariableDeclaration() -> void {
+  bool in_for_loop = this->curr.type == Token::Lexeme::For;
+
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
   if (this->scope_depth == 0) {
     this->AddLocal(this->prev);
@@ -498,11 +576,14 @@ fnc Compiler::VariableDeclaration() -> void {
     this->global_pool->Alloc(this->prev.len, this->prev.start);
   }
 
-  if (this->Match(Token::Lexeme::Equal)) {
+  if (in_for_loop && this->Match(Token::Lexeme::In)) {
     this->Expression();
+  } else if (this->Match(Token::Lexeme::Equal)) {
+    this->Expression();
+    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
+  } else {
+    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
   }
-
-  this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
 }
 
 fnc Compiler::AddLocal(Token id) -> void {
@@ -578,13 +659,13 @@ fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
 
 fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
 
-fnc Compiler::GetParseRule(Token::Lexeme token) -> ParseRule* {
-  return &this->PARSE_RULES[token];
+fnc Compiler::GetParseRule(Token::Lexeme token) -> const ParseRule* {
+  return &this->PARSE_RULES.at(token);
 }
 
 fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
-  ParseRule* rule = this->GetParseRule(this->prev.type);
+  const ParseRule* rule = this->GetParseRule(this->prev.type);
 
   if (rule->prefix == nullptr) {
     this->ErrorAtCurr("Expected expression");
@@ -600,7 +681,7 @@ fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   while (precedence <=
          this->GetParseRule(this->curr.type)->precedence) {
     this->Advance();
-    ParseRule* prev_rule = this->GetParseRule(this->prev.type);
+    const ParseRule* prev_rule = this->GetParseRule(this->prev.type);
     prev_rule->infix(this, assign);
   }
 
@@ -724,4 +805,20 @@ fnc static Grammar::String(Compiler* compiler, bool assign) -> void {
 
 fnc static Grammar::Variable(Compiler* compiler, bool assign) -> void {
   compiler->LoadVariable(assign);
+}
+
+fnc static Grammar::AndOp(Compiler* compiler, bool assign) -> void {
+  u32 short_circuit = compiler->Jump(OpCode::JumpFalse);
+
+  compiler->Emit(OpCode::Pop);
+  compiler->GetPrecedence(Precedence::And);
+  compiler->PatchJump(short_circuit);
+}
+
+fnc static Grammar::OrOp(Compiler* compiler, bool assign) -> void {
+  u32 short_circuit = compiler->Jump(OpCode::JumpTrue);
+
+  compiler->Emit(OpCode::Pop);
+  compiler->GetPrecedence(Precedence::Or);
+  compiler->PatchJump(short_circuit);
 }

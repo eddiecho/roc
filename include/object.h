@@ -5,6 +5,7 @@
 
 #include "absl/hash/hash.h"
 
+#include "chunk.h"
 #include "common.h"
 #include "utils.h"
 
@@ -15,11 +16,13 @@ enum class ObjectType {
 class Object {
  public:
   class String;
+  class Function;
 
   // @WTF - cant use auto or fnc here, because cpp doesnt let you
   bool virtual operator==(const Object* o) const = 0;
 
   fnc Print() -> void;
+  fnc IsTruthy() -> bool;
 
   template <typename H>
   friend H AbslHashValue(H h, const Object& s);
@@ -36,6 +39,12 @@ class Object {
       u32 length;
       const char* start;
     } string;
+    struct {
+      u32 arity;
+      Chunk* chunk;
+      const char* name;
+      u32 name_len;
+    } function;
   } as;
 };
 
@@ -84,6 +93,12 @@ class Object::String : public Object {
   }
 
   fnc Print() -> void;
+  fnc IsTruthy() -> bool;
   fnc Init(u32 length, const char* start) -> void;
   fnc Init(const Object::String&& str) -> void;
 };
+
+class Object::Function : public Object {
+
+};
+

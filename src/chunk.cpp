@@ -95,6 +95,24 @@ fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
   return offset + 2;
 }
 
+fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
+  u32 jmp = (u32)(this->data[offset + 1] << 24);
+  // jmp |= (u32)(this->data[offset + 1] << 24);
+  printf("%-16s %4d -> %d\n", name, offset, offset + 5 + sign + jmp);
+  return offset + 5;
+}
+
+fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
+  u8 one = (*this)[offset + 1];
+  u8 two = (*this)[offset + 2];
+  u8 thr = (*this)[offset + 3];
+  u8 fou = (*this)[offset + 4];
+
+  printf("%-16s %04d %04dd %04d %04d ' ", name, one, two, thr, fou);
+
+  return offset + 5;
+}
+
 fnc Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
@@ -151,13 +169,29 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Pop: {
       return this->SimpleInstruction("OP_POP", offset);
     }
-    case OpCode::SetGlobal: {}
-    case OpCode::GetGlobal: {}
+    case OpCode::SetGlobal: {
+      return this->GlobalInstruction("OP_SETGLOBAL", offset);
+    }
+    case OpCode::GetGlobal: {
+      return this->GlobalInstruction("OP_GETGLOBAL", offset);
+    }
     case OpCode::SetLocal: {
       return this->ByteInstruction("OP_SETLOCAL", offset);
     }
     case OpCode::GetLocal: {
       return this->ByteInstruction("OP_GETLOCAL", offset);
+    }
+    case OpCode::Jump: {
+      return this->JumpInstruction("OP_JUMP", 1, offset);
+    }
+    case OpCode::JumpFalse: {
+      return this->JumpInstruction("OP_JFALSE", 1, offset);
+    }
+    case OpCode::JumpTrue: {
+      return this->JumpInstruction("OP_JTRUE", 1, offset);
+    }
+    case OpCode::Loop: {
+      return this->JumpInstruction("OP_LOOP", -1, offset);
     }
     default: {
       printf("Unknown opcode %d\n", byte);
