@@ -11,6 +11,7 @@
 
 enum class ObjectType {
   String,
+  Function,
 };
 
 class Object {
@@ -31,9 +32,6 @@ class Object {
   ObjectType type;
   Object* next = nullptr;
 
- private:
-  u32 hash;
-
   union {
     struct {
       u32 length;
@@ -46,6 +44,9 @@ class Object {
       u32 name_len;
     } function;
   } as;
+
+ private:
+  u32 hash;
 };
 
 class Object::String : public Object {
@@ -69,7 +70,6 @@ class Object::String : public Object {
     return ret;
   }
 
-  // @STDLIB
   fnc operator==(const Object* o) const -> bool override {
     if (o->type != ObjectType::String) return false;
 
@@ -99,6 +99,17 @@ class Object::String : public Object {
 };
 
 class Object::Function : public Object {
+ public:
+  Function() noexcept;
 
+  fnc operator==(const Object* o) const -> bool override {
+    if (o->type != ObjectType::Function) return false;
+    if (o->as.function.arity != this->as.function.arity) return false;
+    if (o->as.function.name_len != this->as.function.name_len) return false;
+
+    return std::memcmp(this->as.function.name, o->as.function.name, this->as.function.name_len) == 0;
+  }
+
+  fnc Print() -> void;
 };
 

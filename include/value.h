@@ -5,6 +5,7 @@
 #include "common.h"
 #include "dynamic_array.h"
 
+// hurr durr circular imports
 class Object;
 
 enum class ValueType {

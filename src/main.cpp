@@ -28,10 +28,13 @@ fnc static RunFile(const char* path) -> InterpretError {
   global_pool.Init(&object_pool);
 
   COMPILER.Init(src, &chunk, &string_pool, &global_pool);
-  COMPILER.Compile();
+  CompileResult compile_res = COMPILER.Compile();
+  if (compile_res.IsError()) {
+    return InterpretError::CompileError;
+  }
   VM.Init();
 
-  return VM.Interpret(&chunk, &string_pool, &object_pool);
+  return VM.Interpret(compile_res.Get(), &string_pool, &object_pool);
 }
 
 fnc static Repl() -> void {
@@ -52,9 +55,14 @@ fnc static Repl() -> void {
     }
 
     COMPILER.Init(line, &chunk, &string_pool, &global_pool);
-    COMPILER.Compile();
-    // @TODO(eddie) - do something with the status
-    status = VM.Interpret(&chunk, &string_pool, &object_pool);
+    CompileResult compile_res = COMPILER.Compile();
+    if (compile_res.IsError()) {
+      status = InterpretError::CompileError;
+    } else {
+      // @TODO(eddie) - do something with the status
+      status = VM.Interpret(compile_res.Get(), &string_pool, &object_pool);
+
+    }
   }
 }
 

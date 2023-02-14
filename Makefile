@@ -18,7 +18,11 @@ build:
 	@$(MAKE) --no-print-directory --directory build
 
 test:
+ifndef testregex
 	ctest --test-dir build/test --output-on-failure
+else
+	ctest --test-dir build/test --output-on-failure -R $(testregex)
+endif
 
 SOURCES = $(shell find src/ -name '*.cpp')
 HEADERS = $(shell find include/ -name '*.h')

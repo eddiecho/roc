@@ -36,13 +36,3 @@ fnc Utils::ReadFile(const char* path) -> char* {
   return buffer;
 }
 
-fnc Utils::HashString(const char* str, u64 length) -> u32 {
-  u32 hash = 2166136261u;
-
-  for (u32 i = 0; i < length; i++) {
-    hash ^= (u8)str[i];
-    hash *= 16777619;
-  }
-
-  return hash;
-}

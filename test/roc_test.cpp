@@ -53,9 +53,10 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   char* src = Utils::ReadFile(path);
 
   compiler.Init(src, &chunk, &string_pool, &global_pool);
-  compiler.Compile();
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
@@ -69,9 +70,10 @@ TEST_F(VirtualMachineTest, BasicString) {
   char* src = Utils::ReadFile(path);
 
   compiler.Init(src, &chunk, &string_pool, &global_pool);
-  compiler.Compile();
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
@@ -84,9 +86,10 @@ TEST_F(VirtualMachineTest, BasicAssignment) {
   char* src = Utils::ReadFile(path);
 
   compiler.Init(src, &chunk, &string_pool, &global_pool);
-  compiler.Compile();
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 }
 
@@ -96,9 +99,10 @@ TEST_F(VirtualMachineTest, LocalAssignment) {
   char* src = Utils::ReadFile(path);
 
   compiler.Init(src, &chunk, &string_pool, &global_pool);
-  compiler.Compile();
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(&chunk, &string_pool, &object_pool);
+  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 }
 

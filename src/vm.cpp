@@ -16,8 +16,8 @@ fnc VirtualMachine::Init() -> void {
 
 fnc VirtualMachine::Deinit() -> void {
   this->stack_top = this->stack;
+  this->frame_count = 0;
   this->string_pool->Deinit();
-  this->chunk->Deinit();
   this->object_pool->Clear();
 }
 
@@ -42,6 +42,8 @@ fnc VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
+#define GET_CHUNK() (frame->function->as.function.chunk)
+
 fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_list args;
   va_start(args, msg);
@@ -49,8 +51,9 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   va_end(args);
   fputs("\n", stderr);
 
-  size_t inst = this->inst_ptr - this->chunk->data - 1;
-  int line = this->chunk->lines[inst].val;
+  StackFrame* frame = &this->frames[this->frame_count - 1];
+  size_t inst = frame->inst_ptr - GET_CHUNK()->data - 1;
+  int line = GET_CHUNK()->lines[inst].val;
 
   fprintf(stderr, "[line %d] in file\n", line);
   // reset stack pointer
@@ -58,24 +61,28 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
 }
 
 fnc VirtualMachine::Interpret(
-  Chunk* chunk,
+  Object::Function* func,
   StringPool* string_pool,
   Arena<Object>* object_pool
 ) -> InterpretError {
-  this->chunk = chunk;
-  this->inst_ptr = chunk->data;
+
+  StackFrame* frame = &this->frames[this->frame_count - 1];
+  frame->function = func;
+  frame->inst_ptr = func->as.function.chunk->data;
+  frame->locals = this->stack;
+
   this->string_pool = string_pool;
   this->object_pool = object_pool;
 
-#define READ_BYTE() (*this->inst_ptr++)
-#define READ_INT() *(u32*)(this->inst_ptr); this->inst_ptr += sizeof(u32)
-#define READ_CONSTANT() (this->chunk->constants[READ_BYTE()])
+#define READ_BYTE() (*frame->inst_ptr++)
+#define READ_INT() *(u32*)(frame->inst_ptr); frame->inst_ptr += sizeof(u32)
+#define READ_CONSTANT() (GET_CHUNK()->constants[READ_BYTE()])
 
   u8 byte;
   while (1) {
 #ifdef DEBUG_TRACE_EXECUTION
     this->chunk->PrintAtOffset(
-        static_cast<int>(this->inst_ptr - this->chunk->data));
+        static_cast<int>(frame->inst_ptr - GET_CHUNK()->data));
 #endif
 
     byte = READ_BYTE();
@@ -97,7 +104,7 @@ fnc VirtualMachine::Interpret(
       case OpCode::ConstantLong: {
         u32 idx = READ_INT();
 
-        Value constant = this->chunk->constants[idx];
+        Value constant = GET_CHUNK()->constants[idx];
         this->Push(constant);
         break;
       }
@@ -190,24 +197,24 @@ fnc VirtualMachine::Interpret(
       }
       case OpCode::SetLocal: {
         u32 idx = READ_INT();
-        this->stack[idx] = this->Peek();
+        frame->locals[idx] = this->Peek();
         break;
       }
       case OpCode::GetLocal: {
         u32 idx = READ_INT();
-        this->Push(this->stack[idx]);
+        this->Push(frame->locals[idx]);
         break;
       }
       case OpCode::Jump: {
         u32 offset = READ_INT();
-        this->inst_ptr += offset;
+        frame->inst_ptr += offset;
         break;
       }
       case OpCode::JumpFalse: {
         u32 offset = READ_INT();
         Value condition = this->Peek();
         if (!condition.IsTruthy()) {
-          this->inst_ptr += offset;
+          frame->inst_ptr += offset;
         }
         break;
       }
@@ -215,13 +222,13 @@ fnc VirtualMachine::Interpret(
         u32 offset = READ_INT();
         Value condition = this->Peek();
         if (condition.IsTruthy()) {
-          this->inst_ptr += offset;
+          frame->inst_ptr += offset;
         }
         break;
       }
       case OpCode::Loop: {
         u32 offset = READ_INT();
-        this->inst_ptr -= offset;
+        frame->inst_ptr -= offset;
         break;
       }
       default: {
@@ -237,3 +244,5 @@ fnc VirtualMachine::Interpret(
 
   return InterpretError::Success;
 }
+
+#undef GET_CHUNK

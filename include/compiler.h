@@ -7,6 +7,7 @@
 #include "common.h"
 #include "dynamic_array.h"
 #include "global_pool.h"
+#include "object.h"
 #include "string_pool.h"
 
 #define VM_LEXEME_TYPE                                                        \
@@ -141,6 +142,12 @@ fnc static AndOp(Compiler* compiler, bool assign) -> void;
 fnc static OrOp(Compiler* compiler, bool assign) -> void;
 }  // namespace Grammar
 
+enum class CompileErrors {
+  Syntax = 1,
+};
+
+using CompileResult = Result<Object::Function*, CompileErrors>;
+
 class Compiler {
  public:
   Compiler() noexcept;
@@ -148,20 +155,21 @@ class Compiler {
            Chunk* chunk,
            StringPool* string_pool,
            GlobalPool* global_pool) -> void;
-  fnc Compile() -> bool;
+  fnc Compile() -> CompileResult;
 
  private:
   fnc Advance() -> void;
   fnc inline Match(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
   fnc Declaration() -> void;
-  fnc Expression() -> void;
+  fnc Expression(bool nested = false) -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtCurr(const char* message) -> void;
   fnc GetPrecedence(Precedence prec) -> void;
   fnc GetParseRule(Token::Lexeme lexeme) -> const ParseRule*;
   fnc Statement() -> void;
   fnc SyncOnError() -> void;
+  fnc inline CurrentChunk() -> Chunk*;
 
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
@@ -207,12 +215,12 @@ class Compiler {
     u64 value = 0;
   };
 
+  Object::Function curr_func;
   Local locals[Compiler::MAX_LOCALS_COUNT];
   u32 locals_count = 0;
   u32 scope_depth = 0;
 
   Scanner scanner;
-  Chunk* chunk = nullptr;
   StringPool* string_pool = nullptr;
   GlobalPool* global_pool = nullptr;
 

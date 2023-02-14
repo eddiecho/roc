@@ -17,6 +17,10 @@ fnc Object::Print() -> void {
       static_cast<Object::String*>(this)->Print();
       return;
     };
+    case ObjectType::Function: {
+      static_cast<Object::Function*>(this)->Print();
+      return;
+    }
   }
 }
 
@@ -89,3 +93,16 @@ fnc Object::String::Init(const Object::String&& str) -> void {
   this->as.string.start = str.as.string.start;
 }
 
+Object::Function::Function() noexcept {
+  this->type = ObjectType::Function;
+  this->hash = Utils::EMPTY_STRING_HASH;
+
+  this->as.function.arity = 0;
+  this->as.function.chunk = nullptr;
+  this->as.function.name = "";
+  this->as.function.name_len = 0;
+}
+
+fnc Object::Function::Print() -> void {
+  printf("Function: %s", this->as.function.name);
+}

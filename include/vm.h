@@ -38,13 +38,21 @@ fnc static ErrorToString(InterpretError err) -> const char* {
   }
 }
 
-#define VM_STACK_MAX 256
+#define VM_STACK_MAX 128
+#define VM_LOCAL_MAX VM_STACK_MAX * 4
+
+struct StackFrame {
+  Object::Function* function;
+  u8* inst_ptr;
+  Value* locals;
+};
+
 class VirtualMachine {
  public:
   fnc Init() -> void;
   fnc Deinit() -> void;
   fnc Interpret(
-    Chunk* chunk,
+    Object::Function* func,
     StringPool* string_pool,
     Arena<Object>* object_pool
   ) -> InterpretError;
@@ -58,9 +66,10 @@ class VirtualMachine {
   fnc Pop() -> Value;
 
  private:
-  Chunk* chunk = nullptr;
-  u8* inst_ptr = nullptr;
-  Value stack[VM_STACK_MAX];
+  StackFrame frames[VM_STACK_MAX];
+  u32 frame_count = 1;
+
+  Value stack[VM_LOCAL_MAX];
   Value* stack_top;
 
   // @NOTE(eddie) - the string_pool manages its own Objects for strings

@@ -353,13 +353,17 @@ fnc Compiler::Init(const char* src,
                    StringPool* string_pool,
                    GlobalPool* global_pool)
     -> void {
-  this->chunk = chunk;
+  this->curr_func.as.function.chunk = chunk;
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
 }
 
-fnc Compiler::Compile() -> bool {
+fnc inline Compiler::CurrentChunk() -> Chunk* {
+  return this->curr_func.as.function.chunk;
+}
+
+fnc Compiler::Compile() -> CompileResult {
   this->Advance();
 
   while (!this->Match(Token::Lexeme::Eof)) {
@@ -368,7 +372,9 @@ fnc Compiler::Compile() -> bool {
 
   this->EndCompilation();
 
-  return !this->state.error;
+  return this->state.error
+    ? CompileResult(CompileErrors::Syntax)
+    : CompileResult(&this->curr_func);
 }
 
 fnc Compiler::Declaration() -> void {
@@ -396,7 +402,7 @@ fnc Compiler::Statement() -> void {
   }
 }
 
-fnc Compiler::Expression() -> void {
+fnc Compiler::Expression(bool nested) -> void {
   if (this->Match(Token::Lexeme::If)) {
     // this is the condition
     // @FIXME(eddie) - uhm, does this mean nested if expressions work?
@@ -417,7 +423,7 @@ fnc Compiler::Expression() -> void {
     }
     this->PatchJump(else_jump_idx);
   } else if (this->Match(Token::Lexeme::While)) {
-    u32 loop_start = this->chunk->count;
+    u32 loop_start = this->CurrentChunk()->count;
 
     this->Expression();
 
@@ -448,7 +454,9 @@ fnc Compiler::Expression() -> void {
     this->EndScope();
   } else {
     this->GetPrecedence(Precedence::Assignment);
-    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
+
+    if (!nested)
+      this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
   }
 }
 
@@ -456,21 +464,21 @@ fnc Compiler::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   this->Emit((u8*)0xFFFFFFFF, 4);
 
-  return this->chunk->count - 4;
+  return this->CurrentChunk()->count - 4;
 }
 
 fnc Compiler::PatchJump(u32 offset) -> void {
-  u32 jump = this->chunk->count - offset - 2;
+  u32 jump = this->CurrentChunk()->count - offset - 2;
 
-  this->chunk->data[offset] = (jump >> 24) & 0xFF;
-  this->chunk->data[offset + 1] = (jump >> 16) & 0xFF;
-  this->chunk->data[offset + 2] = (jump >> 8) & 0xFF;
-  this->chunk->data[offset + 3] = jump & 0xFF;
+  this->CurrentChunk()->data[offset] = (jump >> 24) & 0xFF;
+  this->CurrentChunk()->data[offset + 1] = (jump >> 16) & 0xFF;
+  this->CurrentChunk()->data[offset + 2] = (jump >> 8) & 0xFF;
+  this->CurrentChunk()->data[offset + 3] = jump & 0xFF;
 }
 
 fnc Compiler::Loop(u32 loop_start) -> void {
   this->Emit(OpCode::Loop);
-  u32 offset = this->chunk->count - loop_start + 2;
+  u32 offset = this->CurrentChunk()->count - loop_start + 2;
 
   this->Emit((u8*)(&offset), 4);
 }
@@ -571,16 +579,15 @@ fnc Compiler::VariableDeclaration() -> void {
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
   if (this->scope_depth == 0) {
-    this->AddLocal(this->prev);
-  } else {
     this->global_pool->Alloc(this->prev.len, this->prev.start);
+  } else {
+    this->AddLocal(this->prev);
   }
 
   if (in_for_loop && this->Match(Token::Lexeme::In)) {
     this->Expression();
   } else if (this->Match(Token::Lexeme::Equal)) {
     this->Expression();
-    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
   } else {
     this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
   }
@@ -635,16 +642,16 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
 }
 
 fnc Compiler::Emit(u8 byte) -> void {
-  this->chunk->AddChunk(byte, this->prev.line);
+  this->CurrentChunk()->AddChunk(byte, this->prev.line);
 }
 
 fnc Compiler::Emit(u8* bytes, u32 count) -> void {
-  this->chunk->AddChunk(bytes, count, this->prev.line);
+  this->CurrentChunk()->AddChunk(bytes, count, this->prev.line);
 }
 
 fnc Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
-  this->chunk->AddChunk(byte, this->prev.line);
+  this->CurrentChunk()->AddChunk(byte, this->prev.line);
 }
 
 fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
@@ -694,11 +701,11 @@ fnc Compiler::GetPrecedence(Precedence precedence) -> void {
 // @STDLIB
 fnc static Grammar::Number(Compiler* compiler, bool assign) -> void {
   f64 value = strtod(compiler->prev.start, nullptr);
-  compiler->chunk->AddConstant(Value(value), compiler->prev.line);
+  compiler->CurrentChunk()->AddConstant(Value(value), compiler->prev.line);
 }
 
 fnc static Grammar::Parenthesis(Compiler* compiler, bool assign) -> void {
-  compiler->Expression();
+  compiler->Expression(true);
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
