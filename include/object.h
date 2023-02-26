@@ -17,7 +17,18 @@ enum class ObjectType {
 class Object {
  public:
   class String;
+  struct StringData {};
+
   class Function;
+  struct FunctionData {
+    u32 arity;
+    Chunk chunk;
+
+    fnc Init() -> void {
+      this->chunk.Init();
+      this->arity = 0;
+    }
+  };
 
   // @WTF - cant use auto or fnc here, because cpp doesnt let you
   bool virtual operator==(const Object* o) const = 0;
@@ -26,46 +37,40 @@ class Object {
   fnc IsTruthy() -> bool;
 
   template <typename H>
-  friend H AbslHashValue(H h, const Object& s);
+  friend H AbslHashValue(H h, const Object& s) {
+    return H::combine(std::move(h), static_cast<u32>(s.type), std::string(s.name, s.name_len));
+  }
 
  public:
   ObjectType type;
+
+  // this gets overloaded for two uses
+  // 1. free lists in GlobalPools to find the next free memory slot
+  // 2. recursive and enclosing functions pointing to their parent
   Object* next = nullptr;
 
-  union {
-    struct {
-      u32 length;
-      const char* start;
-    } string;
-    struct {
-      u32 arity;
-      Chunk* chunk;
-      const char* name;
-      u32 name_len;
-    } function;
-  } as;
+  u32 name_len;
+  const char* name;
 
- private:
-  u32 hash;
+  union Data {
+    StringData string;
+    FunctionData function;
+
+    Data() { memset(this, 0, sizeof(Data)); }
+    ~Data() {}
+  } as;
 };
 
 class Object::String : public Object {
  public:
   String() noexcept;
-  String(u32 length, const char* start) noexcept;
+  String(u32 name_len, const char* name) noexcept;
   String(std::string str) noexcept;
   String(Object::String& str) noexcept;
   String(const Object::String&& str) noexcept;
 
-  template <typename H>
-  friend H AbslHashValue(H h, const Object& s) {
-    return H::combine(std::move(h),
-                      s.hash,
-                      std::string(s.as.string.start, s.as.string.length));
-  }
-
   operator std::string() const {
-    std::string ret{this->as.string.start, this->as.string.length};
+    std::string ret{this->name, this->name_len};
 
     return ret;
   }
@@ -74,27 +79,26 @@ class Object::String : public Object {
     if (o->type != ObjectType::String) return false;
 
     auto other = static_cast<const Object::String*>(o);
-    if (this->as.string.length != other->as.string.length) return false;
+    if (this->name_len != other->name_len) return false;
 
-    return std::memcmp(this->as.string.start, other->as.string.start, this->as.string.length) == 0;
+    return std::memcmp(this->name, other->name, this->name_len) == 0;
   }
 
   fnc operator==(Object::String o) const -> bool {
-    if (this->hash != o.hash) return false;
-    if (this->as.string.length != o.as.string.length) return false;
+    if (this->name_len != o.name_len) return false;
 
-    return std::memcmp(this->as.string.start, o.as.string.start, this->as.string.length) == 0;
+    return std::memcmp(this->name, o.name, this->name_len) == 0;
   }
 
   fnc operator==(std::string str) const -> bool {
-    if (this->as.string.length != str.length()) return false;
+    if (this->name_len != str.length()) return false;
 
-    return std::memcmp(this->as.string.start, str.c_str(), this->as.string.length) == 0;
+    return std::memcmp(this->name, str.c_str(), this->name_len) == 0;
   }
 
   fnc Print() -> void;
   fnc IsTruthy() -> bool;
-  fnc Init(u32 length, const char* start) -> void;
+  fnc Init(u32 name_len, const char* name) -> void;
   fnc Init(const Object::String&& str) -> void;
 };
 
@@ -105,9 +109,9 @@ class Object::Function : public Object {
   fnc operator==(const Object* o) const -> bool override {
     if (o->type != ObjectType::Function) return false;
     if (o->as.function.arity != this->as.function.arity) return false;
-    if (o->as.function.name_len != this->as.function.name_len) return false;
+    if (o->name_len != this->name_len) return false;
 
-    return std::memcmp(this->as.function.name, o->as.function.name, this->as.function.name_len) == 0;
+    return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
   fnc Print() -> void;

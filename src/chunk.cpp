@@ -17,29 +17,29 @@ Chunk::~Chunk() noexcept {
   this->Deinit();
 }
 
-fnc Chunk::AddLine(u32 line) -> void {
+fnc Chunk::AddLine(u64 line) -> void {
   if (this->lines.count == 0) {
     this->lines.Append({this->count, line});
   } else {
-    Range<u32> prev = this->lines[this->lines.count - 1];
+    Range<u64> prev = this->lines[this->lines.count - 1];
     if (prev.val != line) {
       this->lines.Append({this->count, line});
     }
   }
 }
 
-fnc Chunk::AddChunk(u8 byte, u32 line) -> void {
+fnc Chunk::AddChunk(u8 byte, u64 line) -> void {
   this->AddLine(line);
   this->Append(byte);
 }
 
-fnc Chunk::AddChunk(u8* bytes, u32 count, u32 line) -> void {
+fnc Chunk::AddChunk(u8* bytes, u64 count, u64 line) -> void {
   this->AddLine(line);
   this->Append(bytes, count);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-fnc Chunk::AddConstant(Value val, u32 line) -> void {
+fnc Chunk::AddConstant(Value val, u64 line) -> void {
   this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
@@ -48,7 +48,7 @@ fnc Chunk::AddConstant(Value val, u32 line) -> void {
   } else {
     this->Append(static_cast<u8>(OpCode::ConstantLong));
 
-    u32 count = this->constants.count;
+    u64 count = this->constants.count;
     this->Append(count >> 24);
     this->Append(count >> 16);
     this->Append(count >> 8);

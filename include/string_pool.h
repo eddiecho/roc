@@ -15,13 +15,13 @@ class StringPool {
  public:
   fnc Init(Arena<Object>* object_pool) -> void;
   fnc Deinit() -> void;
-  fnc Alloc(u32 length, const char* start) -> u32;
-  fnc Nth(u32 idx) -> Object*;
+  fnc Alloc(u64 length, const char* start) -> u64;
+  fnc Nth(u64 idx) -> Object*;
 
  private:
   DynamicArray<char>* char_data = new DynamicArray<char>();
   Arena<Object>* object_pool = nullptr;
-  absl::flat_hash_map<std::string, u32> intern_table;
+  absl::flat_hash_map<std::string, u64> intern_table;
 };
 
 

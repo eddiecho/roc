@@ -38,6 +38,14 @@ class VirtualMachineTest : public ::testing::Test {
     virtual_machine.Deinit();
   }
 
+  void InitCompiler(const char* test_file) {
+    std::snprintf(path, MAX_PATH_LEN, "%s/%s", TEST_DIR, test_file);
+    char* src = Utils::ReadFile(path);
+    compiler.Init(src, &chunk, &string_pool, &global_pool);
+  }
+
+  char path[MAX_PATH_LEN];
+
   VirtualMachine virtual_machine;
   Compiler compiler;
   Chunk chunk;
@@ -48,11 +56,7 @@ class VirtualMachineTest : public ::testing::Test {
 };
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
-  char path[MAX_PATH_LEN];
-  GetTestFilePath("scripts/simple1.roc");
-  char* src = Utils::ReadFile(path);
-
-  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  InitCompiler("scripts/simple1.roc");
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
@@ -65,11 +69,7 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
 }
 
 TEST_F(VirtualMachineTest, BasicString) {
-  char path[MAX_PATH_LEN];
-  GetTestFilePath("scripts/simple_string1.roc");
-  char* src = Utils::ReadFile(path);
-
-  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  InitCompiler("scripts/simple_string1.roc");
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
@@ -81,11 +81,7 @@ TEST_F(VirtualMachineTest, BasicString) {
 }
 
 TEST_F(VirtualMachineTest, BasicAssignment) {
-  char path[MAX_PATH_LEN];
-  GetTestFilePath("scripts/simple_assignment.roc");
-  char* src = Utils::ReadFile(path);
-
-  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  InitCompiler("scripts/simple_assignment.roc");
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
@@ -94,16 +90,18 @@ TEST_F(VirtualMachineTest, BasicAssignment) {
 }
 
 TEST_F(VirtualMachineTest, LocalAssignment) {
-  char path[MAX_PATH_LEN];
-  GetTestFilePath("scripts/local_assignment.roc");
-  char* src = Utils::ReadFile(path);
-
-  compiler.Init(src, &chunk, &string_pool, &global_pool);
+  InitCompiler("scripts/local_assignment.roc");
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
+}
+
+TEST_F(VirtualMachineTest, SimpleFunction) {
+  InitCompiler("scripts/simple_function.roc");
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
 }
 
 TEST(HelloTest, BasicAssert) {

@@ -5,17 +5,17 @@
 
 template <typename T>
 struct Range {
-  u32 min;
+  u64 min;
   T val;
 
-  Range(u32 min, T val) : min(min), val(val) {}
+  Range(u64 min, T val) : min(min), val(val) {}
 };
 
 // Array for holding contiguous intervals that map to some value
 template <typename T>
 class RangeArray : public DynamicArray<Range<T>> {
  public:
-  fnc Search(u32 val) const -> const u32;
+  fnc Search(u64 val) const -> const u64;
 
   fnc operator[](size_t idx) -> Range<T>& { return this->data[idx]; }
   const Range<T>& operator[](size_t idx) const { return this->data[idx]; }
@@ -23,7 +23,7 @@ class RangeArray : public DynamicArray<Range<T>> {
 
 template <typename T>
 // returns the index of the Range struct
-fnc RangeArray<T>::Search(u32 range) const -> const u32 {
+fnc RangeArray<T>::Search(u64 range) const -> const u64 {
   if (this->count == 0) {
     return 0xFFFFFFFF;
   }

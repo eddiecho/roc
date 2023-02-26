@@ -232,7 +232,7 @@ fnc Scanner::ScanToken() -> Token {
     case ':':
       return this->MakeToken(Token::Lexeme::Colon);
     case ',':
-      return this->MakeToken(Token::Lexeme::Colon);
+      return this->MakeToken(Token::Lexeme::Comma);
     case '.':
       return this->MakeToken(Token::Lexeme::Dot);
     case '-':
@@ -283,9 +283,9 @@ fnc Scanner::ScanToken() -> Token {
 
 Compiler::Compiler() noexcept {}
 
-const absl::flat_hash_map<Token::Lexeme, ParseRule> Compiler::PARSE_RULES = {
+const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftParens,
-     ParseRule(&Grammar::Parenthesis, nullptr, Precedence::None)},
+     ParseRule(&Grammar::Parenthesis, &Grammar::InvokeOp, Precedence::None)},
     {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
 
     {Token::Lexeme::Minus,
@@ -353,14 +353,19 @@ fnc Compiler::Init(const char* src,
                    StringPool* string_pool,
                    GlobalPool* global_pool)
     -> void {
-  this->curr_func.as.function.chunk = chunk;
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
+  this->chunks.Append(chunk);
+
+  u64 top_level_func_idx = this->global_pool->Alloc(
+      Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME, ObjectType::Function);
+  this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
+  this->curr_func->as.function.chunk = *chunk;
 }
 
 fnc inline Compiler::CurrentChunk() -> Chunk* {
-  return this->curr_func.as.function.chunk;
+  return &this->curr_func->as.function.chunk;
 }
 
 fnc Compiler::Compile() -> CompileResult {
@@ -374,12 +379,16 @@ fnc Compiler::Compile() -> CompileResult {
 
   return this->state.error
     ? CompileResult(CompileErrors::Syntax)
-    : CompileResult(&this->curr_func);
+    : CompileResult(this->curr_func);
 }
 
+// @TODO(eddie) - all of the semicolon handling stuff is scattered around
+// maybe consolidate all into the top level?
 fnc Compiler::Declaration() -> void {
   if (this->Match(Token::Lexeme::Var)) {
     this->VariableDeclaration();
+  } else if (this->Match(Token::Lexeme::Function)) {
+    this->FunctionDeclaration();
   } else {
     this->Statement();
   }
@@ -423,7 +432,7 @@ fnc Compiler::Expression(bool nested) -> void {
     }
     this->PatchJump(else_jump_idx);
   } else if (this->Match(Token::Lexeme::While)) {
-    u32 loop_start = this->CurrentChunk()->count;
+    u64 loop_start = this->CurrentChunk()->count;
 
     this->Expression();
 
@@ -462,12 +471,12 @@ fnc Compiler::Expression(bool nested) -> void {
 
 fnc Compiler::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
-  this->Emit((u8*)0xFFFFFFFF, 4);
+  this->Emit(IntToBytes(0xFFFFFFFF), 4);
 
   return this->CurrentChunk()->count - 4;
 }
 
-fnc Compiler::PatchJump(u32 offset) -> void {
+fnc Compiler::PatchJump(u64 offset) -> void {
   u32 jump = this->CurrentChunk()->count - offset - 2;
 
   this->CurrentChunk()->data[offset] = (jump >> 24) & 0xFF;
@@ -476,11 +485,11 @@ fnc Compiler::PatchJump(u32 offset) -> void {
   this->CurrentChunk()->data[offset + 3] = jump & 0xFF;
 }
 
-fnc Compiler::Loop(u32 loop_start) -> void {
+fnc Compiler::Loop(u64 loop_start) -> void {
   this->Emit(OpCode::Loop);
   u32 offset = this->CurrentChunk()->count - loop_start + 2;
 
-  this->Emit((u8*)(&offset), 4);
+  this->Emit(IntToBytes(&offset), 4);
 }
 
 fnc Compiler::SyncOnError() -> void {
@@ -579,7 +588,7 @@ fnc Compiler::VariableDeclaration() -> void {
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
   if (this->scope_depth == 0) {
-    this->global_pool->Alloc(this->prev.len, this->prev.start);
+    this->global_pool->Alloc(this->prev.len, this->prev.start, ObjectType::String);
   } else {
     this->AddLocal(this->prev);
   }
@@ -588,9 +597,44 @@ fnc Compiler::VariableDeclaration() -> void {
     this->Expression();
   } else if (this->Match(Token::Lexeme::Equal)) {
     this->Expression();
-  } else {
-    this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after variable declaration");
   }
+}
+
+fnc Compiler::FunctionDeclaration() -> void {
+  this->Consume(Token::Lexeme::Identifier, "Expected function name");
+
+  u32 new_func_idx = this->global_pool->Alloc(this->prev.len, this->prev.start, ObjectType::Function);
+  Object::Function* new_func = static_cast<Object::Function*>(
+      this->global_pool->Nth(new_func_idx));
+
+  // @FIXME(eddie) - i hope these chunks persist through the call stack
+  new_func->as.function.Init();
+  new_func->next = this->curr_func;
+  this->curr_func = new_func;
+  this->chunks.Append(&new_func->as.function.chunk);
+
+  u32 func_start = this->prev.line;
+
+  this->BeginScope();
+
+  this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
+
+  if (this->curr.type != Token::Lexeme::RightParens) {
+    do {
+      this->curr_func->as.function.arity++;
+      this->VariableDeclaration();
+
+    } while(this->Match(Token::Lexeme::Comma));
+  }
+
+  this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
+  this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
+
+  this->CodeBlock();
+
+  this->EndScope();
+
+  this->curr_func->as.function.chunk.AddConstant(Value(this->curr_func), func_start);
 }
 
 fnc Compiler::AddLocal(Token id) -> void {
@@ -621,7 +665,7 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
 
   u32 idx = this->FindLocal(this->prev);
   if (idx == Compiler::LOCALS_INVALID_IDX) {
-    idx = this->global_pool->Find(this->prev.len, this->prev.start);
+    idx = this->global_pool->Find(this->prev.len, this->prev.start, ObjectType::String);
     if (idx == GlobalPool::INVALID_INDEX) {
       this->ErrorAtCurr("Undefined global variable");
     }
@@ -638,7 +682,7 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
     this->Emit(get);
   }
 
-  this->Emit(reinterpret_cast<u8*>(&idx), 4);
+  this->Emit(IntToBytes(&idx), 4);
 }
 
 fnc Compiler::Emit(u8 byte) -> void {
@@ -806,8 +850,7 @@ fnc static Grammar::String(Compiler* compiler, bool assign) -> void {
   u32 index = compiler->string_pool->Alloc(length, start);
 
   compiler->Emit(OpCode::String);
-  u8* index_bytes = reinterpret_cast<u8*>(&index);
-  compiler->Emit(index_bytes, 4);
+  compiler->Emit(IntToBytes(&index), 4);
 }
 
 fnc static Grammar::Variable(Compiler* compiler, bool assign) -> void {
@@ -828,4 +871,19 @@ fnc static Grammar::OrOp(Compiler* compiler, bool assign) -> void {
   compiler->Emit(OpCode::Pop);
   compiler->GetPrecedence(Precedence::Or);
   compiler->PatchJump(short_circuit);
+}
+
+fnc static Grammar::InvokeOp(Compiler* compiler, bool assign) -> void {
+  u32 arg_count = 0;
+  if (compiler->curr.type != Token::Lexeme::RightParens) {
+    do {
+      compiler->Expression();
+      arg_count++;
+    } while (compiler->Match(Token::Lexeme::Comma));
+  }
+
+  compiler->Consume(Token::Lexeme::RightParens, "Expected closing parenthesis ')' after arguments");
+
+  compiler->Emit(OpCode::Invoke);
+  compiler->Emit(IntToBytes(&arg_count), 4);
 }

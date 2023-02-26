@@ -19,16 +19,16 @@ class DynamicArray {
   DynamicArray<T>() noexcept;
 
   fnc Init() -> void;
-  fnc Init(u32 size) -> void;
-  fnc Append(T item) -> u32;
-  fnc Append(T* items, u32 size) -> u32;
+  fnc Init(u64 size) -> void;
+  fnc Append(T item) -> u64;
+  fnc Append(T* items, u64 size) -> u64;
   fnc Deinit() -> void;
 
   fnc operator[](size_t idx) -> T& { return this->data[idx]; }
   fnc operator[](size_t idx) const -> const T& { return this->data[idx]; }
 
  public:
-  u32 count;
+  u64 count;
   T* data = nullptr;
 
  private:
@@ -50,7 +50,7 @@ fnc DynamicArray<T>::Init() -> void {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Init(u32 size) -> void {
+fnc DynamicArray<T>::Init(u64 size) -> void {
   this->count = 0;
   this->capacity_ = size;
   using type = T;
@@ -58,7 +58,7 @@ fnc DynamicArray<T>::Init(u32 size) -> void {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Append(T item) -> u32 {
+fnc DynamicArray<T>::Append(T item) -> u64 {
   if (this->capacity_ < this->count + 1) {
     u64 old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
@@ -73,7 +73,7 @@ fnc DynamicArray<T>::Append(T item) -> u32 {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Append(T* items, u32 size) -> u32 {
+fnc DynamicArray<T>::Append(T* items, u64 size) -> u64 {
   using type = T;
 
   while (this->capacity_ < this->count + size) {

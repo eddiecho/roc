@@ -16,7 +16,7 @@ fnc StringPool::Deinit() -> void {
   this->intern_table.clear();
 }
 
-fnc StringPool::Alloc(u32 length, const char* start) -> u32 {
+fnc StringPool::Alloc(u64 length, const char* start) -> u64 {
   std::string str {start, length};
   auto it = this->intern_table.find(str);
   if (it != this->intern_table.end()) {
@@ -26,7 +26,7 @@ fnc StringPool::Alloc(u32 length, const char* start) -> u32 {
   auto obj_idx = this->object_pool->Alloc();
   auto obj = static_cast<Object::String*>(this->object_pool->Nth(obj_idx));
 
-  u32 data_ptr = this->char_data->Append(const_cast<char *>(start), length);
+  u64 data_ptr = this->char_data->Append(const_cast<char *>(start), length);
   this->char_data->Append(0);
   obj->Init(length, this->char_data->data + data_ptr);
 
@@ -35,7 +35,7 @@ fnc StringPool::Alloc(u32 length, const char* start) -> u32 {
   return obj_idx;
 }
 
-fnc StringPool::Nth(u32 index) -> Object* {
+fnc StringPool::Nth(u64 index) -> Object* {
   return this->object_pool->Nth(index);
 }
 

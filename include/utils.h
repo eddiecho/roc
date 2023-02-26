@@ -25,6 +25,8 @@ PrivDefer<F> Deferfnc(F f) {
 #define Assert(Expression)
 #endif
 
+#define IntToBytes(num) reinterpret_cast<u8*>(num)
+
 namespace Utils {
 fnc ReadFile(const char* path) -> char*;
 
@@ -38,7 +40,6 @@ fnc constexpr inline HashString(const char* str, u64 length) -> u32 {
 
   return hash;
 }
-
 constexpr u32 EMPTY_STRING_HASH = HashString("", 0);
 }  // namespace Utils
 

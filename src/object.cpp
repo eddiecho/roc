@@ -29,80 +29,66 @@ fnc Object::IsTruthy() -> bool {
     default:
       return true;
     case ObjectType::String: {
-      return static_cast<Object::String*>(this)->as.string.length > 0;
+      return static_cast<Object::String*>(this)->name_len > 0;
     }
   }
 }
 
 Object::String::String() noexcept {
   this->type = ObjectType::String;
-  this->hash = 0;
-  this->as.string.length = 0;
-  this->as.string.start = nullptr;
+  this->name_len = 0;
+  this->name = nullptr;
 }
 
-Object::String::String(u32 length, const char* start) noexcept {
+Object::String::String(u32 name_len, const char* name) noexcept {
   this->type = ObjectType::String;
-  this->hash = Utils::HashString(start, length);
-
-  this->as.string.length = length;
-  this->as.string.start = start;
+  this->name_len = name_len;
+  this->name = name;
 }
 
 Object::String::String(std::string str) noexcept {
   this->type = ObjectType::String;
-  this->hash = Utils::HashString(str.c_str(), str.length());
 
-  this->as.string.length = str.length();
-  this->as.string.start = str.c_str();
+  this->name_len = str.length();
+  this->name = str.c_str();
 }
 
 Object::String::String(Object::String& str) noexcept {
   this->type = ObjectType::String;
-  this->hash = str.hash;
-
-  this->as.string.length = str.as.string.length;
-  this->as.string.start = str.as.string.start;
+  this->name_len = str.name_len;
+  this->name = str.name;
 }
 
 Object::String::String(const Object::String&& str) noexcept {
   this->type = ObjectType::String;
-  this->hash = str.hash;
-
-  this->as.string.length = str.as.string.length;
-  this->as.string.start = str.as.string.start;
+  this->name_len = str.name_len;
+  this->name = str.name;
 }
 
 fnc Object::String::Print() -> void {
-  printf("String: %s", this->as.string.start);
+  printf("String: %s", this->name);
 }
 
-fnc Object::String::Init(u32 len, const char* start) -> void {
+fnc Object::String::Init(u32 len, const char* name) -> void {
   this->type = ObjectType::String;
-  this->hash = Utils::HashString(start, len);
-
-  this->as.string.length = len;
-  this->as.string.start = start;
+  this->name_len = len;
+  this->name = name;
 }
 
 fnc Object::String::Init(const Object::String&& str) -> void {
   this->type = ObjectType::String;
-  this->hash = str.hash;
-
-  this->as.string.length = str.as.string.length;
-  this->as.string.start = str.as.string.start;
+  this->name_len = str.name_len;
+  this->name = str.name;
 }
 
 Object::Function::Function() noexcept {
   this->type = ObjectType::Function;
-  this->hash = Utils::EMPTY_STRING_HASH;
-
   this->as.function.arity = 0;
-  this->as.function.chunk = nullptr;
-  this->as.function.name = "";
-  this->as.function.name_len = 0;
+  this->as.function.chunk = Chunk();
+  this->name = "";
+  this->name_len = 0;
 }
 
 fnc Object::Function::Print() -> void {
-  printf("Function: %s", this->as.function.name);
+  printf("Function: %s", this->name);
 }

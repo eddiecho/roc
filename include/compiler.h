@@ -140,6 +140,7 @@ fnc static String(Compiler* compiler, bool assign) -> void;
 fnc static Variable(Compiler* compiler, bool assign) -> void;
 fnc static AndOp(Compiler* compiler, bool assign) -> void;
 fnc static OrOp(Compiler* compiler, bool assign) -> void;
+fnc static InvokeOp(Compiler* compiler, bool assign) -> void;
 }  // namespace Grammar
 
 enum class CompileErrors {
@@ -147,6 +148,7 @@ enum class CompileErrors {
 };
 
 using CompileResult = Result<Object::Function*, CompileErrors>;
+using ParseRuleMap = absl::flat_hash_map<Token::Lexeme, ParseRule>;
 
 class Compiler {
  public:
@@ -179,10 +181,11 @@ class Compiler {
   fnc CodeBlock() -> void;
   fnc AddLocal(Token id) -> void;
   fnc FindLocal(Token id) -> u32;
+  fnc FunctionDeclaration() -> void;
 
   fnc Jump(OpCode opcode) -> u32;
-  fnc PatchJump(u32 jump_idx) -> void;
-  fnc Loop(u32 loop_idx) -> void;
+  fnc PatchJump(u64 jump_idx) -> void;
+  fnc Loop(u64 loop_idx) -> void;
 
   fnc Emit(u8 byte) -> void;
   fnc Emit(u8* bytes, u32 count) -> void;
@@ -197,11 +200,14 @@ class Compiler {
   fnc friend Grammar::Variable(Compiler* compiler, bool assign) -> void;
   fnc friend Grammar::AndOp(Compiler* compiler, bool assign) -> void;
   fnc friend Grammar::OrOp(Compiler* compiler, bool assign) -> void;
+  fnc friend Grammar::InvokeOp(Compiler* compiler, bool assign) -> void;
 
  private:
-  constexpr static u32 MAX_LOCALS_COUNT = 256;
-  constexpr static u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
-  const static absl::flat_hash_map<Token::Lexeme, ParseRule> PARSE_RULES;
+  constexpr static const u32 MAX_LOCALS_COUNT = 256;
+  constexpr static const u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
+  constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
+  constexpr static const u32 GLOBAL_FUNCTION_NAME_LEN = 15;
+  const static ParseRuleMap PARSE_RULES;
 
  private:
   Token curr;
@@ -215,7 +221,8 @@ class Compiler {
     u64 value = 0;
   };
 
-  Object::Function curr_func;
+  DynamicArray<Chunk*> chunks;
+  Object::Function *curr_func = nullptr;
   Local locals[Compiler::MAX_LOCALS_COUNT];
   u32 locals_count = 0;
   u32 scope_depth = 0;

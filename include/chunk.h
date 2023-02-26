@@ -30,6 +30,7 @@ enum class OpCode : u8 {
   JumpFalse,
   JumpTrue,
   Loop,
+  Invoke,
 };
 
 class VirtualMachine;
@@ -42,10 +43,10 @@ class Chunk : public DynamicArray<u8> {
   friend VirtualMachine;
 
   fnc Disassemble() const -> const void;
-  fnc AddChunk(u8 byte, u32 line) -> void;
-  fnc AddChunk(u8* bytes, u32 count, u32 line) -> void;
-  fnc AddLine(u32 line) -> void;
-  fnc AddConstant(Value val, u32 line) -> void;
+  fnc AddChunk(u8 byte, u64 line) -> void;
+  fnc AddChunk(u8* bytes, u64 count, u64 line) -> void;
+  fnc AddLine(u64 line) -> void;
+  fnc AddConstant(Value val, u64 line) -> void;
 
  private:
   fnc PrintAtOffset(int offset) const -> const int;
@@ -58,5 +59,5 @@ class Chunk : public DynamicArray<u8> {
 
  private:
   ConstData constants;
-  RangeArray<u32> lines;
+  RangeArray<u64> lines;
 };

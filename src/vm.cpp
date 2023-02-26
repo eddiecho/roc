@@ -52,10 +52,10 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
   fputs("\n", stderr);
 
   StackFrame* frame = &this->frames[this->frame_count - 1];
-  size_t inst = frame->inst_ptr - GET_CHUNK()->data - 1;
-  int line = GET_CHUNK()->lines[inst].val;
+  size_t inst = frame->inst_ptr - GET_CHUNK().data - 1;
+  u64 line = GET_CHUNK().lines[inst].val;
 
-  fprintf(stderr, "[line %d] in file\n", line);
+  fprintf(stderr, "[line %lu] in file\n", line);
   // reset stack pointer
   this->stack_top = this->stack;
 }
@@ -68,7 +68,7 @@ fnc VirtualMachine::Interpret(
 
   StackFrame* frame = &this->frames[this->frame_count - 1];
   frame->function = func;
-  frame->inst_ptr = func->as.function.chunk->data;
+  frame->inst_ptr = func->as.function.chunk.data;
   frame->locals = this->stack;
 
   this->string_pool = string_pool;
@@ -76,7 +76,7 @@ fnc VirtualMachine::Interpret(
 
 #define READ_BYTE() (*frame->inst_ptr++)
 #define READ_INT() *(u32*)(frame->inst_ptr); frame->inst_ptr += sizeof(u32)
-#define READ_CONSTANT() (GET_CHUNK()->constants[READ_BYTE()])
+#define READ_CONSTANT() (GET_CHUNK().constants[READ_BYTE()])
 
   u8 byte;
   while (1) {
@@ -104,7 +104,7 @@ fnc VirtualMachine::Interpret(
       case OpCode::ConstantLong: {
         u32 idx = READ_INT();
 
-        Value constant = GET_CHUNK()->constants[idx];
+        Value constant = GET_CHUNK().constants[idx];
         this->Push(constant);
         break;
       }

@@ -24,7 +24,7 @@ class Arena {
     this->data = reinterpret_cast<T*>(malloc(DEFAULT_ARENA_SIZE * sizeof(type)));
   };
 
-  Arena(u32 size) {
+  Arena(u64 size) {
     using type = T;
 
     this->count = 0;
@@ -39,19 +39,19 @@ class Arena {
     }
   };
 
-  fnc Alloc() -> u32;
-  fnc Alloc(u32 len) -> u32;
+  fnc Alloc() -> u64;
+  fnc Alloc(u64 len) -> u64;
   fnc Free(T* entry) -> void;
   fnc Clear() -> void;
-  fnc AllocatedBytes() const -> u32;
-  fnc Nth(u32 idx) -> T*;
+  fnc AllocatedBytes() const -> u64;
+  fnc Nth(u64 idx) -> T*;
 
  private:
-  fnc Push() -> u32;
+  fnc Push() -> u64;
 
  private:
-  u32 capacity;
-  u32 count;
+  u64 capacity;
+  u64 count;
   T* data;
   // @TODO(eddie) - unique_ptr
   Arena* next = nullptr;
@@ -60,7 +60,7 @@ class Arena {
 };
 
 template <Nodeable T>
-fnc Arena<T>::Push() -> u32 {
+fnc Arena<T>::Push() -> u64 {
   if (this->count == this->capacity) {
     if (this->next == nullptr) {
       // @FIXME(eddie) - does this work?
@@ -76,7 +76,7 @@ fnc Arena<T>::Push() -> u32 {
 }
 
 template <Nodeable T>
-fnc Arena<T>::AllocatedBytes() const -> u32 {
+fnc Arena<T>::AllocatedBytes() const -> u64 {
   using type = T;
   return this->count * sizeof(type);
 }
@@ -87,7 +87,7 @@ fnc Arena<T>::Clear() -> void {
 }
 
 template <Nodeable T>
-fnc Arena<T>::Alloc() -> u32 {
+fnc Arena<T>::Alloc() -> u64 {
   T* result = this->first_free;
   if (result != nullptr) {
     this->first_free = this->first_free->next;
@@ -107,7 +107,7 @@ fnc Arena<T>::Free(T* entry) -> void {
 }
 
 template <Nodeable T>
-fnc Arena<T>::Nth(u32 idx) -> T* {
+fnc Arena<T>::Nth(u64 idx) -> T* {
   if (idx > this->capacity) return this->next->Nth(idx - this->capacity);
 
   return &this->data[idx];
