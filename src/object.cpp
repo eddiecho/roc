@@ -84,7 +84,6 @@ fnc Object::String::Init(const Object::String&& str) -> void {
 Object::Function::Function() noexcept {
   this->type = ObjectType::Function;
   this->as.function.arity = 0;
-  this->as.function.chunk = Chunk();
   this->name = "";
   this->name_len = 0;
 }

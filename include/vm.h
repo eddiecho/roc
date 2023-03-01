@@ -57,7 +57,7 @@ class VirtualMachine {
     Arena<Object>* object_pool
   ) -> InterpretError;
 
-  fnc RuntimeError(const char* msg, ...) -> void;
+  fnc RuntimeError(const char* msg, ...) -> InterpretError;
   fnc Peek() const -> Value;
   fnc Peek(int dist) const -> Value;
 

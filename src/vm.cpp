@@ -8,6 +8,7 @@
 #include "common.h"
 #include "dynamic_array.h"
 #include "object.h"
+#include "value.h"
 
 fnc VirtualMachine::Init() -> void {
   // reset stack pointer
@@ -17,8 +18,14 @@ fnc VirtualMachine::Init() -> void {
 fnc VirtualMachine::Deinit() -> void {
   this->stack_top = this->stack;
   this->frame_count = 0;
-  this->string_pool->Deinit();
-  this->object_pool->Clear();
+
+  if (this->string_pool != nullptr) {
+    this->string_pool->Deinit();
+  }
+
+  if (this->object_pool != nullptr) {
+    this->object_pool->Clear();
+  }
 }
 
 fnc VirtualMachine::Push(Value value) -> void {
@@ -42,22 +49,27 @@ fnc VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
-#define GET_CHUNK() (frame->function->as.function.chunk)
-
-fnc VirtualMachine::RuntimeError(const char* msg, ...) -> void {
+fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   va_list args;
   va_start(args, msg);
   vfprintf(stderr, msg, args);
   va_end(args);
   fputs("\n", stderr);
 
-  StackFrame* frame = &this->frames[this->frame_count - 1];
-  size_t inst = frame->inst_ptr - GET_CHUNK().data - 1;
-  u64 line = GET_CHUNK().lines[inst].val;
+  for (int i = this->frame_count - 1; i >= 0; i--) {
+    StackFrame* frame = &this->frames[i];
+    auto func = frame->function;
+    u64 inst = frame->inst_ptr - func->as.function.chunk.data - 1;
 
-  fprintf(stderr, "[line %lu] in file\n", line);
+    auto line_range = func->as.function.chunk.lines[inst];
+    fprintf(stderr, "[line %lu] in ", line_range.val);
+    fprintf(stderr, "%s\n", func->name);
+  }
+
   // reset stack pointer
   this->stack_top = this->stack;
+
+  return InterpretError::RuntimeError;
 }
 
 fnc VirtualMachine::Interpret(
@@ -66,7 +78,8 @@ fnc VirtualMachine::Interpret(
   Arena<Object>* object_pool
 ) -> InterpretError {
 
-  StackFrame* frame = &this->frames[this->frame_count - 1];
+  StackFrame* frame;
+  frame = &this->frames[this->frame_count - 1];
   frame->function = func;
   frame->inst_ptr = func->as.function.chunk.data;
   frame->locals = this->stack;
@@ -74,15 +87,20 @@ fnc VirtualMachine::Interpret(
   this->string_pool = string_pool;
   this->object_pool = object_pool;
 
-#define READ_BYTE() (*frame->inst_ptr++)
-#define READ_INT() *(u32*)(frame->inst_ptr); frame->inst_ptr += sizeof(u32)
+  // func->as.function.chunk.Disassemble();
+
+#define CurrentFrame() (&this->frames[this->frame_count - 1])
+#define GET_CHUNK() (CurrentFrame()->function->as.function.chunk)
+#define READ_BYTE() (*CurrentFrame()->inst_ptr++)
+#define READ_INT() *(u32*)(CurrentFrame()->inst_ptr); (CurrentFrame())->inst_ptr += sizeof(u32)
 #define READ_CONSTANT() (GET_CHUNK().constants[READ_BYTE()])
 
   u8 byte;
   while (1) {
+
 #ifdef DEBUG_TRACE_EXECUTION
-    this->chunk->PrintAtOffset(
-        static_cast<int>(frame->inst_ptr - GET_CHUNK()->data));
+    func->as.function.chunk.PrintAtOffset(
+        static_cast<int>(CurrentFrame()inst_ptr - GET_CHUNK().data));
 #endif
 
     byte = READ_BYTE();
@@ -91,10 +109,19 @@ fnc VirtualMachine::Interpret(
     switch (instruction) {
       case OpCode::Return: {
         Value val = this->Pop();
-        val.Print();
-        printf("\n");
+        this->frame_count--;
+        if (this->frame_count == 0) {
+          // the book has this here because it uses the first stack slot
+          // implicitly as the top level function
+          // this->Pop();
+          return InterpretError::Success;
+        }
 
-        return InterpretError::Success;
+        this->stack_top = CurrentFrame()->locals;
+        this->Push(val);
+        frame = &this->frames[this->frame_count - 1];
+
+        break;
       }
       case OpCode::Constant: {
         Value constant = READ_CONSTANT();
@@ -197,24 +224,24 @@ fnc VirtualMachine::Interpret(
       }
       case OpCode::SetLocal: {
         u32 idx = READ_INT();
-        frame->locals[idx] = this->Peek();
+        CurrentFrame()->locals[idx] = this->Peek();
         break;
       }
       case OpCode::GetLocal: {
         u32 idx = READ_INT();
-        this->Push(frame->locals[idx]);
+        this->Push(CurrentFrame()->locals[idx]);
         break;
       }
       case OpCode::Jump: {
         u32 offset = READ_INT();
-        frame->inst_ptr += offset;
+        CurrentFrame()->inst_ptr += offset;
         break;
       }
       case OpCode::JumpFalse: {
         u32 offset = READ_INT();
         Value condition = this->Peek();
         if (!condition.IsTruthy()) {
-          frame->inst_ptr += offset;
+          CurrentFrame()->inst_ptr += offset;
         }
         break;
       }
@@ -222,17 +249,42 @@ fnc VirtualMachine::Interpret(
         u32 offset = READ_INT();
         Value condition = this->Peek();
         if (condition.IsTruthy()) {
-          frame->inst_ptr += offset;
+          CurrentFrame()->inst_ptr += offset;
         }
         break;
       }
       case OpCode::Loop: {
         u32 offset = READ_INT();
-        frame->inst_ptr -= offset;
+        CurrentFrame()->inst_ptr -= offset;
+        break;
+      }
+      case OpCode::Invoke: {
+        u32 argc = READ_INT();
+        auto function_base = this->Peek(argc);
+        if (function_base.IsObject()) {
+          StackFrame* new_frame = &this->frames[this->frame_count++];
+          auto new_func = static_cast<Object::Function*>(function_base.as.object);
+
+          if (argc != new_func->as.function.arity) {
+            return this->RuntimeError("Expected %d arguments to function but got %d",
+                                      new_func->as.function.arity, argc);
+          }
+
+          if (this->frame_count == VM_STACK_MAX) {
+            return this->RuntimeError("Stack overflow");
+          }
+
+          new_frame->function = new_func;
+          new_frame->inst_ptr = new_func->as.function.chunk.data;
+          new_frame->locals = this->stack_top - argc - 1;
+
+        } else {
+          return this->RuntimeError("Can not invoke non function object");
+        }
         break;
       }
       default: {
-        printf("Unimplemented OpCode reached???");
+        printf("Unimplemented OpCode %d reached???\n", static_cast<u8>(instruction));
         break;
       }
     }

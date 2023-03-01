@@ -193,6 +193,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Loop: {
       return this->JumpInstruction("OP_LOOP", -1, offset);
     }
+    case OpCode::Invoke: {
+      return this->ByteInstruction("OP_INVOKE", offset);
+    }
     default: {
       printf("Unknown opcode %d\n", byte);
       return offset + 1;

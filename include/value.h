@@ -62,7 +62,7 @@ struct Value {
     }
   }
 
-  fnc constexpr inline IsObject() -> bool;
+  fnc IsObject() const -> bool;
   fnc Print() const -> const void;
   fnc IsTruthy() const -> bool;
 };

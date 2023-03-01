@@ -13,6 +13,7 @@ enum class ObjectType {
   String,
   Function,
 };
+#define OBJECT_TYPE_COUNT 2
 
 class Object {
  public:
@@ -24,14 +25,15 @@ class Object {
     u32 arity;
     Chunk chunk;
 
-    fnc Init() -> void {
-      this->chunk.Init();
+    fnc Init(Chunk chunk) -> void {
       this->arity = 0;
+      this->chunk = chunk;
     }
   };
 
-  // @WTF - cant use auto or fnc here, because cpp doesnt let you
-  bool virtual operator==(const Object* o) const = 0;
+  bool operator==(const Object* o) const {
+    return this->type == o->type;
+  }
 
   fnc Print() -> void;
   fnc IsTruthy() -> bool;
@@ -75,7 +77,7 @@ class Object::String : public Object {
     return ret;
   }
 
-  fnc operator==(const Object* o) const -> bool override {
+  fnc operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::String) return false;
 
     auto other = static_cast<const Object::String*>(o);
@@ -106,7 +108,7 @@ class Object::Function : public Object {
  public:
   Function() noexcept;
 
-  fnc operator==(const Object* o) const -> bool override {
+  fnc operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Function) return false;
     if (o->as.function.arity != this->as.function.arity) return false;
     if (o->name_len != this->name_len) return false;

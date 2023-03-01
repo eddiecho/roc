@@ -37,3 +37,7 @@ fnc Value::IsTruthy() const -> bool {
       return this->as.object->IsTruthy();
   }
 }
+
+fnc Value::IsObject() const -> bool {
+  return this->type == ValueType::Object;
+}

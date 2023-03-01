@@ -15,13 +15,14 @@ fnc GlobalPool::Deinit() -> void {
 }
 
 fnc GlobalPool::Alloc(u64 length, const char* start, ObjectType obj_type) -> u64 {
-  u64 idx = this->Find(length, start, obj_type);
+  u64 idx = this->Find(length, start);
+
   if (idx != GlobalPool::INVALID_INDEX) {
     return idx;
   }
 
   std::string str {start, length};
-  KeyType key = { str, obj_type };
+  KeyType key = str;
 
   auto obj_idx = this->object_pool->Alloc();
   this->index.emplace(key, obj_idx);
@@ -29,16 +30,16 @@ fnc GlobalPool::Alloc(u64 length, const char* start, ObjectType obj_type) -> u64
   return obj_idx;
 }
 
-fnc GlobalPool::Find(u64 length, const char* start, ObjectType obj_type) -> u64 {
+fnc GlobalPool::Find(u64 length, const char* start) -> u64 {
   std::string str {start, length};
-  KeyType key = { str, obj_type };
 
+  KeyType key = str;
   auto it = this->index.find(key);
-  if (it == this->index.end()) {
-    return GlobalPool::INVALID_INDEX;
+  if (it != this->index.end()) {
+    return it->second;
   }
 
-  return it->second;
+  return GlobalPool::INVALID_INDEX;
 }
 
 fnc GlobalPool::Nth(u64 index) -> Object* {

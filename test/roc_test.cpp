@@ -102,6 +102,9 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
   InitCompiler("scripts/simple_function.roc");
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
+
+  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  EXPECT_EQ(status, InterpretError::Success);
 }
 
 TEST(HelloTest, BasicAssert) {

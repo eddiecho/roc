@@ -285,7 +285,7 @@ Compiler::Compiler() noexcept {}
 
 const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftParens,
-     ParseRule(&Grammar::Parenthesis, &Grammar::InvokeOp, Precedence::None)},
+     ParseRule(&Grammar::Parenthesis, &Grammar::InvokeOp, Precedence::Invoke)},
     {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
 
     {Token::Lexeme::Minus,
@@ -327,6 +327,7 @@ const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
+    {Token::Lexeme::Identifier, ParseRule(&Grammar::Variable, nullptr, Precedence::None)},
 
     // @TODO(eddie)
     {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -336,7 +337,6 @@ const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::Semicolon, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Colon, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Equal, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::Identifier, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Else, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::For, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Function, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -403,6 +403,17 @@ fnc Compiler::Statement() -> void {
   // var/func/struct declarations
 
   if (this->curr.type == Token::Lexeme::Return) {
+    if (this->scope_depth == 0) {
+      this->ErrorAtCurr("Can not have top level return statement");
+    }
+
+    if (this->Match(Token::Lexeme::Semicolon)) {
+      this->Emit(OpCode::Return);
+    } else {
+      this->Expression();
+      this->Emit(OpCode::Return);
+    }
+
   } else {
     // technically, expressions without a corresponding assignment or the above are called
     // "expression statements"
@@ -465,7 +476,7 @@ fnc Compiler::Expression(bool nested) -> void {
     this->GetPrecedence(Precedence::Assignment);
 
     if (!nested)
-      this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after an expression.");
+      this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after non block expression.");
   }
 }
 
@@ -608,7 +619,8 @@ fnc Compiler::FunctionDeclaration() -> void {
       this->global_pool->Nth(new_func_idx));
 
   // @FIXME(eddie) - i hope these chunks persist through the call stack
-  new_func->as.function.Init();
+  Chunk chunk;
+  new_func->as.function.Init(chunk);
   new_func->next = this->curr_func;
   this->curr_func = new_func;
   this->chunks.Append(&new_func->as.function.chunk);
@@ -649,7 +661,7 @@ fnc Compiler::AddLocal(Token id) -> void {
 }
 
 fnc Compiler::FindLocal(Token id) -> u32 {
-  for (u32 i = this->locals_count - 1; i >= 0; i--) {
+  for (int i = this->locals_count - 1; i >= 0; i--) {
     Local* local = &this->locals[i];
     if (local->id.IdentifiersEqual(id)) {
       return i;
@@ -665,7 +677,7 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
 
   u32 idx = this->FindLocal(this->prev);
   if (idx == Compiler::LOCALS_INVALID_IDX) {
-    idx = this->global_pool->Find(this->prev.len, this->prev.start, ObjectType::String);
+    idx = this->global_pool->Find(this->prev.len, this->prev.start);
     if (idx == GlobalPool::INVALID_INDEX) {
       this->ErrorAtCurr("Undefined global variable");
     }
@@ -716,6 +728,10 @@ fnc Compiler::GetParseRule(Token::Lexeme token) -> const ParseRule* {
 
 fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
+  if (this->prev.type == Token::Lexeme::Return) {
+    this->Advance();
+  }
+
   const ParseRule* rule = this->GetParseRule(this->prev.type);
 
   if (rule->prefix == nullptr) {
@@ -877,7 +893,7 @@ fnc static Grammar::InvokeOp(Compiler* compiler, bool assign) -> void {
   u32 arg_count = 0;
   if (compiler->curr.type != Token::Lexeme::RightParens) {
     do {
-      compiler->Expression();
+      compiler->Expression(true);
       arg_count++;
     } while (compiler->Match(Token::Lexeme::Comma));
   }
