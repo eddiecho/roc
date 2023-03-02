@@ -33,7 +33,7 @@ Token::Token(const char* error) noexcept {
 fnc Token::IdentifiersEqual(Token other) const -> bool {
   if (this->len != other.len) return false;
 
-  return memcmp(this->start, other.start, this->len);
+  return memcmp(this->start, other.start, this->len) == 0;
 }
 
 fnc static constexpr IsDigit(const char c) -> const bool {
@@ -362,6 +362,14 @@ fnc Compiler::Init(const char* src,
       Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME, ObjectType::Function);
   this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
   this->curr_func->as.function.chunk = *chunk;
+
+  // steal the first local slot for the top level function
+  // makes the rest cleaner i guess
+  // especially when you have to call functions or something
+  Local* top_level_declaration = &this->locals[this->locals_count++];
+  top_level_declaration->depth = 0;
+  top_level_declaration->id.start = "";
+  top_level_declaration->id.len = 0;
 }
 
 fnc inline Compiler::CurrentChunk() -> Chunk* {
@@ -533,6 +541,7 @@ fnc Compiler::BeginScope() -> void {
 fnc Compiler::EndScope() -> void {
   this->scope_depth--;
 
+  // @TODO(eddie) - PopN opcode, because this sucks
   while (this->locals_count > 0
     && this->locals[this->locals_count - 1].depth > this->scope_depth) {
     this->Emit(OpCode::Pop);
@@ -622,6 +631,11 @@ fnc Compiler::FunctionDeclaration() -> void {
   Chunk chunk;
   new_func->as.function.Init(chunk);
   new_func->next = this->curr_func;
+  new_func->name_len = this->prev.len;
+
+  u64 name_idx = this->string_pool->Alloc(this->prev.len, this->prev.start);
+  new_func->name = this->string_pool->Nth(name_idx)->name;
+
   this->curr_func = new_func;
   this->chunks.Append(&new_func->as.function.chunk);
 
@@ -646,7 +660,10 @@ fnc Compiler::FunctionDeclaration() -> void {
 
   this->EndScope();
 
-  this->curr_func->as.function.chunk.AddConstant(Value(this->curr_func), func_start);
+  // this->curr_func->as.function.chunk.AddConstant(Value(this->curr_func), func_start);
+
+  // reset the current function to whatever it was before
+  this->curr_func = static_cast<Object::Function*>(this->curr_func->next);
 }
 
 fnc Compiler::AddLocal(Token id) -> void {

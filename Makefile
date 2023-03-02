@@ -88,4 +88,11 @@ tidy:
 	done
 	@echo "Done"
 
-.PHONY: build fmt sync tidy test cmake
+cloc:
+	cloc src/ include/ test/
+
+release:
+	@$(MAKE) build;
+	@$(MAKE) test
+
+.PHONY: build fmt sync tidy test cmake cloc release

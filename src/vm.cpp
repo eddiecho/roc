@@ -87,7 +87,9 @@ fnc VirtualMachine::Interpret(
   this->string_pool = string_pool;
   this->object_pool = object_pool;
 
-  // func->as.function.chunk.Disassemble();
+#if 1
+  func->as.function.chunk.Disassemble();
+#endif
 
 #define CurrentFrame() (&this->frames[this->frame_count - 1])
 #define GET_CHUNK() (CurrentFrame()->function->as.function.chunk)
@@ -108,7 +110,8 @@ fnc VirtualMachine::Interpret(
 
     switch (instruction) {
       case OpCode::Return: {
-        Value val = this->Pop();
+        // @TODO(eddie) - what to do about void function?
+        Value ret_val = this->Pop();
         this->frame_count--;
         if (this->frame_count == 0) {
           // the book has this here because it uses the first stack slot
@@ -117,9 +120,10 @@ fnc VirtualMachine::Interpret(
           return InterpretError::Success;
         }
 
-        this->stack_top = CurrentFrame()->locals;
-        this->Push(val);
-        frame = &this->frames[this->frame_count - 1];
+        this->stack_top = this->frames[this->frame_count].locals;
+        this->Push(ret_val);
+        // dont think this is necessary with the CurrentFrame macro
+        // frame = &this->frames[this->frame_count - 1];
 
         break;
       }
@@ -277,7 +281,6 @@ fnc VirtualMachine::Interpret(
           new_frame->function = new_func;
           new_frame->inst_ptr = new_func->as.function.chunk.data;
           new_frame->locals = this->stack_top - argc - 1;
-
         } else {
           return this->RuntimeError("Can not invoke non function object");
         }

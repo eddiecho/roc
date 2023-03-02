@@ -108,7 +108,7 @@ fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
   u8 thr = (*this)[offset + 3];
   u8 fou = (*this)[offset + 4];
 
-  printf("%-16s %04d %04dd %04d %04d ' ", name, one, two, thr, fou);
+  printf("%-16s %04d %04d %04d %04d ' \n", name, one, two, thr, fou);
 
   return offset + 5;
 }
@@ -154,6 +154,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Return: {
       return this->SimpleInstruction("OP_RETURN", offset);
     }
+    case OpCode::String: {
+      return this->GlobalInstruction("OP_STRING", offset);
+    }
     case OpCode::Not: {
       return this->SimpleInstruction("OP_NOT", offset);
     }
@@ -176,10 +179,10 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       return this->GlobalInstruction("OP_GETGLOBAL", offset);
     }
     case OpCode::SetLocal: {
-      return this->ByteInstruction("OP_SETLOCAL", offset);
+      return this->GlobalInstruction("OP_SETLOCAL", offset);
     }
     case OpCode::GetLocal: {
-      return this->ByteInstruction("OP_GETLOCAL", offset);
+      return this->GlobalInstruction("OP_GETLOCAL", offset);
     }
     case OpCode::Jump: {
       return this->JumpInstruction("OP_JUMP", 1, offset);

@@ -105,6 +105,8 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
 
   InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
+  Value val = virtual_machine.Peek();
+  EXPECT_EQ(val.as.number, 22.0);
 }
 
 TEST(HelloTest, BasicAssert) {
