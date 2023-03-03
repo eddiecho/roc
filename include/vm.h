@@ -41,6 +41,8 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 #define VM_STACK_MAX 128
 #define VM_LOCAL_MAX VM_STACK_MAX * 4
 
+// @TODO(eddie) - extract out instruction pointer, and put it
+// directly into VirtualMachine to remove some indirection
 struct StackFrame {
   Object::Function* function;
   u8* inst_ptr;

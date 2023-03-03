@@ -12,6 +12,7 @@
 enum class ObjectType {
   String,
   Function,
+  Closure,
 };
 #define OBJECT_TYPE_COUNT 2
 
@@ -31,11 +32,16 @@ class Object {
     }
   };
 
+  class Closure;
+  struct ClosureData {
+    FunctionData* function;
+  };
+
   bool operator==(const Object* o) const {
     return this->type == o->type;
   }
 
-  fnc Print() -> void;
+  fnc Print() const -> void;
   fnc IsTruthy() -> bool;
 
   template <typename H>
@@ -57,6 +63,7 @@ class Object {
   union Data {
     StringData string;
     FunctionData function;
+    ClosureData closure;
 
     Data() { memset(this, 0, sizeof(Data)); }
     ~Data() {}
@@ -98,7 +105,7 @@ class Object::String : public Object {
     return std::memcmp(this->name, str.c_str(), this->name_len) == 0;
   }
 
-  fnc Print() -> void;
+  fnc Print() const -> void;
   fnc IsTruthy() -> bool;
   fnc Init(u32 name_len, const char* name) -> void;
   fnc Init(const Object::String&& str) -> void;
@@ -116,6 +123,21 @@ class Object::Function : public Object {
     return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
-  fnc Print() -> void;
+  fnc Print() const -> void;
+  fnc inline Unwrap() -> Object::FunctionData;
 };
 
+class Object::Closure : public Object {
+ public:
+  Closure() noexcept;
+  Closure(Object::Function* function) noexcept;
+
+  fnc operator==(const Object* o) const -> bool {
+    if (o->type != ObjectType::Closure) return false;
+
+    return this->as.closure.function == o->as.closure.function;
+  }
+
+  fnc Print() const -> void;
+  fnc inline Unwrap() -> Object::FunctionData*;
+};

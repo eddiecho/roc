@@ -7,18 +7,22 @@
 #include "memory.h"
 #include "utils.h"
 
-fnc Object::Print() -> void {
+fnc Object::Print() const -> void {
   switch(this->type) {
     default: {
       printf("Unknown object type\n");
       return;
     };
     case ObjectType::String: {
-      static_cast<Object::String*>(this)->Print();
+      static_cast<const Object::String*>(this)->Print();
       return;
     };
     case ObjectType::Function: {
-      static_cast<Object::Function*>(this)->Print();
+      static_cast<const Object::Function*>(this)->Print();
+      return;
+    }
+    case ObjectType::Closure: {
+      static_cast<const Object::Closure*>(this)->Print();
       return;
     }
   }
@@ -65,7 +69,7 @@ Object::String::String(const Object::String&& str) noexcept {
   this->name = str.name;
 }
 
-fnc Object::String::Print() -> void {
+fnc Object::String::Print() const -> void {
   printf("String: %s", this->name);
 }
 
@@ -88,6 +92,32 @@ Object::Function::Function() noexcept {
   this->name_len = 0;
 }
 
-fnc Object::Function::Print() -> void {
+fnc Object::Function::Print() const -> void {
+  printf("Function: %s", this->name);
+}
+
+fnc inline Object::Function::Unwrap() -> Object::FunctionData {
+  return this->as.function;
+}
+
+Object::Closure::Closure() noexcept {
+  this->type = ObjectType::Closure;
+  this->name_len = 0;
+  this->name = 0;
+  this->as.closure.function = nullptr;
+}
+
+Object::Closure::Closure(Object::Function* function) noexcept {
+  this->type = ObjectType::Closure;
+  this->name_len = function->name_len;
+  this->name = function->name;
+  this->as.closure.function = &function->as.function;
+}
+
+fnc inline Object::Closure::Unwrap() -> Object::FunctionData* {
+  return this->as.closure.function;
+}
+
+fnc Object::Closure::Print() const -> void {
   printf("Function: %s", this->name);
 }
