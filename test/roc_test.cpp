@@ -60,7 +60,10 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  Object* function = res.Get();
+  EXPECT_EQ(function->type, ObjectType::Closure);
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
@@ -73,7 +76,10 @@ TEST_F(VirtualMachineTest, BasicString) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  Object* function = res.Get();
+  EXPECT_EQ(function->type, ObjectType::Closure);
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 
   Value val = virtual_machine.Peek();
@@ -85,7 +91,10 @@ TEST_F(VirtualMachineTest, BasicAssignment) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  Object* function = res.Get();
+  EXPECT_EQ(function->type, ObjectType::Closure);
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 }
 
@@ -94,7 +103,10 @@ TEST_F(VirtualMachineTest, LocalAssignment) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  Object* function = res.Get();
+  EXPECT_EQ(function->type, ObjectType::Closure);
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
 }
 
@@ -103,7 +115,10 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  InterpretError status = virtual_machine.Interpret(res.Get(), &string_pool, &object_pool);
+  Object* function = res.Get();
+  EXPECT_EQ(function->type, ObjectType::Closure);
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
   Value val = virtual_machine.Peek();
   EXPECT_EQ(val.as.number, 22.0);

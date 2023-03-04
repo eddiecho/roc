@@ -6,6 +6,7 @@
 #include "dynamic_array.h"
 
 // hurr durr circular imports
+// "heap" allocated data
 class Object;
 
 enum class ValueType {

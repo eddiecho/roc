@@ -46,7 +46,7 @@ constexpr u32 EMPTY_STRING_HASH = HashString("", 0);
 template <typename T, typename E>
 struct Result {
   enum class ResultType {
-    Some,
+    Ok,
     Error,
   };
 
@@ -66,7 +66,7 @@ struct Result {
   };
 
   Result<T, E>(T t) {
-    this->type = ResultType::Some;
+    this->type = ResultType::Ok;
     this->as.obj = t;
   };
 
@@ -75,7 +75,12 @@ struct Result {
   }
 
   fnc Get() -> T {
-    Assert(this->type == ResultType::Some);
+    Assert(this->type == ResultType::Ok);
     return this->as.obj;
+  }
+
+  fnc Err() -> E {
+    Assert(this->type == ResultType::Error);
+    return this->as.err;
   }
 };

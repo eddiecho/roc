@@ -139,5 +139,7 @@ class Object::Closure : public Object {
   }
 
   fnc Print() const -> void;
-  fnc inline Unwrap() -> Object::FunctionData*;
+  fnc inline Unwrap() -> Object::FunctionData* {
+    return this->as.closure.function;
+  }
 };

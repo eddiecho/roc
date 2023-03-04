@@ -11,6 +11,7 @@
 #include "dynamic_array.h"
 #include "object.h"
 #include "string_pool.h"
+#include "utils.h"
 #include "value.h"
 
 #define VM_INTERPRET_ERRORS \
@@ -44,7 +45,7 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 // @TODO(eddie) - extract out instruction pointer, and put it
 // directly into VirtualMachine to remove some indirection
 struct StackFrame {
-  Object::Function* function;
+  Object::Closure* closure;
   u8* inst_ptr;
   Value* locals;
 };
@@ -54,7 +55,7 @@ class VirtualMachine {
   fnc Init() -> void;
   fnc Deinit() -> void;
   fnc Interpret(
-    Object::Function* func,
+    Object* func,
     StringPool* string_pool,
     Arena<Object>* object_pool
   ) -> InterpretError;
@@ -66,10 +67,11 @@ class VirtualMachine {
  private:
   fnc Push(Value value) -> void;
   fnc Pop() -> Value;
+  fnc Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
 
  private:
   StackFrame frames[VM_STACK_MAX];
-  u32 frame_count = 1;
+  u32 frame_count = 0;
 
   Value stack[VM_LOCAL_MAX];
   Value* stack_top;

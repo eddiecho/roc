@@ -143,11 +143,11 @@ fnc static OrOp(Compiler* compiler, bool assign) -> void;
 fnc static InvokeOp(Compiler* compiler, bool assign) -> void;
 }  // namespace Grammar
 
-enum class CompileErrors {
+enum class CompileError {
   Syntax = 1,
 };
 
-using CompileResult = Result<Object::Function*, CompileErrors>;
+using CompileResult = Result<Object*, CompileError>;
 using ParseRuleMap = absl::flat_hash_map<Token::Lexeme, ParseRule>;
 
 class Compiler {
@@ -230,7 +230,6 @@ class Compiler {
   Scanner scanner;
   StringPool* string_pool = nullptr;
   GlobalPool* global_pool = nullptr;
-
 };
 
 #undef VM_LEXEME_TYPE

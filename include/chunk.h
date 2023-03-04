@@ -31,6 +31,7 @@ enum class OpCode : u8 {
   JumpTrue,
   Loop,
   Invoke,
+  Closure,
 };
 
 class VirtualMachine;
@@ -38,15 +39,14 @@ class VirtualMachine;
 class Chunk : public DynamicArray<u8> {
  public:
   Chunk() noexcept;
-  ~Chunk() noexcept;
 
   friend VirtualMachine;
 
   fnc Disassemble() const -> const void;
-  fnc AddChunk(u8 byte, u64 line) -> void;
-  fnc AddChunk(u8* bytes, u64 count, u64 line) -> void;
+  fnc AddChunk(u8 byte, u64 line) -> u64;
+  fnc AddChunk(u8* bytes, u64 count, u64 line) -> u64;
   fnc AddLine(u64 line) -> void;
-  fnc AddConstant(Value val, u64 line) -> void;
+  fnc AddConstant(Value val, u64 line) -> u64;
 
  private:
   fnc PrintAtOffset(int offset) const -> const int;

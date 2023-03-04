@@ -32,9 +32,12 @@ fnc static RunFile(const char* path) -> InterpretError {
   if (compile_res.IsError()) {
     return InterpretError::CompileError;
   }
+
+  Assert(compile_res.Get().type == ObjectType::Function);
+  Object::Function* function = static_cast<Object::Function*>(compile_res.Get());
   VM.Init();
 
-  return VM.Interpret(compile_res.Get(), &string_pool, &object_pool);
+  return VM.Interpret(function, &string_pool, &object_pool);
 }
 
 fnc static Repl() -> void {
@@ -60,8 +63,9 @@ fnc static Repl() -> void {
       status = InterpretError::CompileError;
     } else {
       // @TODO(eddie) - do something with the status
-      status = VM.Interpret(compile_res.Get(), &string_pool, &object_pool);
-
+      Assert(compile_res.Get().type == ObjectType::Function);
+      Object::Function* function = static_cast<Object::Function*>(compile_res.Get());
+      status = VM.Interpret(function, &string_pool, &object_pool);
     }
   }
 }

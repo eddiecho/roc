@@ -8,6 +8,7 @@
 #include "global_pool.h"
 #include "object.h"
 #include "string_pool.h"
+#include "utils.h"
 #include "value.h"
 
 Token::Token() noexcept {
@@ -362,6 +363,8 @@ fnc Compiler::Init(const char* src,
       Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME, ObjectType::Function);
   this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
   this->curr_func->as.function.chunk = *chunk;
+  this->curr_func->as.function.arity = 0;
+  this->curr_func->type = ObjectType::Function;
 
   // steal the first local slot for the top level function
   // makes the rest cleaner i guess
@@ -376,7 +379,7 @@ fnc inline Compiler::CurrentChunk() -> Chunk* {
   return &this->curr_func->as.function.chunk;
 }
 
-fnc Compiler::Compile() -> CompileResult {
+fnc Compiler::Compile() -> Result<Object*, CompileError> {
   this->Advance();
 
   while (!this->Match(Token::Lexeme::Eof)) {
@@ -385,13 +388,16 @@ fnc Compiler::Compile() -> CompileResult {
 
   this->EndCompilation();
 
-  return this->state.error
-    ? CompileResult(CompileErrors::Syntax)
-    : CompileResult(this->curr_func);
+  if (this->state.error) return CompileError::Syntax;
+
+  u64 top_level_closure_idx = this->global_pool->Alloc(0, "", ObjectType::Closure);
+  auto top_level_closure = static_cast<Object::Closure*>(this->global_pool->Nth(top_level_closure_idx));
+  top_level_closure->type = ObjectType::Closure;
+  top_level_closure->as.closure.function = &this->curr_func->as.function;
+
+  return top_level_closure;
 }
 
-// @TODO(eddie) - all of the semicolon handling stuff is scattered around
-// maybe consolidate all into the top level?
 fnc Compiler::Declaration() -> void {
   if (this->Match(Token::Lexeme::Var)) {
     this->VariableDeclaration();
@@ -583,6 +589,7 @@ fnc Compiler::Advance() -> void {
   }
 }
 
+// @TODO(eddie) - just get rid of this
 fnc inline Compiler::Match(Token::Lexeme type) -> bool {
   if (this->curr.type == type) {
     this->Advance();
@@ -621,6 +628,8 @@ fnc Compiler::VariableDeclaration() -> void {
 }
 
 fnc Compiler::FunctionDeclaration() -> void {
+  auto declaration_line = this->curr.line;
+
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
   u32 new_func_idx = this->global_pool->Alloc(this->prev.len, this->prev.start, ObjectType::Function);
@@ -629,6 +638,7 @@ fnc Compiler::FunctionDeclaration() -> void {
 
   // @FIXME(eddie) - i hope these chunks persist through the call stack
   Chunk chunk;
+  new_func->type = ObjectType::Function;
   new_func->as.function.Init(chunk);
   new_func->next = this->curr_func;
   new_func->name_len = this->prev.len;
@@ -660,10 +670,12 @@ fnc Compiler::FunctionDeclaration() -> void {
 
   this->EndScope();
 
-  // this->curr_func->as.function.chunk.AddConstant(Value(this->curr_func), func_start);
-
   // reset the current function to whatever it was before
   this->curr_func = static_cast<Object::Function*>(this->curr_func->next);
+
+  u32 func_idx = this->CurrentChunk()->AddConstant(Value(new_func), declaration_line);
+  this->Emit(OpCode::Closure);
+  this->Emit(IntToBytes(&func_idx), 4);
 }
 
 fnc Compiler::AddLocal(Token id) -> void {

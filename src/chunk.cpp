@@ -11,12 +11,6 @@ Chunk::Chunk() noexcept {
   this->lines.Init();
 }
 
-Chunk::~Chunk() noexcept {
-  this->lines.Deinit();
-  this->constants.Deinit();
-  this->Deinit();
-}
-
 fnc Chunk::AddLine(u64 line) -> void {
   if (this->lines.count == 0) {
     this->lines.Append({this->count, line});
@@ -28,18 +22,18 @@ fnc Chunk::AddLine(u64 line) -> void {
   }
 }
 
-fnc Chunk::AddChunk(u8 byte, u64 line) -> void {
+fnc Chunk::AddChunk(u8 byte, u64 line) -> u64 {
   this->AddLine(line);
-  this->Append(byte);
+  return this->Append(byte);
 }
 
-fnc Chunk::AddChunk(u8* bytes, u64 count, u64 line) -> void {
+fnc Chunk::AddChunk(u8* bytes, u64 count, u64 line) -> u64 {
   this->AddLine(line);
-  this->Append(bytes, count);
+  return this->Append(bytes, count);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-fnc Chunk::AddConstant(Value val, u64 line) -> void {
+fnc Chunk::AddConstant(Value val, u64 line) -> u64 {
   this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
@@ -55,7 +49,7 @@ fnc Chunk::AddConstant(Value val, u64 line) -> void {
     this->Append(count);
   }
 
-  this->constants.Append(val);
+  return this->constants.Append(val);
 }
 
 fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
@@ -198,6 +192,15 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     }
     case OpCode::Invoke: {
       return this->ByteInstruction("OP_INVOKE", offset);
+    }
+    case OpCode::Closure: {
+      offset++;
+      u8 closure_idx = this->data[offset++];
+      printf("%-16s %4d ", "OP_CLOSURE", closure_idx);
+      this->constants[closure_idx].Print();
+      printf("\n");
+
+      return offset;
     }
     default: {
       printf("Unknown opcode %d\n", byte);

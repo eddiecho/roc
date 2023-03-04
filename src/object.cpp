@@ -114,10 +114,6 @@ Object::Closure::Closure(Object::Function* function) noexcept {
   this->as.closure.function = &function->as.function;
 }
 
-fnc inline Object::Closure::Unwrap() -> Object::FunctionData* {
-  return this->as.closure.function;
-}
-
 fnc Object::Closure::Print() const -> void {
   printf("Function: %s", this->name);
 }
