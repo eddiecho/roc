@@ -60,8 +60,7 @@ TEST_F(VirtualMachineTest, BasicCompiler) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  Object* function = res.Get();
-  EXPECT_EQ(function->type, ObjectType::Closure);
+  auto function = res.Get();
 
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
@@ -76,8 +75,7 @@ TEST_F(VirtualMachineTest, BasicString) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  Object* function = res.Get();
-  EXPECT_EQ(function->type, ObjectType::Closure);
+  auto function = res.Get();
 
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
@@ -91,8 +89,7 @@ TEST_F(VirtualMachineTest, BasicAssignment) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  Object* function = res.Get();
-  EXPECT_EQ(function->type, ObjectType::Closure);
+  auto function = res.Get();
 
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
@@ -103,8 +100,7 @@ TEST_F(VirtualMachineTest, LocalAssignment) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  Object* function = res.Get();
-  EXPECT_EQ(function->type, ObjectType::Closure);
+  auto function = res.Get();
 
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
@@ -115,8 +111,7 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
   CompileResult res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
-  Object* function = res.Get();
-  EXPECT_EQ(function->type, ObjectType::Closure);
+  auto function = res.Get();
 
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);

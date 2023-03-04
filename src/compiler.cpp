@@ -390,12 +390,7 @@ fnc Compiler::Compile() -> Result<Object*, CompileError> {
 
   if (this->state.error) return CompileError::Syntax;
 
-  u64 top_level_closure_idx = this->global_pool->Alloc(0, "", ObjectType::Closure);
-  auto top_level_closure = static_cast<Object::Closure*>(this->global_pool->Nth(top_level_closure_idx));
-  top_level_closure->type = ObjectType::Closure;
-  top_level_closure->as.closure.function = &this->curr_func->as.function;
-
-  return top_level_closure;
+  return this->curr_func;
 }
 
 fnc Compiler::Declaration() -> void {
@@ -673,9 +668,12 @@ fnc Compiler::FunctionDeclaration() -> void {
   // reset the current function to whatever it was before
   this->curr_func = static_cast<Object::Function*>(this->curr_func->next);
 
+  // we need this only for closures that actually require upvalues
+  /*
   u32 func_idx = this->CurrentChunk()->AddConstant(Value(new_func), declaration_line);
   this->Emit(OpCode::Closure);
   this->Emit(IntToBytes(&func_idx), 4);
+    */
 }
 
 fnc Compiler::AddLocal(Token id) -> void {

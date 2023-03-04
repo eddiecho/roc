@@ -65,8 +65,9 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
     u64 inst = frame->inst_ptr - func->chunk.data - 1;
 
     auto line_range = func->chunk.lines[inst];
+    auto name = frame->closure == nullptr ? frame->function->name : frame->closure->name;
     fprintf(stderr, "[line %lu] in ", line_range.val);
-    fprintf(stderr, "%s\n", closure->name);
+    fprintf(stderr, "%s\n", name);
   }
 
   // reset stack pointer
@@ -91,6 +92,26 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk.data;
   ret->locals = this->stack_top - argc - 1;
+  ret->chunk = inner_func.chunk;
+
+  return this->frame_count - 1;
+}
+
+fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_t, InterpretError> {
+  if (argc != function->as.function.arity) {
+    return this->RuntimeError("Expected %d arguments to function but got %d",
+                              function->as.function.arity, argc);
+  }
+
+  if (this->frame_count == VM_STACK_MAX) {
+    return this->RuntimeError("Stack overflow");
+  }
+
+  StackFrame* ret = &this->frames[this->frame_count++];
+  ret->function = function;
+  ret->inst_ptr = function->as.function.chunk.data;
+  ret->locals = this->stack_top - argc - 1;
+  ret->chunk = function->as.function.chunk;
 
   return this->frame_count - 1;
 }
@@ -104,12 +125,10 @@ fnc VirtualMachine::Interpret(
 ) -> InterpretError {
 
   Assert(obj != nullptr);
-  Assert(obj->type == ObjectType::Closure);
-
-  auto closure = static_cast<Object::Closure*>(obj);
+  auto function = static_cast<Object::Function*>(obj);
 
   // setup initial call stack
-  auto frame_result = this->Invoke(closure, 0);
+  auto frame_result = this->Invoke(function, 0);
   if (frame_result.IsError()) {
     return frame_result.Err();
   }
@@ -120,13 +139,12 @@ fnc VirtualMachine::Interpret(
   this->object_pool = object_pool;
 
 #if 1
-  frame->closure->Unwrap()->chunk.Disassemble();
+  frame->chunk.Disassemble();
 #endif
 
-#define GET_CHUNK() (frame->closure->Unwrap()->chunk)
 #define READ_BYTE() (*frame->inst_ptr++)
 #define READ_INT() *(u32*)(frame->inst_ptr); (frame->inst_ptr += sizeof(u32))
-#define READ_CONSTANT() (GET_CHUNK().constants[READ_BYTE()])
+#define READ_CONSTANT() (frame->chunk.constants[READ_BYTE()])
 
   u8 byte;
   while (1) {
@@ -161,7 +179,7 @@ fnc VirtualMachine::Interpret(
       case OpCode::ConstantLong: {
         u32 idx = READ_INT();
 
-        Value constant = GET_CHUNK().constants[idx];
+        Value constant = frame->chunk.constants[idx];
         this->Push(constant);
         break;
       }
@@ -292,16 +310,33 @@ fnc VirtualMachine::Interpret(
         u32 argc = READ_INT();
         auto function_base = this->Peek(argc);
         if (function_base.IsObject()) {
-          Assert(function_base.as.object->type == ObjectType::Closure);
 
-          auto new_closure = static_cast<Object::Closure*>(function_base.as.object);
-          auto new_frame_result = this->Invoke(new_closure, argc);
-          if (new_frame_result.IsError()) {
-            return new_frame_result.Err();
+          auto function_obj = function_base.as.object;
+          switch (function_obj->type) {
+            default:
+              return this->RuntimeError("Can not invoke non function object");
+            case ObjectType::Function: {
+              auto new_function = static_cast<Object::Function*>(function_obj);
+              auto new_frame_result = this->Invoke(new_function, argc);
+              if (new_frame_result.IsError()) {
+                return new_frame_result.Err();
+              }
+
+              frame = &this->frames[new_frame_result.Get()];
+              break;
+            }
+            case ObjectType::Closure: {
+              auto new_closure = static_cast<Object::Closure*>(function_base.as.object);
+              auto new_frame_result = this->Invoke(new_closure, argc);
+              if (new_frame_result.IsError()) {
+                return new_frame_result.Err();
+              }
+
+              frame = &this->frames[new_frame_result.Get()];
+              break;
+            }
           }
 
-          // update frame with invocation
-          frame = &this->frames[new_frame_result.Get()];
         } else {
           return this->RuntimeError("Can not invoke non function object");
         }
@@ -326,6 +361,7 @@ fnc VirtualMachine::Interpret(
         closure->name_len = function->name_len;
         closure->as.closure.function = &function->as.function;
 
+        // @FIXME(eddie) - should this be on the stack or in locals?
         this->Push(Value(closure));
         break;
       }
@@ -339,10 +375,6 @@ fnc VirtualMachine::Interpret(
 #undef READ_BYTE
 #undef READ_INT
 #undef READ_CONSTANT
-#undef CurrentFrame
-#undef GET_CHUNK
 
   return InterpretError::Success;
 }
-
-#undef GET_CHUNK

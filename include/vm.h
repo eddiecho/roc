@@ -45,7 +45,9 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 // @TODO(eddie) - extract out instruction pointer, and put it
 // directly into VirtualMachine to remove some indirection
 struct StackFrame {
-  Object::Closure* closure;
+  Object::Closure* closure = nullptr;
+  Object::Function* function = nullptr;
+  Chunk chunk;
   u8* inst_ptr;
   Value* locals;
 };
@@ -68,6 +70,7 @@ class VirtualMachine {
   fnc Push(Value value) -> void;
   fnc Pop() -> Value;
   fnc Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
+  fnc Invoke(Object::Function* closure, u32 argc) -> Result<size_t, InterpretError>;
 
  private:
   StackFrame frames[VM_STACK_MAX];
