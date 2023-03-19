@@ -96,3 +96,4 @@ release:
 	@$(MAKE) test
 
 .PHONY: build fmt sync tidy test cmake cloc release
+

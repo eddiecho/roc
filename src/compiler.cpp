@@ -369,7 +369,7 @@ fnc Compiler::Init(const char* src,
   // steal the first local slot for the top level function
   // makes the rest cleaner i guess
   // especially when you have to call functions or something
-  Local* top_level_declaration = &this->locals[this->locals_count++];
+  Local* top_level_declaration = &this->locals.locals[this->locals.locals_count++];
   top_level_declaration->depth = 0;
   top_level_declaration->id.start = "";
   top_level_declaration->id.len = 0;
@@ -543,10 +543,10 @@ fnc Compiler::EndScope() -> void {
   this->scope_depth--;
 
   // @TODO(eddie) - PopN opcode, because this sucks
-  while (this->locals_count > 0
-    && this->locals[this->locals_count - 1].depth > this->scope_depth) {
+  while (this->locals.locals_count > 0
+    && this->locals.locals[this->locals.locals_count - 1].depth > this->scope_depth) {
     this->Emit(OpCode::Pop);
-    this->locals_count--;
+    this->locals.locals_count--;
   }
 }
 
@@ -635,12 +635,15 @@ fnc Compiler::FunctionDeclaration() -> void {
   Chunk chunk;
   new_func->type = ObjectType::Function;
   new_func->as.function.Init(chunk);
-  new_func->next = this->curr_func;
+  new_func->next = (Object*)this->curr_func;
   new_func->name_len = this->prev.len;
 
   u64 name_idx = this->string_pool->Alloc(this->prev.len, this->prev.start);
   new_func->name = this->string_pool->Nth(name_idx)->name;
 
+  ScopedLocals new_locals = {};
+  new_locals.prev = &this->locals;
+  this->locals = new_locals;
   this->curr_func = new_func;
   this->chunks.Append(&new_func->as.function.chunk);
 
@@ -666,6 +669,7 @@ fnc Compiler::FunctionDeclaration() -> void {
   this->EndScope();
 
   // reset the current function to whatever it was before
+  this->locals = *this->locals.prev;
   this->curr_func = static_cast<Object::Function*>(this->curr_func->next);
 
   // we need this only for closures that actually require upvalues
@@ -678,22 +682,34 @@ fnc Compiler::FunctionDeclaration() -> void {
 
 fnc Compiler::AddLocal(Token id) -> void {
   // @TODO(eddie) - this sucks
-  if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
+  if (this->locals.locals_count == Compiler::MAX_LOCALS_COUNT) {
     this->ErrorAtCurr("Too many locals in current scope");
   }
 
-  Local* local = &this->locals[this->locals_count++];
+  Local* local = &this->locals.locals[this->locals.locals_count++];
   local->id = id;
   local->depth = this->scope_depth;
 }
 
 fnc Compiler::FindLocal(Token id) -> u32 {
-  for (int i = this->locals_count - 1; i >= 0; i--) {
-    Local* local = &this->locals[i];
+  for (int i = this->locals.locals_count - 1; i >= 0; i--) {
+    Local* local = &this->locals.locals[i];
     if (local->id.IdentifiersEqual(id)) {
       return i;
     }
   }
+
+  return Compiler::LOCALS_INVALID_IDX;
+}
+
+fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> u32 {
+  return 0;
+}
+
+fnc Compiler::FindUpvalue() -> u32 {
+  if (this->curr_func->next == nullptr) return Compiler::LOCALS_INVALID_IDX;
+
+
 
   return Compiler::LOCALS_INVALID_IDX;
 }
@@ -706,7 +722,13 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
   if (idx == Compiler::LOCALS_INVALID_IDX) {
     idx = this->global_pool->Find(this->prev.len, this->prev.start);
     if (idx == GlobalPool::INVALID_INDEX) {
-      this->ErrorAtCurr("Undefined global variable");
+      idx = this->FindUpvalue();
+      if (idx == Compiler::LOCALS_INVALID_IDX) {
+        this->ErrorAtCurr("Undefined variable");
+      } else {
+        get = OpCode::GetUpvalue;
+        get = OpCode::SetUpvalue;
+      }
     }
 
     get = OpCode::GetGlobal;

@@ -109,6 +109,18 @@ struct Local {
   u32 depth;
 };
 
+#define M_MAX_LOCALS_COUNT 256
+struct ScopedLocals {
+  u32 locals_count = 0;
+  Local locals[M_MAX_LOCALS_COUNT];
+  ScopedLocals* prev = nullptr;
+};
+
+// For resolving upvalues in closures
+struct LocalsList {
+  ScopedLocals* head = nullptr;
+};
+
 class Compiler;
 using ParseFunction = void (*)(Compiler*, bool);
 
@@ -180,8 +192,10 @@ class Compiler {
   fnc EndScope() -> void;
   fnc CodeBlock() -> void;
   fnc AddLocal(Token id) -> void;
+  fnc FindLocal(Token id, ScopedLocals* scope) -> u32;
   fnc FindLocal(Token id) -> u32;
   fnc FunctionDeclaration() -> void;
+  fnc FindUpvalue() -> u32;
 
   fnc Jump(OpCode opcode) -> u32;
   fnc PatchJump(u64 jump_idx) -> void;
@@ -203,7 +217,7 @@ class Compiler {
   fnc friend Grammar::InvokeOp(Compiler* compiler, bool assign) -> void;
 
  private:
-  constexpr static const u32 MAX_LOCALS_COUNT = 256;
+  constexpr static const u32 MAX_LOCALS_COUNT = M_MAX_LOCALS_COUNT;
   constexpr static const u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
   constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
   constexpr static const u32 GLOBAL_FUNCTION_NAME_LEN = 15;
@@ -223,8 +237,8 @@ class Compiler {
 
   DynamicArray<Chunk*> chunks;
   Object::Function *curr_func = nullptr;
-  Local locals[Compiler::MAX_LOCALS_COUNT];
-  u32 locals_count = 0;
+  ScopedLocals locals;
+  LocalsList locals_list;
   u32 scope_depth = 0;
 
   Scanner scanner;
@@ -233,3 +247,4 @@ class Compiler {
 };
 
 #undef VM_LEXEME_TYPE
+#undef M_MAX_LOCALS_COUNT

@@ -107,6 +107,8 @@ fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
   return offset + 5;
 }
 
+// @TODO(eddie) - just make every single opcode 64bits
+// @FIXME(eddie) - another pass needed
 fnc Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
@@ -191,16 +193,15 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       return this->JumpInstruction("OP_LOOP", -1, offset);
     }
     case OpCode::Invoke: {
-      return this->ByteInstruction("OP_INVOKE", offset);
+      return this->ByteInstruction("OP_INVOKE", offset) + 3;
     }
     case OpCode::Closure: {
-      offset++;
-      u8 closure_idx = this->data[offset++];
+      u8 closure_idx = this->data[offset + 1 ];
       printf("%-16s %4d ", "OP_CLOSURE", closure_idx);
       this->constants[closure_idx].Print();
       printf("\n");
 
-      return offset;
+      return offset + 4;
     }
     default: {
       printf("Unknown opcode %d\n", byte);

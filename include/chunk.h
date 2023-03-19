@@ -26,6 +26,8 @@ enum class OpCode : u8 {
   GetGlobal,
   SetLocal,
   GetLocal,
+  SetUpvalue,
+  GetUpvalue,
   Jump,
   JumpFalse,
   JumpTrue,

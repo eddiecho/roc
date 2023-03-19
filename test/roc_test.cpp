@@ -116,7 +116,20 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
   InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
   EXPECT_EQ(status, InterpretError::Success);
   Value val = virtual_machine.Peek();
-  EXPECT_EQ(val.as.number, 22.0);
+  EXPECT_EQ(val.as.number, 27.0);
+}
+
+TEST_F(VirtualMachineTest, SimpleClosure) {
+  InitCompiler("scripts/simple_closure.roc");
+  CompileResult res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
+
+  auto function = res.Get();
+
+  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_EQ(status, InterpretError::Success);
+  Value val = virtual_machine.Peek();
+  EXPECT_EQ(val.as.number, 2.0);
 }
 
 TEST(HelloTest, BasicAssert) {
