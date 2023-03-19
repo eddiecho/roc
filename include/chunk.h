@@ -36,19 +36,26 @@ enum class OpCode : u8 {
   Closure,
 };
 
+using Bytecode = DynamicArray<u8>;
+using LocalVariables = DynamicArray<Value>;
+class Compiler;
 class VirtualMachine;
 
-class Chunk : public DynamicArray<u8> {
+class Chunk {
  public:
   Chunk() noexcept;
 
+  friend Compiler;
   friend VirtualMachine;
 
   fnc Disassemble() const -> const void;
-  fnc AddChunk(u8 byte, u64 line) -> u64;
-  fnc AddChunk(u8* bytes, u64 count, u64 line) -> u64;
+  fnc AddInstruction(u8 byte, u64 line) -> u64;
+  fnc AddInstruction(u8* bytes, u64 count, u64 line) -> u64;
   fnc AddLine(u64 line) -> void;
-  fnc AddConstant(Value val, u64 line) -> u64;
+  fnc AddLocal(Value val, u64 line) -> u64;
+  fnc Count() const -> u64;
+  fnc BaseInstructionPointer() const -> u8*;
+  fnc Deinit() -> void;
 
  private:
   fnc PrintAtOffset(int offset) const -> const int;
@@ -60,6 +67,7 @@ class Chunk : public DynamicArray<u8> {
   fnc GlobalInstruction(const char* name, int offset) const -> int;
 
  private:
-  ConstData constants;
+  Bytecode bytecode;
+  LocalVariables constants;
   RangeArray<u64> lines;
 };

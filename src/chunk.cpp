@@ -6,47 +6,63 @@
 #include "value.h"
 
 Chunk::Chunk() noexcept {
-  this->Init();
+  this->bytecode.Init();
   this->constants.Init();
   this->lines.Init();
 }
 
+fnc Chunk::Deinit() -> void {
+  this->bytecode.Deinit();
+  this->constants.Deinit();
+  this->lines.Deinit();
+}
+
+fnc Chunk::Count() const -> u64 {
+  return this->bytecode.count;
+}
+
+fnc Chunk::BaseInstructionPointer() const -> u8* {
+  return this->bytecode.data;
+}
+
 fnc Chunk::AddLine(u64 line) -> void {
+  auto count = this->bytecode.count;
+
   if (this->lines.count == 0) {
-    this->lines.Append({this->count, line});
+    this->lines.Append({count, line});
   } else {
-    Range<u64> prev = this->lines[this->lines.count - 1];
+    auto prev = this->lines[this->lines.count - 1];
     if (prev.val != line) {
-      this->lines.Append({this->count, line});
+      this->lines.Append({count, line});
     }
   }
 }
 
-fnc Chunk::AddChunk(u8 byte, u64 line) -> u64 {
+fnc Chunk::AddInstruction(u8 byte, u64 line) -> u64 {
   this->AddLine(line);
-  return this->Append(byte);
+  return this->bytecode.Append(byte);
 }
 
-fnc Chunk::AddChunk(u8* bytes, u64 count, u64 line) -> u64 {
+fnc Chunk::AddInstruction(u8* bytes, u64 count, u64 line) -> u64 {
   this->AddLine(line);
-  return this->Append(bytes, count);
+  return this->bytecode.Append(bytes, count);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-fnc Chunk::AddConstant(Value val, u64 line) -> u64 {
+fnc Chunk::AddLocal(Value val, u64 line) -> u64 {
   this->AddLine(line);
 
   if (this->constants.count < SMALL_CONST_POOL_SIZE) {
-    this->Append(static_cast<u8>(OpCode::Constant));
-    this->Append((u8)this->constants.count);
+    this->bytecode.Append(static_cast<u8>(OpCode::Constant));
+    this->bytecode.Append((u8)this->constants.count);
   } else {
-    this->Append(static_cast<u8>(OpCode::ConstantLong));
+    this->bytecode.Append(static_cast<u8>(OpCode::ConstantLong));
 
     u64 count = this->constants.count;
-    this->Append(count >> 24);
-    this->Append(count >> 16);
-    this->Append(count >> 8);
-    this->Append(count);
+    this->bytecode.Append(count >> 24);
+    this->bytecode.Append(count >> 16);
+    this->bytecode.Append(count >> 8);
+    this->bytecode.Append(count);
   }
 
   return this->constants.Append(val);
@@ -58,7 +74,7 @@ fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
 }
 
 fnc Chunk::ConstantInstruction(int offset) const -> int {
-  u8 const_idx = (*this)[offset + 1];
+  u8 const_idx = this->bytecode[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   this->constants[const_idx].Print();
   printf("\n");
@@ -67,9 +83,9 @@ fnc Chunk::ConstantInstruction(int offset) const -> int {
 }
 
 fnc Chunk::ConstantLongInstruction(int offset) const -> int {
-  u8 one = (*this)[offset + 1];
-  u8 two = (*this)[offset + 2];
-  u8 thr = (*this)[offset + 3];
+  u8 one = this->bytecode[offset + 1];
+  u8 two = this->bytecode[offset + 2];
+  u8 thr = this->bytecode[offset + 3];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT_LONG", one, two, thr);
 
   u32 idx = 0;
@@ -84,23 +100,23 @@ fnc Chunk::ConstantLongInstruction(int offset) const -> int {
 }
 
 fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
-  u8 idx = this->data[offset + 1];
+  u8 idx = this->bytecode[offset + 1];
   printf("%-16s %4d\n", name, idx);
   return offset + 2;
 }
 
 fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
-  u32 jmp = (u32)(this->data[offset + 1] << 24);
+  u32 jmp = (u32)(this->bytecode[offset + 1] << 24);
   // jmp |= (u32)(this->data[offset + 1] << 24);
   printf("%-16s %4d -> %d\n", name, offset, offset + 5 + sign + jmp);
   return offset + 5;
 }
 
 fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
-  u8 one = (*this)[offset + 1];
-  u8 two = (*this)[offset + 2];
-  u8 thr = (*this)[offset + 3];
-  u8 fou = (*this)[offset + 4];
+  u8 one = this->bytecode[offset + 1];
+  u8 two = this->bytecode[offset + 2];
+  u8 thr = this->bytecode[offset + 3];
+  u8 fou = this->bytecode[offset + 4];
 
   printf("%-16s %04d %04d %04d %04d ' \n", name, one, two, thr, fou);
 
@@ -116,7 +132,7 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
   u32 line = this->lines[line_idx].val;
   printf("%4d ", line);
 
-  u8 byte = (*this)[offset];
+  u8 byte = this->bytecode[offset];
   auto instruction = static_cast<OpCode>(byte);
 
   switch (instruction) {
@@ -196,7 +212,7 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       return this->ByteInstruction("OP_INVOKE", offset) + 3;
     }
     case OpCode::Closure: {
-      u8 closure_idx = this->data[offset + 1 ];
+      u8 closure_idx = this->bytecode[offset + 1 ];
       printf("%-16s %4d ", "OP_CLOSURE", closure_idx);
       this->constants[closure_idx].Print();
       printf("\n");
@@ -212,7 +228,7 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
 
 fnc Chunk::Disassemble() const -> const void {
   printf("==========\n");
-  for (u32 offset = 0; offset < this->count;) {
+  for (u32 offset = 0; offset < this->bytecode.count;) {
     offset = this->PrintAtOffset(offset);
   }
 }

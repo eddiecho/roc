@@ -62,7 +62,7 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
     auto closure = frame->closure;
     auto func = closure->Unwrap();
 
-    u64 inst = frame->inst_ptr - func->chunk.data - 1;
+    u64 inst = frame->inst_ptr - func->chunk.BaseInstructionPointer() - 1;
 
     auto line_range = func->chunk.lines[inst];
     auto name = frame->closure == nullptr ? frame->function->name : frame->closure->name;
@@ -90,7 +90,7 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
 
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->closure = closure;
-  ret->inst_ptr = inner_func.chunk.data;
+  ret->inst_ptr = inner_func.chunk.BaseInstructionPointer();
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = inner_func.chunk;
 
@@ -109,7 +109,7 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
 
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->function = function;
-  ret->inst_ptr = function->as.function.chunk.data;
+  ret->inst_ptr = function->as.function.chunk.BaseInstructionPointer();
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = function->as.function.chunk;
 

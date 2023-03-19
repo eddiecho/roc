@@ -67,5 +67,3 @@ struct Value {
   fnc Print() const -> const void;
   fnc IsTruthy() const -> bool;
 };
-
-struct ConstData : DynamicArray<Value> {};

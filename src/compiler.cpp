@@ -452,7 +452,7 @@ fnc Compiler::Expression(bool nested) -> void {
     }
     this->PatchJump(else_jump_idx);
   } else if (this->Match(Token::Lexeme::While)) {
-    u64 loop_start = this->CurrentChunk()->count;
+    u64 loop_start = this->CurrentChunk()->Count();
 
     this->Expression();
 
@@ -493,21 +493,21 @@ fnc Compiler::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   this->Emit(IntToBytes(0xFFFFFFFF), 4);
 
-  return this->CurrentChunk()->count - 4;
+  return this->CurrentChunk()->Count() - 4;
 }
 
 fnc Compiler::PatchJump(u64 offset) -> void {
-  u32 jump = this->CurrentChunk()->count - offset - 2;
+  u32 jump = this->CurrentChunk()->Count() - offset - 2;
 
-  this->CurrentChunk()->data[offset] = (jump >> 24) & 0xFF;
-  this->CurrentChunk()->data[offset + 1] = (jump >> 16) & 0xFF;
-  this->CurrentChunk()->data[offset + 2] = (jump >> 8) & 0xFF;
-  this->CurrentChunk()->data[offset + 3] = jump & 0xFF;
+  this->CurrentChunk()->bytecode[offset] = (jump >> 24) & 0xFF;
+  this->CurrentChunk()->bytecode[offset + 1] = (jump >> 16) & 0xFF;
+  this->CurrentChunk()->bytecode[offset + 2] = (jump >> 8) & 0xFF;
+  this->CurrentChunk()->bytecode[offset + 3] = jump & 0xFF;
 }
 
 fnc Compiler::Loop(u64 loop_start) -> void {
   this->Emit(OpCode::Loop);
-  u32 offset = this->CurrentChunk()->count - loop_start + 2;
+  u32 offset = this->CurrentChunk()->Count() - loop_start + 2;
 
   this->Emit(IntToBytes(&offset), 4);
 }
@@ -747,16 +747,16 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
 }
 
 fnc Compiler::Emit(u8 byte) -> void {
-  this->CurrentChunk()->AddChunk(byte, this->prev.line);
+  this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
 fnc Compiler::Emit(u8* bytes, u32 count) -> void {
-  this->CurrentChunk()->AddChunk(bytes, count, this->prev.line);
+  this->CurrentChunk()->AddInstruction(bytes, count, this->prev.line);
 }
 
 fnc Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
-  this->CurrentChunk()->AddChunk(byte, this->prev.line);
+  this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
 fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
@@ -810,7 +810,7 @@ fnc Compiler::GetPrecedence(Precedence precedence) -> void {
 // @STDLIB
 fnc static Grammar::Number(Compiler* compiler, bool assign) -> void {
   f64 value = strtod(compiler->prev.start, nullptr);
-  compiler->CurrentChunk()->AddConstant(Value(value), compiler->prev.line);
+  compiler->CurrentChunk()->AddLocal(Value(value), compiler->prev.line);
 }
 
 fnc static Grammar::Parenthesis(Compiler* compiler, bool assign) -> void {
