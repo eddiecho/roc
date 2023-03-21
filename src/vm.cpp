@@ -92,7 +92,7 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk.BaseInstructionPointer();
   ret->locals = this->stack_top - argc - 1;
-  ret->chunk = inner_func.chunk;
+  ret->chunk = &inner_func.chunk;
 
   return this->frame_count - 1;
 }
@@ -111,7 +111,7 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
   ret->function = function;
   ret->inst_ptr = function->as.function.chunk.BaseInstructionPointer();
   ret->locals = this->stack_top - argc - 1;
-  ret->chunk = function->as.function.chunk;
+  ret->chunk = &function->as.function.chunk;
 
   return this->frame_count - 1;
 }
@@ -139,12 +139,12 @@ fnc VirtualMachine::Interpret(
   this->object_pool = object_pool;
 
 #if 1
-  frame->chunk.Disassemble();
+  frame->chunk->Disassemble();
 #endif
 
 #define READ_BYTE() (*frame->inst_ptr++)
 #define READ_INT() *(u32*)(frame->inst_ptr); (frame->inst_ptr += sizeof(u32))
-#define READ_CONSTANT() (frame->chunk.constants[READ_BYTE()])
+#define READ_CONSTANT() (frame->chunk->locals[READ_BYTE()])
 
   u8 byte;
   while (1) {
@@ -179,7 +179,7 @@ fnc VirtualMachine::Interpret(
       case OpCode::ConstantLong: {
         u32 idx = READ_INT();
 
-        Value constant = frame->chunk.constants[idx];
+        Value constant = frame->chunk->locals[idx];
         this->Push(constant);
         break;
       }
@@ -346,7 +346,7 @@ fnc VirtualMachine::Interpret(
         u32 idx = READ_INT();
 
         auto inner_func = frame->closure->Unwrap();
-        auto func_val = inner_func->chunk.constants[idx];
+        auto func_val = inner_func->chunk.locals[idx];
 
         Assert(func_val.type == ValueType::Object);
         auto obj = func_val.as.object;

@@ -166,7 +166,6 @@ class Compiler {
  public:
   Compiler() noexcept;
   fnc Init(const char* src,
-           Chunk* chunk,
            StringPool* string_pool,
            GlobalPool* global_pool) -> void;
   fnc Compile() -> CompileResult;
@@ -185,6 +184,7 @@ class Compiler {
   fnc SyncOnError() -> void;
   fnc inline CurrentChunk() -> Chunk*;
 
+  fnc FunctionDeclaration() -> void;
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
   fnc Identifier(const char* err) -> u32;
@@ -192,10 +192,10 @@ class Compiler {
   fnc EndScope() -> void;
   fnc CodeBlock() -> void;
   fnc AddLocal(Token id) -> void;
-  fnc FindLocal(Token id, ScopedLocals* scope) -> u32;
-  fnc FindLocal(Token id) -> u32;
-  fnc FunctionDeclaration() -> void;
-  fnc FindUpvalue() -> u32;
+  fnc FindLocal(Token id, ScopedLocals* scope) -> Option<u64>;
+  fnc FindLocal(Token id) -> Option<u64>;
+  fnc FindUpvalue(Token id) -> Option<u64>;
+  fnc FindGlobal(Token id) -> Option<u64>;
 
   fnc Jump(OpCode opcode) -> u32;
   fnc PatchJump(u64 jump_idx) -> void;
@@ -235,7 +235,7 @@ class Compiler {
     u64 value = 0;
   };
 
-  DynamicArray<Chunk*> chunks;
+  ChunkManager chunk_manager;
   Object::Function *curr_func = nullptr;
   ScopedLocals locals;
   LocalsList locals_list;

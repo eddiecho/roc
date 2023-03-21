@@ -15,10 +15,10 @@ fnc GlobalPool::Deinit() -> void {
 }
 
 fnc GlobalPool::Alloc(u64 length, const char* start, ObjectType obj_type) -> u64 {
-  u64 idx = this->Find(length, start);
+  auto idx = this->Find(length, start);
 
-  if (idx != GlobalPool::INVALID_INDEX) {
-    return idx;
+  if (!idx.IsNone()) {
+    return idx.Get();
   }
 
   std::string str {start, length};
@@ -30,7 +30,7 @@ fnc GlobalPool::Alloc(u64 length, const char* start, ObjectType obj_type) -> u64
   return obj_idx;
 }
 
-fnc GlobalPool::Find(u64 length, const char* start) -> u64 {
+fnc GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
   std::string str {start, length};
 
   KeyType key = str;
@@ -39,7 +39,7 @@ fnc GlobalPool::Find(u64 length, const char* start) -> u64 {
     return it->second;
   }
 
-  return GlobalPool::INVALID_INDEX;
+  return OptionType::None;
 }
 
 fnc GlobalPool::Nth(u64 index) -> Object* {

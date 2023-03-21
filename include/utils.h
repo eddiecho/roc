@@ -84,3 +84,43 @@ struct Result {
     return this->as.err;
   }
 };
+
+enum class OptionType {
+  Some,
+  None,
+};
+
+template <typename T>
+struct Option {
+
+  OptionType type;
+  T data = {};
+
+  // this is just to faciliate returning None without using empty constructor
+  // you definitely shouldnt use it to return Some
+  // but you know, cpp is stupid
+  Option<T>(OptionType type) {
+    Assert(type != OptionType::Some);
+    this->type = type;
+  };
+
+  Option<T>() {
+    this->type = OptionType::None;
+  }
+
+  Option<T>(T t) {
+    this->type = OptionType::Some;
+    this->data = t;
+  }
+
+  fnc IsNone() -> bool {
+    return this->type == OptionType::None;
+  }
+
+  fnc Get() -> T {
+    Assert(this->type == OptionType::Some);
+    return this->data;
+  }
+
+  operator bool() { return !this->IsNone(); }
+};

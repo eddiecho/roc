@@ -32,7 +32,6 @@ class VirtualMachineTest : public ::testing::Test {
   }
 
   void TearDown() override {
-    chunk.Deinit();
     object_pool.Clear();
     string_pool.Deinit();
     virtual_machine.Deinit();
@@ -41,14 +40,13 @@ class VirtualMachineTest : public ::testing::Test {
   void InitCompiler(const char* test_file) {
     std::snprintf(path, MAX_PATH_LEN, "%s/%s", TEST_DIR, test_file);
     char* src = Utils::ReadFile(path);
-    compiler.Init(src, &chunk, &string_pool, &global_pool);
+    compiler.Init(src, &string_pool, &global_pool);
   }
 
   char path[MAX_PATH_LEN];
 
   VirtualMachine virtual_machine;
   Compiler compiler;
-  Chunk chunk;
   StringPool string_pool;
   Arena<Object> string_object_pool;
   Arena<Object> object_pool;

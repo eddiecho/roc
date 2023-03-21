@@ -350,21 +350,20 @@ const ParseRuleMap Compiler::PARSE_RULES = {
 };
 
 fnc Compiler::Init(const char* src,
-                   Chunk* chunk,
                    StringPool* string_pool,
                    GlobalPool* global_pool)
     -> void {
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
-  this->chunks.Append(chunk);
 
   u64 top_level_func_idx = this->global_pool->Alloc(
       Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME, ObjectType::Function);
   this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
-  this->curr_func->as.function.chunk = *chunk;
   this->curr_func->as.function.arity = 0;
   this->curr_func->type = ObjectType::Function;
+  Chunk* chunk = this->chunk_manager.Alloc();
+  this->curr_func->as.function.chunk = *chunk;
 
   // steal the first local slot for the top level function
   // makes the rest cleaner i guess
@@ -631,10 +630,9 @@ fnc Compiler::FunctionDeclaration() -> void {
   Object::Function* new_func = static_cast<Object::Function*>(
       this->global_pool->Nth(new_func_idx));
 
-  // @FIXME(eddie) - i hope these chunks persist through the call stack
-  Chunk chunk;
+  auto chunk = this->chunk_manager.Alloc();
   new_func->type = ObjectType::Function;
-  new_func->as.function.Init(chunk);
+  new_func->as.function.Init(*chunk);
   new_func->next = (Object*)this->curr_func;
   new_func->name_len = this->prev.len;
 
@@ -645,7 +643,6 @@ fnc Compiler::FunctionDeclaration() -> void {
   new_locals.prev = &this->locals;
   this->locals = new_locals;
   this->curr_func = new_func;
-  this->chunks.Append(&new_func->as.function.chunk);
 
   u32 func_start = this->prev.line;
 
@@ -691,7 +688,7 @@ fnc Compiler::AddLocal(Token id) -> void {
   local->depth = this->scope_depth;
 }
 
-fnc Compiler::FindLocal(Token id) -> u32 {
+fnc Compiler::FindLocal(Token id) -> Option<u64> {
   for (int i = this->locals.locals_count - 1; i >= 0; i--) {
     Local* local = &this->locals.locals[i];
     if (local->id.IdentifiersEqual(id)) {
@@ -699,40 +696,56 @@ fnc Compiler::FindLocal(Token id) -> u32 {
     }
   }
 
-  return Compiler::LOCALS_INVALID_IDX;
+  return OptionType::None;
 }
 
-fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> u32 {
+fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
   return 0;
 }
 
-fnc Compiler::FindUpvalue() -> u32 {
-  if (this->curr_func->next == nullptr) return Compiler::LOCALS_INVALID_IDX;
+fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
+  if (this->curr_func->next == nullptr) return OptionType::None;
 
-
-
-  return Compiler::LOCALS_INVALID_IDX;
+  return OptionType::None;
 }
 
+fnc Compiler::FindGlobal(Token id) -> Option<u64> {
+  return this->global_pool->Find(id.len, id.start);
+}
+
+/*
+ * Variables work like this:
+ * GlobalPool is backed by a hash table, keyed by variable name
+ * the value is an index into a buffer of Objects. The hash table
+ * does not exist at runtime.
+ *
+ * Locals are stored directly into a Chunk's locals array
+ * A Local's name is erased at runtime @TODO(eddie) - this bad from a debugging POV
+ * Lookups are handled in Compiler, we store an array of names
+ * here, and lookups return an index into the locals array
+*/
 fnc Compiler::LoadVariable(bool assignment) -> void {
-  OpCode get = OpCode::GetLocal;
-  OpCode set = OpCode::SetLocal;
+  OpCode get = {};
+  OpCode set = {};
 
-  u32 idx = this->FindLocal(this->prev);
-  if (idx == Compiler::LOCALS_INVALID_IDX) {
-    idx = this->global_pool->Find(this->prev.len, this->prev.start);
-    if (idx == GlobalPool::INVALID_INDEX) {
-      idx = this->FindUpvalue();
-      if (idx == Compiler::LOCALS_INVALID_IDX) {
-        this->ErrorAtCurr("Undefined variable");
-      } else {
-        get = OpCode::GetUpvalue;
-        get = OpCode::SetUpvalue;
-      }
-    }
-
+  // This implicitly defines a hierarchy for variable resolution
+  // Locals have priority over globals,
+  // globals have priorty over upvalues;
+  // @TODO(eddie) - i wonder if we should adjust this?
+  // also the conditionals are kinda cursed
+  auto idx = this->FindLocal(this->prev);
+  if (!idx.IsNone()) {
+    get = OpCode::GetLocal;
+    set = OpCode::SetLocal;
+  } else if (idx = this->FindGlobal(this->prev); !idx.IsNone()) {
     get = OpCode::GetGlobal;
     set = OpCode::SetGlobal;
+  } else if (idx = this->FindUpvalue(this->prev); !idx.IsNone()) {
+    get = OpCode::GetUpvalue;
+    get = OpCode::SetUpvalue;
+  } else {
+    this->ErrorAtCurr("Undefined variable");
+    return;
   }
 
   if (this->Match(Token::Lexeme::Equal) && assignment) {
@@ -743,7 +756,9 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
     this->Emit(get);
   }
 
-  this->Emit(IntToBytes(&idx), 4);
+  auto unwrapped = idx.Get();
+  // @FIXME(eddie) - this is 8 bytes
+  this->Emit(IntToBytes(&unwrapped), 4);
 }
 
 fnc Compiler::Emit(u8 byte) -> void {

@@ -21,13 +21,12 @@ fnc static RunFile(const char* path) -> InterpretError {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
-  Chunk chunk;
   StringPool string_pool;
   Arena<Object> object_pool;
   GlobalPool global_pool;
   global_pool.Init(&object_pool);
 
-  COMPILER.Init(src, &chunk, &string_pool, &global_pool);
+  COMPILER.Init(src, &string_pool, &global_pool);
   CompileResult compile_res = COMPILER.Compile();
   if (compile_res.IsError()) {
     return InterpretError::CompileError;
@@ -49,7 +48,6 @@ fnc static Repl() -> void {
   global_pool.Init(&object_pool);
 
   while (1) {
-    Chunk chunk;
     printf("> ");
 
     if (!fgets(line, sizeof(line), stdin)) {
@@ -57,7 +55,8 @@ fnc static Repl() -> void {
       break;
     }
 
-    COMPILER.Init(line, &chunk, &string_pool, &global_pool);
+    // @FIXME(eddie) - should reuse the same chunk for this
+    COMPILER.Init(line, &string_pool, &global_pool);
     CompileResult compile_res = COMPILER.Compile();
     if (compile_res.IsError()) {
       status = InterpretError::CompileError;

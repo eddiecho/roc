@@ -47,7 +47,7 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 struct StackFrame {
   Object::Closure* closure = nullptr;
   Object::Function* function = nullptr;
-  Chunk chunk;
+  Chunk* chunk = nullptr;
   u8* inst_ptr;
   Value* locals;
 };

@@ -92,6 +92,7 @@ cloc:
 	cloc src/ include/ test/
 
 release:
+	@$(MAKE) sync;
 	@$(MAKE) build;
 	@$(MAKE) test
 

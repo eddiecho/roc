@@ -3,17 +3,18 @@
 #include <stdio.h>
 
 #include "common.h"
+#include "memory.h"
 #include "value.h"
 
-Chunk::Chunk() noexcept {
+fnc Chunk::Init() -> void {
   this->bytecode.Init();
-  this->constants.Init();
+  this->locals.Init();
   this->lines.Init();
 }
 
 fnc Chunk::Deinit() -> void {
   this->bytecode.Deinit();
-  this->constants.Deinit();
+  this->locals.Deinit();
   this->lines.Deinit();
 }
 
@@ -52,20 +53,21 @@ fnc Chunk::AddInstruction(u8* bytes, u64 count, u64 line) -> u64 {
 fnc Chunk::AddLocal(Value val, u64 line) -> u64 {
   this->AddLine(line);
 
-  if (this->constants.count < SMALL_CONST_POOL_SIZE) {
+  u32 idx = this->locals.count;
+
+  if (idx < SMALL_CONST_POOL_SIZE) {
     this->bytecode.Append(static_cast<u8>(OpCode::Constant));
-    this->bytecode.Append((u8)this->constants.count);
+    this->bytecode.Append((u8)idx);
   } else {
     this->bytecode.Append(static_cast<u8>(OpCode::ConstantLong));
 
-    u64 count = this->constants.count;
-    this->bytecode.Append(count >> 24);
-    this->bytecode.Append(count >> 16);
-    this->bytecode.Append(count >> 8);
-    this->bytecode.Append(count);
+    this->bytecode.Append(idx >> 24);
+    this->bytecode.Append(idx >> 16);
+    this->bytecode.Append(idx >> 8);
+    this->bytecode.Append(idx);
   }
 
-  return this->constants.Append(val);
+  return this->locals.Append(val);
 }
 
 fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
@@ -76,7 +78,7 @@ fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
 fnc Chunk::ConstantInstruction(int offset) const -> int {
   u8 const_idx = this->bytecode[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
-  this->constants[const_idx].Print();
+  this->locals[const_idx].Print();
   printf("\n");
 
   return offset + 2;
@@ -93,7 +95,7 @@ fnc Chunk::ConstantLongInstruction(int offset) const -> int {
   idx |= (two << 8);
   idx |= (thr);
 
-  this->constants[idx].Print();
+  this->locals[idx].Print();
   printf("\n");
 
   return offset + 4;
@@ -214,7 +216,7 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Closure: {
       u8 closure_idx = this->bytecode[offset + 1 ];
       printf("%-16s %4d ", "OP_CLOSURE", closure_idx);
-      this->constants[closure_idx].Print();
+      this->locals[closure_idx].Print();
       printf("\n");
 
       return offset + 4;
@@ -233,3 +235,15 @@ fnc Chunk::Disassemble() const -> const void {
   }
 }
 
+fnc ChunkManager::Alloc() -> Chunk* {
+  if (this->capacity < this->count + 1) {
+    auto old_cap = this->capacity;
+    this->capacity = GROW_CAPACITY(old_cap);
+    this->chunks = GROW_ARRAY(Chunk, this->chunks, old_cap, this->capacity);
+  }
+
+  Chunk* chunk = &this->chunks[this->count++];
+  chunk->Init();
+
+  return chunk;
+}

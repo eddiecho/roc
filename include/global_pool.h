@@ -15,7 +15,7 @@ class GlobalPool {
   fnc Deinit() -> void;
   fnc Alloc(u64 length, const char* start, ObjectType obj_type) -> u64;
   fnc Nth(u64 idx) -> Object*;
-  fnc Find(u64 length, const char* start) -> u64;
+  fnc Find(u64 length, const char* start) -> Option<u64>;
 
   static constexpr u64 INVALID_INDEX = 0xFFFFFFFF;
 

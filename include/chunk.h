@@ -6,7 +6,7 @@
 #include "value.h"
 
 enum class OpCode : u8 {
-  Constant,
+  Constant,             // 0
   ConstantLong,
   Add,
   Subtract,
@@ -16,7 +16,7 @@ enum class OpCode : u8 {
   Return,
   True,
   False,
-  Not,
+  Not,                  // 10
   Equality,
   Greater,
   Less,
@@ -26,7 +26,7 @@ enum class OpCode : u8 {
   GetGlobal,
   SetLocal,
   GetLocal,
-  SetUpvalue,
+  SetUpvalue,           // 20
   GetUpvalue,
   Jump,
   JumpFalse,
@@ -43,11 +43,15 @@ class VirtualMachine;
 
 class Chunk {
  public:
+  friend class ChunkManager;
+
   Chunk() noexcept;
 
   friend Compiler;
   friend VirtualMachine;
 
+  fnc Init() -> void;
+  fnc Deinit() -> void;
   fnc Disassemble() const -> const void;
   fnc AddInstruction(u8 byte, u64 line) -> u64;
   fnc AddInstruction(u8* bytes, u64 count, u64 line) -> u64;
@@ -55,7 +59,6 @@ class Chunk {
   fnc AddLocal(Value val, u64 line) -> u64;
   fnc Count() const -> u64;
   fnc BaseInstructionPointer() const -> u8*;
-  fnc Deinit() -> void;
 
  private:
   fnc PrintAtOffset(int offset) const -> const int;
@@ -68,6 +71,16 @@ class Chunk {
 
  private:
   Bytecode bytecode;
-  LocalVariables constants;
+  LocalVariables locals;
   RangeArray<u64> lines;
+};
+
+class ChunkManager {
+ public:
+  fnc Alloc() -> Chunk*;
+
+ private:
+  u64 count = 0;
+  u64 capacity = 0;
+  Chunk* chunks = nullptr;
 };
