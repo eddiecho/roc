@@ -91,6 +91,7 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk.BaseInstructionPointer();
+  // the -1 is so that slot 0 of locals is a reference to Object::Function being called
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = &inner_func.chunk;
 
@@ -110,6 +111,7 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->function = function;
   ret->inst_ptr = function->as.function.chunk.BaseInstructionPointer();
+  // the -1 is so that slot 0 of locals is a reference to Object::Function being called
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = &function->as.function.chunk;
 
@@ -220,7 +222,8 @@ fnc VirtualMachine::Interpret(
         break;
       }
       case OpCode::Negate: {
-        this->Push(-this->Pop().as.number);
+        Value a = this->Pop();
+        this->Push(-a.as.number);
         break;
       }
       case OpCode::False: {
@@ -267,7 +270,8 @@ fnc VirtualMachine::Interpret(
       }
       case OpCode::GetGlobal: {
         u32 idx = READ_INT();
-        this->Push(Value(this->object_pool->Nth(idx)));
+        Value global = this->object_pool->Nth(idx);
+        this->Push(global);
         break;
       }
       case OpCode::SetLocal: {
@@ -277,7 +281,8 @@ fnc VirtualMachine::Interpret(
       }
       case OpCode::GetLocal: {
         u32 idx = READ_INT();
-        this->Push(frame->locals[idx]);
+        Value local = frame->locals[idx];
+        this->Push(local);
         break;
       }
       case OpCode::Jump: {
@@ -336,6 +341,11 @@ fnc VirtualMachine::Interpret(
               break;
             }
           }
+
+          #if 1
+            printf("====== Function: %s\n", function_obj->name);
+            frame->chunk->Disassemble();
+          #endif
 
         } else {
           return this->RuntimeError("Can not invoke non function object");

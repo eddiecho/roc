@@ -13,7 +13,7 @@ class GlobalPool {
  public:
   fnc Init(Arena<Object>* object_pool) -> void;
   fnc Deinit() -> void;
-  fnc Alloc(u64 length, const char* start, ObjectType obj_type) -> u64;
+  fnc Alloc(u64 length, const char* start) -> u64;
   fnc Nth(u64 idx) -> Object*;
   fnc Find(u64 length, const char* start) -> Option<u64>;
 

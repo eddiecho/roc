@@ -14,7 +14,7 @@ fnc GlobalPool::Deinit() -> void {
   this->index.clear();
 }
 
-fnc GlobalPool::Alloc(u64 length, const char* start, ObjectType obj_type) -> u64 {
+fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
   auto idx = this->Find(length, start);
 
   if (!idx.IsNone()) {

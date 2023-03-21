@@ -191,6 +191,7 @@ class Compiler {
   fnc BeginScope() -> void;
   fnc EndScope() -> void;
   fnc CodeBlock() -> void;
+  fnc AddGlobal(Token id) -> u64;
   fnc AddLocal(Token id) -> void;
   fnc FindLocal(Token id, ScopedLocals* scope) -> Option<u64>;
   fnc FindLocal(Token id) -> Option<u64>;

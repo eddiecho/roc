@@ -357,8 +357,8 @@ fnc Compiler::Init(const char* src,
   this->global_pool = global_pool;
   this->scanner.Init(src);
 
-  u64 top_level_func_idx = this->global_pool->Alloc(
-      Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME, ObjectType::Function);
+  auto top_level_func_idx = this->global_pool->Alloc(
+      Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
   this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
   this->curr_func->as.function.arity = 0;
   this->curr_func->type = ObjectType::Function;
@@ -609,7 +609,7 @@ fnc Compiler::VariableDeclaration() -> void {
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
   if (this->scope_depth == 0) {
-    this->global_pool->Alloc(this->prev.len, this->prev.start, ObjectType::String);
+    this->AddGlobal(this->prev);
   } else {
     this->AddLocal(this->prev);
   }
@@ -626,7 +626,7 @@ fnc Compiler::FunctionDeclaration() -> void {
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
-  u32 new_func_idx = this->global_pool->Alloc(this->prev.len, this->prev.start, ObjectType::Function);
+  auto new_func_idx = this->AddGlobal(this->prev);
   Object::Function* new_func = static_cast<Object::Function*>(
       this->global_pool->Nth(new_func_idx));
 
@@ -643,6 +643,12 @@ fnc Compiler::FunctionDeclaration() -> void {
   new_locals.prev = &this->locals;
   this->locals = new_locals;
   this->curr_func = new_func;
+
+  // see Compiler::Init() for why we need this
+  Local* base_local = &this->locals.locals[this->locals.locals_count++];
+  base_local->depth = 0;
+  base_local->id.start = "";
+  base_local->id.len = 0;
 
   u32 func_start = this->prev.line;
 
@@ -675,6 +681,10 @@ fnc Compiler::FunctionDeclaration() -> void {
   this->Emit(OpCode::Closure);
   this->Emit(IntToBytes(&func_idx), 4);
     */
+}
+
+fnc Compiler::AddGlobal(Token id) -> u64 {
+  return this->global_pool->Alloc(id.len, id.start);
 }
 
 fnc Compiler::AddLocal(Token id) -> void {
