@@ -392,16 +392,20 @@ fnc Compiler::Compile() -> Result<Object*, CompileError> {
   return this->curr_func;
 }
 
-fnc Compiler::Declaration() -> void {
+fnc Compiler::Declaration() -> BlockState {
+  BlockState state = {};
+
   if (this->Match(Token::Lexeme::Var)) {
     this->VariableDeclaration();
   } else if (this->Match(Token::Lexeme::Function)) {
-    this->FunctionDeclaration();
+    state.raw |= this->FunctionDeclaration().raw;
   } else {
     this->Statement();
   }
 
   if (this->state.panic) this->SyncOnError();
+
+  return state;
 }
 
 fnc Compiler::Statement() -> void {
@@ -434,7 +438,7 @@ fnc Compiler::Expression(bool nested) -> void {
   if (this->Match(Token::Lexeme::If)) {
     // this is the condition
     // @FIXME(eddie) - uhm, does this mean nested if expressions work?
-    this->Expression();
+    this->Expression(true);
 
     u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
     this->Emit(OpCode::Pop);
@@ -453,7 +457,7 @@ fnc Compiler::Expression(bool nested) -> void {
   } else if (this->Match(Token::Lexeme::While)) {
     u64 loop_start = this->CurrentChunk()->Count();
 
-    this->Expression();
+    this->Expression(true);
 
     u32 exit_jump = this->Jump(OpCode::JumpFalse);
     this->Emit(OpCode::Pop);
@@ -473,7 +477,7 @@ fnc Compiler::Expression(bool nested) -> void {
     this->VariableDeclaration();
 
     // the block
-    this->Expression();
+    this->Expression(true);
 
     this->EndScope();
   } else if (this->Match(Token::Lexeme::LeftBrace)) {
@@ -490,7 +494,8 @@ fnc Compiler::Expression(bool nested) -> void {
 
 fnc Compiler::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
-  this->Emit(IntToBytes(0xFFFFFFFF), 4);
+  int placeholder = 0xFFFFFFFF;
+  this->Emit(IntToBytes(&placeholder), 4);
 
   return this->CurrentChunk()->Count() - 4;
 }
@@ -549,13 +554,16 @@ fnc Compiler::EndScope() -> void {
   }
 }
 
-fnc Compiler::CodeBlock() -> void {
+fnc Compiler::CodeBlock() -> BlockState {
+  BlockState state = {};
+
   while (this->curr.type != Token::Lexeme::RightBrace
     && this->curr.type != Token::Lexeme::Eof) {
-    this->Declaration();
+    state.raw |= this->Declaration().raw;
   }
 
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
+  return state;
 }
 
 fnc Compiler::Advance() -> void {
@@ -621,8 +629,9 @@ fnc Compiler::VariableDeclaration() -> void {
   }
 }
 
-fnc Compiler::FunctionDeclaration() -> void {
+fnc Compiler::FunctionDeclaration() -> BlockState {
   auto declaration_line = this->curr.line;
+  auto curr_func = this->curr_func;
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
@@ -633,7 +642,6 @@ fnc Compiler::FunctionDeclaration() -> void {
   auto chunk = this->chunk_manager.Alloc();
   new_func->type = ObjectType::Function;
   new_func->as.function.Init(*chunk);
-  new_func->next = (Object*)this->curr_func;
   new_func->name_len = this->prev.len;
 
   u64 name_idx = this->string_pool->Alloc(this->prev.len, this->prev.start);
@@ -652,6 +660,7 @@ fnc Compiler::FunctionDeclaration() -> void {
 
   u32 func_start = this->prev.line;
 
+  BlockState state = {};
   this->BeginScope();
 
   this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
@@ -667,20 +676,21 @@ fnc Compiler::FunctionDeclaration() -> void {
   this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
   this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
 
-  this->CodeBlock();
+  state.raw |= this->CodeBlock().raw;
 
   this->EndScope();
 
   // reset the current function to whatever it was before
   this->locals = *this->locals.prev;
-  this->curr_func = static_cast<Object::Function*>(this->curr_func->next);
+  this->curr_func = curr_func;
 
-  // we need this only for closures that actually require upvalues
-  /*
-  u32 func_idx = this->CurrentChunk()->AddConstant(Value(new_func), declaration_line);
-  this->Emit(OpCode::Closure);
-  this->Emit(IntToBytes(&func_idx), 4);
-    */
+  if (state.has_captures) {
+    u32 func_idx = this->CurrentChunk()->AddLocal(Value(new_func), declaration_line);
+    this->Emit(OpCode::Closure);
+    this->Emit(IntToBytes(&func_idx), 4);
+  }
+
+  return state;
 }
 
 fnc Compiler::AddGlobal(Token id) -> u64 {
@@ -698,9 +708,17 @@ fnc Compiler::AddLocal(Token id) -> void {
   local->depth = this->scope_depth;
 }
 
+fnc Compiler::AddUpvalue(Token id) -> void {
+
+}
+
 fnc Compiler::FindLocal(Token id) -> Option<u64> {
-  for (int i = this->locals.locals_count - 1; i >= 0; i--) {
-    Local* local = &this->locals.locals[i];
+  return this->FindLocal(id, &this->locals);
+}
+
+fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
+  for (int i = scope->locals_count - 1; i >= 0; i--) {
+    Local* local = &scope->locals[i];
     if (local->id.IdentifiersEqual(id)) {
       return i;
     }
@@ -709,12 +727,19 @@ fnc Compiler::FindLocal(Token id) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
-  return 0;
-}
-
 fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
-  if (this->curr_func->next == nullptr) return OptionType::None;
+  auto looking_at = this->curr_func->next;
+  auto curr_locals = &this->locals;
+
+  while (looking_at != nullptr && curr_locals->prev != nullptr) {
+    auto idx = this->FindLocal(id, curr_locals);
+    if (!idx.IsNone()) {
+      return idx;
+    }
+
+    looking_at = looking_at->next;
+    curr_locals = curr_locals->prev;
+  }
 
   return OptionType::None;
 }

@@ -52,9 +52,7 @@ class Object {
  public:
   ObjectType type;
 
-  // this gets overloaded for two uses
-  // 1. free lists in GlobalPools to find the next free memory slot
-  // 2. recursive and enclosing functions pointing to their parent
+  // used for free lists in GlobalPools to find the next free memory slot
   Object* next = nullptr;
 
   u32 name_len;

@@ -117,6 +117,19 @@ TEST_F(VirtualMachineTest, SimpleFunction) {
   EXPECT_EQ(val.as.number, 27.0);
 }
 
+TEST_F(VirtualMachineTest, SimpleRecursion) {
+  InitCompiler("scripts/simple_recursion.roc");
+  auto res = compiler.Compile();
+  EXPECT_FALSE(res.IsError());
+
+  auto function = res.Get();
+
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_EQ(status, InterpretError::Success);
+  auto val = virtual_machine.Peek();
+  EXPECT_EQ(val.as.number, 10000);
+}
+
 TEST_F(VirtualMachineTest, SimpleClosure) {
   InitCompiler("scripts/simple_closure.roc");
   CompileResult res = compiler.Compile();

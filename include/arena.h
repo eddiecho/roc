@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <type_traits>
+
 #include "common.h"
 #include "memory.h"
 
@@ -91,6 +93,7 @@ fnc Arena<T>::Alloc() -> u64 {
   T* result = this->first_free;
   if (result != nullptr) {
     this->first_free = this->first_free->next;
+    this->first_free->next = nullptr;
 
     return result - this->data;
   }

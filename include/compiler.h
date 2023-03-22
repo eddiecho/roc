@@ -162,6 +162,15 @@ enum class CompileError {
 using CompileResult = Result<Object*, CompileError>;
 using ParseRuleMap = absl::flat_hash_map<Token::Lexeme, ParseRule>;
 
+struct BlockState {
+  union {
+    u32 raw;
+    struct {
+      unsigned char has_captures: 1;
+    };
+  };
+};
+
 class Compiler {
  public:
   Compiler() noexcept;
@@ -174,7 +183,7 @@ class Compiler {
   fnc Advance() -> void;
   fnc inline Match(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
-  fnc Declaration() -> void;
+  fnc Declaration() -> BlockState;
   fnc Expression(bool nested = false) -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtCurr(const char* message) -> void;
@@ -184,15 +193,16 @@ class Compiler {
   fnc SyncOnError() -> void;
   fnc inline CurrentChunk() -> Chunk*;
 
-  fnc FunctionDeclaration() -> void;
+  fnc FunctionDeclaration() -> BlockState;
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
   fnc Identifier(const char* err) -> u32;
   fnc BeginScope() -> void;
   fnc EndScope() -> void;
-  fnc CodeBlock() -> void;
+  fnc CodeBlock() -> BlockState;
   fnc AddGlobal(Token id) -> u64;
   fnc AddLocal(Token id) -> void;
+  fnc AddUpvalue(Token id) -> void;
   fnc FindLocal(Token id, ScopedLocals* scope) -> Option<u64>;
   fnc FindLocal(Token id) -> Option<u64>;
   fnc FindUpvalue(Token id) -> Option<u64>;
@@ -219,7 +229,6 @@ class Compiler {
 
  private:
   constexpr static const u32 MAX_LOCALS_COUNT = M_MAX_LOCALS_COUNT;
-  constexpr static const u32 LOCALS_INVALID_IDX = 0xFFFFFFFE;
   constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
   constexpr static const u32 GLOBAL_FUNCTION_NAME_LEN = 15;
   const static ParseRuleMap PARSE_RULES;

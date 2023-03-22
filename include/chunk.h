@@ -1,5 +1,6 @@
 #pragma once
 
+#include "arena.h"
 #include "common.h"
 #include "dynamic_array.h"
 #include "range_search.h"
@@ -82,5 +83,7 @@ class ChunkManager {
  private:
   u64 count = 0;
   u64 capacity = 0;
+  // @TODO(eddie) - investigate using Arena for this
+  // Chunk needs a next field in that case
   Chunk* chunks = nullptr;
 };
