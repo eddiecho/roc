@@ -15,6 +15,7 @@ enum class OpCode : u8 {
   Divide,
   Negate,
   Return,
+  ReturnVoid,
   True,
   False,
   Not,                  // 10

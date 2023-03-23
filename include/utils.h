@@ -51,13 +51,16 @@ struct Result {
   };
 
   ResultType type;
-  union {
+  union Data {
     T obj;
     E err;
+
+    Data() { memset(this, 0, sizeof(Data)); }
+    ~Data() {}
   } as;
 
   Result<T, E>() {
-    this->type = ResultType::Some;
+    this->type = ResultType::Ok;
   };
 
   Result<T, E>(E err) {

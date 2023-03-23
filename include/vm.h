@@ -15,7 +15,6 @@
 #include "value.h"
 
 #define VM_INTERPRET_ERRORS \
-  X(Success)                \
   X(CompileError)           \
   X(RuntimeError)
 
@@ -52,6 +51,8 @@ struct StackFrame {
   Value* locals;
 };
 
+using InterpretResult = Result<Value, InterpretError>;
+
 class VirtualMachine {
  public:
   fnc Init() -> void;
@@ -60,7 +61,7 @@ class VirtualMachine {
     Object* func,
     StringPool* string_pool,
     Arena<Object>* object_pool
-  ) -> InterpretError;
+  ) -> InterpretResult;
 
   fnc RuntimeError(const char* msg, ...) -> InterpretError;
   fnc Peek() const -> Value;

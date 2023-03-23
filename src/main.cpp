@@ -17,7 +17,7 @@
 static VirtualMachine VM;
 static Compiler COMPILER;
 
-fnc static RunFile(const char* path) -> InterpretError {
+fnc static RunFile(const char* path) -> InterpretResult {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
@@ -41,7 +41,7 @@ fnc static RunFile(const char* path) -> InterpretError {
 
 fnc static Repl() -> void {
   char line[1024];
-  InterpretError status;
+  InterpretResult status;
   StringPool string_pool;
   Arena<Object> object_pool;
   GlobalPool global_pool;

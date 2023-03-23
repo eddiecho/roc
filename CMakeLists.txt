@@ -12,6 +12,9 @@ project("${PROJECT_NAME}" VERSION 0.1)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
+# set(PROFILER_FLAGS "-lprofiler")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${PROFILER_FLAGS}")
+
 include(FetchContent)
 FetchContent_Declare(
   googletest

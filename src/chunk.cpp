@@ -108,8 +108,10 @@ fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
 }
 
 fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
-  u32 jmp = (u32)(this->bytecode[offset + 1] << 24);
-  // jmp |= (u32)(this->data[offset + 1] << 24);
+  auto location = this->bytecode.data + 1;
+  auto as_int = reinterpret_cast<u32*>(location);
+  u32 jmp = *location;
+
   printf("%-16s %4d -> %d\n", name, offset, offset + 5 + sign + jmp);
   return offset + 5;
 }

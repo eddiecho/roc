@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "absl/container/flat_hash_set.h"
+#include <string>
 
 #include "common.h"
 #include "dynamic_array.h"
@@ -44,7 +45,9 @@ fnc VirtualMachine::Pop() -> Value {
   return *this->stack_top;
 }
 
-fnc VirtualMachine::Peek() const -> Value { return *this->stack_top; }
+fnc VirtualMachine::Peek() const -> Value {
+  return this->stack_top[-1];
+}
 
 fnc VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
@@ -124,7 +127,7 @@ fnc VirtualMachine::Interpret(
   Object* obj,
   StringPool* string_pool,
   Arena<Object>* object_pool
-) -> InterpretError {
+) -> InterpretResult {
 
   Assert(obj != nullptr);
   auto function = static_cast<Object::Function*>(obj);
@@ -141,6 +144,7 @@ fnc VirtualMachine::Interpret(
   this->object_pool = object_pool;
 
 #if 1
+  absl::flat_hash_set<std::string_view> function_map;
   frame->chunk->Disassemble();
 #endif
 
@@ -155,20 +159,22 @@ fnc VirtualMachine::Interpret(
     auto instruction = static_cast<OpCode>(byte);
 
     switch (instruction) {
-      case OpCode::Return: {
-        // @TODO(eddie) - what to do about void function?
-        Value ret_val = this->Pop();
+      case OpCode::ReturnVoid: {
         this->frame_count--;
         if (this->frame_count == 0) {
-          // the book has this here because it uses the first stack slot
-          // implicitly as the top level function
-          // this->Pop();
-          return InterpretError::Success;
+          return this->Pop();
         }
 
         this->stack_top = this->frames[this->frame_count].locals;
-        this->Push(ret_val);
+        frame = &this->frames[this->frame_count - 1];
+        break;
+      }
+      case OpCode::Return: {
+        Value ret_val = this->Pop();
+        this->frame_count--;
 
+        this->stack_top = this->frames[this->frame_count].locals;
+        this->Push(ret_val);
         frame = &this->frames[this->frame_count - 1];
 
         break;
@@ -242,7 +248,7 @@ fnc VirtualMachine::Interpret(
       case OpCode::Equality: {
         Value b = this->Pop();
         Value a = this->Pop();
-        this->Push(a == b);
+        this->Push(Value(a == b));
         break;
       }
       case OpCode::Greater: {
@@ -343,8 +349,12 @@ fnc VirtualMachine::Interpret(
           }
 
           #if 1
-            printf("====== Function: %s\n", function_obj->name);
-            frame->chunk->Disassemble();
+            auto it = function_map.find(function_obj->name);
+            if (it == function_map.end()) {
+              printf("====== Function: %s\n", function_obj->name);
+              frame->chunk->Disassemble();
+              function_map.insert(function_obj->name);
+            }
           #endif
 
         } else {
@@ -386,5 +396,5 @@ fnc VirtualMachine::Interpret(
 #undef READ_INT
 #undef READ_CONSTANT
 
-  return InterpretError::Success;
+  return this->Peek();
 }

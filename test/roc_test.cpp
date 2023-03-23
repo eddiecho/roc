@@ -23,6 +23,12 @@
 #define GetTestFilePath(pp) \
   std::snprintf(path, MAX_PATH_LEN, "%s/" pp, TEST_DIR)
 
+fnc Fibonacci(u64 n) -> u64 {
+  if (n <= 1) return 1;
+
+  return Fibonacci(n - 1) + Fibonacci(n - 2);
+}
+
 class VirtualMachineTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -55,65 +61,61 @@ class VirtualMachineTest : public ::testing::Test {
 
 TEST_F(VirtualMachineTest, BasicCompiler) {
   InitCompiler("scripts/simple1.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
-
-  Value val = virtual_machine.Peek();
+  auto val = status.Get();
   EXPECT_EQ(val.type, ValueType::Number);
   EXPECT_DOUBLE_EQ(val.as.number, 7.0);
 }
 
 TEST_F(VirtualMachineTest, BasicString) {
   InitCompiler("scripts/simple_string1.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
-
-  Value val = virtual_machine.Peek();
+  auto val = status.Get();
   EXPECT_EQ(val.type, ValueType::Object);
 }
 
 TEST_F(VirtualMachineTest, BasicAssignment) {
   InitCompiler("scripts/simple_assignment.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
-
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 }
 
 TEST_F(VirtualMachineTest, LocalAssignment) {
   InitCompiler("scripts/local_assignment.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
-
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 }
 
 TEST_F(VirtualMachineTest, SimpleFunction) {
   InitCompiler("scripts/simple_function.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
-  Value val = virtual_machine.Peek();
+  auto val = status.Get();
   EXPECT_EQ(val.as.number, 27.0);
 }
 
@@ -123,23 +125,23 @@ TEST_F(VirtualMachineTest, SimpleRecursion) {
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
-
   auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
-  auto val = virtual_machine.Peek();
-  EXPECT_EQ(val.as.number, 10000);
+  EXPECT_FALSE(status.IsError());
+
+  auto val = status.Get();
+  EXPECT_EQ((u64)val.as.number, Fibonacci(20));
 }
 
 TEST_F(VirtualMachineTest, SimpleClosure) {
   InitCompiler("scripts/simple_closure.roc");
-  CompileResult res = compiler.Compile();
+  auto res = compiler.Compile();
   EXPECT_FALSE(res.IsError());
 
   auto function = res.Get();
+  auto status = virtual_machine.Interpret(function, &string_pool, &object_pool);
+  EXPECT_FALSE(status.IsError());
 
-  InterpretError status = virtual_machine.Interpret(function, &string_pool, &object_pool);
-  EXPECT_EQ(status, InterpretError::Success);
-  Value val = virtual_machine.Peek();
+  auto val = status.Get();
   EXPECT_EQ(val.as.number, 2.0);
 }
 

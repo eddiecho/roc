@@ -282,6 +282,10 @@ fnc Scanner::ScanToken() -> Token {
   }
 }
 
+auto BlockState::Merge(BlockState other) -> void {
+  this->raw |= other.raw;
+}
+
 Compiler::Compiler() noexcept {}
 
 const ParseRuleMap Compiler::PARSE_RULES = {
@@ -381,7 +385,7 @@ fnc inline Compiler::CurrentChunk() -> Chunk* {
 fnc Compiler::Compile() -> Result<Object*, CompileError> {
   this->Advance();
 
-  while (!this->Match(Token::Lexeme::Eof)) {
+  while (!this->MatchAndAdvance(Token::Lexeme::Eof)) {
     this->Declaration();
   }
 
@@ -395,12 +399,20 @@ fnc Compiler::Compile() -> Result<Object*, CompileError> {
 fnc Compiler::Declaration() -> BlockState {
   BlockState state = {};
 
-  if (this->Match(Token::Lexeme::Var)) {
-    this->VariableDeclaration();
-  } else if (this->Match(Token::Lexeme::Function)) {
-    state.raw |= this->FunctionDeclaration().raw;
-  } else {
-    this->Statement();
+  switch (this->curr.type) {
+    default: {
+      this->Statement();
+      break;
+    }
+    case Token::Lexeme::Var: {
+      this->Advance();
+      this->VariableDeclaration();
+      break;
+    }
+    case Token::Lexeme::Function: {
+      this->Advance();
+      state.Merge(this->FunctionDeclaration());
+    }
   }
 
   if (this->state.panic) this->SyncOnError();
@@ -419,8 +431,8 @@ fnc Compiler::Statement() -> void {
       this->ErrorAtCurr("Can not have top level return statement");
     }
 
-    if (this->Match(Token::Lexeme::Semicolon)) {
-      this->Emit(OpCode::Return);
+    if (this->MatchAndAdvance(Token::Lexeme::Semicolon)) {
+      this->Emit(OpCode::ReturnVoid);
     } else {
       this->Expression();
       this->Emit(OpCode::Return);
@@ -435,78 +447,95 @@ fnc Compiler::Statement() -> void {
 }
 
 fnc Compiler::Expression(bool nested) -> void {
-  if (this->Match(Token::Lexeme::If)) {
-    // this is the condition
-    // @FIXME(eddie) - uhm, does this mean nested if expressions work?
-    this->Expression(true);
+  switch (this->curr.type) {
+    case Token::Lexeme::If: {
+      this->Advance();
+      // this is the condition
+      // uhm, does this mean nested if expressions work?
+      this->Expression(true);
 
-    u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
-    this->Emit(OpCode::Pop);
+      u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
+      this->Emit(OpCode::Pop);
 
-    // this is the block after
-    this->Statement();
-
-    u32 else_jump_idx = this->Jump(OpCode::Jump);
-    this->PatchJump(if_jump_idx);
-    this->Emit(OpCode::Pop);
-
-    if (this->Match(Token::Lexeme::Else)) {
+      // this is the block after
       this->Statement();
+
+      u32 else_jump_idx = this->Jump(OpCode::Jump);
+      this->PatchJump(if_jump_idx);
+      this->Emit(OpCode::Pop);
+
+      if (this->MatchAndAdvance(Token::Lexeme::Else)) {
+        this->Statement();
+      }
+      this->PatchJump(else_jump_idx);
+      break;
     }
-    this->PatchJump(else_jump_idx);
-  } else if (this->Match(Token::Lexeme::While)) {
-    u64 loop_start = this->CurrentChunk()->Count();
+    case Token::Lexeme::While: {
+      this->Advance();
+      u64 loop_start = this->CurrentChunk()->Count();
 
-    this->Expression(true);
+      this->Expression(true);
 
-    u32 exit_jump = this->Jump(OpCode::JumpFalse);
-    this->Emit(OpCode::Pop);
+      u32 exit_jump = this->Jump(OpCode::JumpFalse);
+      this->Emit(OpCode::Pop);
 
-    this->Statement();
+      this->Statement();
 
-    this->Loop(loop_start);
+      this->Loop(loop_start);
 
-    this->PatchJump(exit_jump);
-    this->Emit(OpCode::Pop);
+      this->PatchJump(exit_jump);
+      this->Emit(OpCode::Pop);
+      break;
+    }
+    case Token::Lexeme::For: {
+      this->Advance();
+      // @TODO(eddie) - we need range generators and iterators
+      // @TODO(eddie) - continue and break statements
+      this->BeginScope();
 
-  // @TODO(eddie) - we need range generators and iterators
-  // @TODO(eddie) - continue and break statements
-  } else if (this->Match(Token::Lexeme::For)) {
-    this->BeginScope();
+      this->VariableDeclaration();
 
-    this->VariableDeclaration();
+      // the block
+      this->Expression(true);
 
-    // the block
-    this->Expression(true);
+      this->EndScope();
+      break;
+    }
+    case Token::Lexeme::LeftBrace: {
+      this->Advance();
+      this->BeginScope();
+      this->CodeBlock();
+      this->EndScope();
+      break;
+    }
+    default: {
+      this->GetPrecedence(Precedence::Assignment);
 
-    this->EndScope();
-  } else if (this->Match(Token::Lexeme::LeftBrace)) {
-    this->BeginScope();
-    this->CodeBlock();
-    this->EndScope();
-  } else {
-    this->GetPrecedence(Precedence::Assignment);
+      if (!nested)
+        this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after non block expression.");
 
-    if (!nested)
-      this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after non block expression.");
+      break;
+    }
   }
 }
 
 fnc Compiler::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
-  this->Emit(IntToBytes(&placeholder), 4);
+  auto place = IntToBytes(&placeholder);
+  this->Emit(place, 4);
 
   return this->CurrentChunk()->Count() - 4;
 }
 
 fnc Compiler::PatchJump(u64 offset) -> void {
-  u32 jump = this->CurrentChunk()->Count() - offset - 2;
+  u32 jump = this->CurrentChunk()->Count() - offset - 4;
 
-  this->CurrentChunk()->bytecode[offset] = (jump >> 24) & 0xFF;
-  this->CurrentChunk()->bytecode[offset + 1] = (jump >> 16) & 0xFF;
-  this->CurrentChunk()->bytecode[offset + 2] = (jump >> 8) & 0xFF;
-  this->CurrentChunk()->bytecode[offset + 3] = jump & 0xFF;
+  // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
+  // so! we just ignore it by doing disgusting bit reinterpreting
+  auto code = this->CurrentChunk()->bytecode.data + offset;
+  auto as_int = reinterpret_cast<u32*>(code);
+  *as_int = jump;
 }
 
 fnc Compiler::Loop(u64 loop_start) -> void {
@@ -592,7 +621,7 @@ fnc Compiler::Advance() -> void {
 }
 
 // @TODO(eddie) - just get rid of this
-fnc inline Compiler::Match(Token::Lexeme type) -> bool {
+fnc inline Compiler::MatchAndAdvance(Token::Lexeme type) -> bool {
   if (this->curr.type == type) {
     this->Advance();
     return true;
@@ -622,9 +651,9 @@ fnc Compiler::VariableDeclaration() -> void {
     this->AddLocal(this->prev);
   }
 
-  if (in_for_loop && this->Match(Token::Lexeme::In)) {
+  if (in_for_loop && this->MatchAndAdvance(Token::Lexeme::In)) {
     this->Expression();
-  } else if (this->Match(Token::Lexeme::Equal)) {
+  } else if (this->MatchAndAdvance(Token::Lexeme::Equal)) {
     this->Expression();
   }
 }
@@ -670,7 +699,7 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
       this->curr_func->as.function.arity++;
       this->VariableDeclaration();
 
-    } while(this->Match(Token::Lexeme::Comma));
+    } while(this->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
   this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
@@ -783,7 +812,7 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
     return;
   }
 
-  if (this->Match(Token::Lexeme::Equal) && assignment) {
+  if (this->MatchAndAdvance(Token::Lexeme::Equal) && assignment) {
     this->Expression();
 
     this->Emit(set);
@@ -819,7 +848,7 @@ fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   this->ErrorAtCurr(message);
 }
 
-fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::Return); }
+fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
 
 fnc Compiler::GetParseRule(Token::Lexeme token) -> const ParseRule* {
   return &this->PARSE_RULES.at(token);
@@ -994,7 +1023,7 @@ fnc static Grammar::InvokeOp(Compiler* compiler, bool assign) -> void {
     do {
       compiler->Expression(true);
       arg_count++;
-    } while (compiler->Match(Token::Lexeme::Comma));
+    } while (compiler->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
   compiler->Consume(Token::Lexeme::RightParens, "Expected closing parenthesis ')' after arguments");

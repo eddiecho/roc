@@ -169,6 +169,8 @@ struct BlockState {
       unsigned char has_captures: 1;
     };
   };
+
+  fnc Merge(BlockState other) -> void;
 };
 
 class Compiler {
@@ -181,7 +183,7 @@ class Compiler {
 
  private:
   fnc Advance() -> void;
-  fnc inline Match(Token::Lexeme type) -> bool;
+  fnc inline MatchAndAdvance(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
   fnc Declaration() -> BlockState;
   fnc Expression(bool nested = false) -> void;
