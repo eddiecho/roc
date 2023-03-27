@@ -21,8 +21,7 @@ fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
     return idx.Get();
   }
 
-  std::string str {start, length};
-  KeyType key = str;
+  KeyType key = {start, length};
 
   auto obj_idx = this->object_pool->Alloc();
   this->index.emplace(key, obj_idx);
@@ -31,9 +30,7 @@ fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
 }
 
 fnc GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
-  std::string str {start, length};
-
-  KeyType key = str;
+  KeyType key = {start, length};
   auto it = this->index.find(key);
   if (it != this->index.end()) {
     return it->second;

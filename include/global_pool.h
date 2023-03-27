@@ -7,7 +7,7 @@
 #include "dynamic_array.h"
 #include "object.h"
 
-using KeyType = std::string;
+using KeyType = std::string_view;
 
 class GlobalPool {
  public:

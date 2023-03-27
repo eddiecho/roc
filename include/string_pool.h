@@ -21,7 +21,7 @@ class StringPool {
  private:
   DynamicArray<char>* char_data = new DynamicArray<char>();
   Arena<Object>* object_pool = nullptr;
-  absl::flat_hash_map<std::string, u64> intern_table;
+  absl::flat_hash_map<std::string_view, u64> intern_table;
 };
 
 

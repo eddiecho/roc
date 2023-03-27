@@ -14,7 +14,6 @@ enum class ObjectType {
   Function,
   Closure,
 };
-#define OBJECT_TYPE_COUNT 2
 
 class Object {
  public:
@@ -44,11 +43,6 @@ class Object {
   fnc Print() const -> void;
   fnc IsTruthy() -> bool;
 
-  template <typename H>
-  friend H AbslHashValue(H h, const Object& s) {
-    return H::combine(std::move(h), static_cast<u32>(s.type), std::string(s.name, s.name_len));
-  }
-
  public:
   ObjectType type;
 
@@ -72,12 +66,12 @@ class Object::String : public Object {
  public:
   String() noexcept;
   String(u32 name_len, const char* name) noexcept;
-  String(std::string str) noexcept;
+  String(std::string_view str) noexcept;
   String(Object::String& str) noexcept;
   String(const Object::String&& str) noexcept;
 
-  operator std::string() const {
-    std::string ret{this->name, this->name_len};
+  operator std::string_view() const {
+    std::string_view ret{this->name, this->name_len};
 
     return ret;
   }
@@ -95,12 +89,6 @@ class Object::String : public Object {
     if (this->name_len != o.name_len) return false;
 
     return std::memcmp(this->name, o.name, this->name_len) == 0;
-  }
-
-  fnc operator==(std::string str) const -> bool {
-    if (this->name_len != str.length()) return false;
-
-    return std::memcmp(this->name, str.c_str(), this->name_len) == 0;
   }
 
   fnc Print() const -> void;

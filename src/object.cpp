@@ -50,11 +50,11 @@ Object::String::String(u32 name_len, const char* name) noexcept {
   this->name = name;
 }
 
-Object::String::String(std::string str) noexcept {
+Object::String::String(std::string_view str) noexcept {
   this->type = ObjectType::String;
 
   this->name_len = str.length();
-  this->name = str.c_str();
+  this->name = str.data();
 }
 
 Object::String::String(Object::String& str) noexcept {

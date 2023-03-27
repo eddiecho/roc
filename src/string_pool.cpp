@@ -17,7 +17,7 @@ fnc StringPool::Deinit() -> void {
 }
 
 fnc StringPool::Alloc(u64 length, const char* start) -> u64 {
-  std::string str {start, length};
+  std::string_view str {start, length};
   auto it = this->intern_table.find(str);
   if (it != this->intern_table.end()) {
     return it->second;
