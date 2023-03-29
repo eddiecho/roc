@@ -23,12 +23,8 @@ class Object {
   class Function;
   struct FunctionData {
     u32 arity;
+    u32 upvalue_count;
     Chunk chunk;
-
-    fnc Init(Chunk chunk) -> void {
-      this->arity = 0;
-      this->chunk = chunk;
-    }
   };
 
   class Closure;

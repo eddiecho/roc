@@ -364,10 +364,12 @@ fnc Compiler::Init(const char* src,
   auto top_level_func_idx = this->global_pool->Alloc(
       Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
   this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
-  this->curr_func->as.function.arity = 0;
   this->curr_func->type = ObjectType::Function;
   Chunk* chunk = this->chunk_manager.Alloc();
   this->curr_func->as.function.chunk = *chunk;
+  this->curr_func->as.function.arity = 0;
+  this->curr_func->as.function.upvalue_count = 0;
+  this->curr_func->next = nullptr;
 
   // steal the first local slot for the top level function
   // makes the rest cleaner i guess
@@ -605,7 +607,6 @@ fnc Compiler::Advance() -> void {
     this->curr = token;
 
 #ifdef DEBUG_TRACE_EXECUTION
-    // output debug token info
     if (token.line != line) {
       printf("%4d ", token.line);
     } else {
@@ -630,15 +631,19 @@ fnc inline Compiler::MatchAndAdvance(Token::Lexeme type) -> bool {
   return false;
 }
 
-fnc Compiler::ErrorAtCurr(const char* message) -> void {
+fnc inline Compiler::ErrorAtToken(const char* message, Token id) -> void {
   if (this->state.panic) return;
 
-  fprintf(stderr, "[line %d] Error", this->curr.line);
-  fprintf(stderr, " at '%.*s'", this->curr.len, this->curr.start);
+  fprintf(stderr, "[line %d] Error", id.line);
+  fprintf(stderr, " at '%.*s'", id.len, id.start);
   fprintf(stderr, ": %s\n", message);
 
   this->state.panic = 1;
   this->state.error = 1;
+}
+
+fnc inline Compiler::ErrorAtCurr(const char* message) -> void {
+  this->ErrorAtToken(message, this->curr);
 }
 
 fnc Compiler::VariableDeclaration() -> void {
@@ -660,7 +665,10 @@ fnc Compiler::VariableDeclaration() -> void {
 
 fnc Compiler::FunctionDeclaration() -> BlockState {
   auto declaration_line = this->curr.line;
+  // @FIXME(eddie) - these are chunky copies
   auto curr_func = this->curr_func;
+  auto curr_locals = this->locals;
+  auto curr_upvalues = this->upvalues;
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
@@ -670,14 +678,17 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
 
   auto chunk = this->chunk_manager.Alloc();
   new_func->type = ObjectType::Function;
-  new_func->as.function.Init(*chunk);
+  new_func->as.function.chunk = *chunk;
+  new_func->as.function.arity = 0;
+  new_func->as.function.upvalue_count = 0;
   new_func->name_len = this->prev.len;
+  new_func->next = curr_func;
 
   u64 name_idx = this->string_pool->Alloc(this->prev.len, this->prev.start);
   new_func->name = this->string_pool->Nth(name_idx)->name;
 
   ScopedLocals new_locals = {};
-  new_locals.prev = &this->locals;
+  new_locals.prev = &curr_locals;
   this->locals = new_locals;
   this->curr_func = new_func;
 
@@ -686,6 +697,10 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
   base_local->depth = 0;
   base_local->id.start = "";
   base_local->id.len = 0;
+
+  ScopedUpvalues new_upvalues = {};
+  new_upvalues.prev = &curr_upvalues;
+  this->upvalues = new_upvalues;
 
   u32 func_start = this->prev.line;
 
@@ -711,6 +726,7 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
 
   // reset the current function to whatever it was before
   this->locals = *this->locals.prev;
+  this->upvalues = *this->upvalues.prev;
   this->curr_func = curr_func;
 
   if (state.has_captures) {
@@ -737,11 +753,14 @@ fnc Compiler::AddLocal(Token id) -> void {
   local->depth = this->scope_depth;
 }
 
-fnc Compiler::AddUpvalue(Token id) -> void {
-
+fnc Compiler::AddUpvalue(u8 index, bool local) -> u32 {
+  u32 count = this->curr_func->as.function.upvalue_count;
+  this->upvalues.upvalues[count].local = local;
+  this->upvalues.upvalues[count].index = index;
+  return this->curr_func->as.function.upvalue_count++;
 }
 
-fnc Compiler::FindLocal(Token id) -> Option<u64> {
+fnc inline Compiler::FindLocal(Token id) -> Option<u64> {
   return this->FindLocal(id, &this->locals);
 }
 
@@ -758,12 +777,12 @@ fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
 
 fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
   auto looking_at = this->curr_func->next;
-  auto curr_locals = &this->locals;
+  auto curr_locals = this->locals.prev;
 
-  while (looking_at != nullptr && curr_locals->prev != nullptr) {
+  while (looking_at != nullptr && curr_locals != nullptr) {
     auto idx = this->FindLocal(id, curr_locals);
     if (!idx.IsNone()) {
-      return idx;
+      return this->AddUpvalue(idx, true);
     }
 
     looking_at = looking_at->next;
@@ -773,7 +792,7 @@ fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc Compiler::FindGlobal(Token id) -> Option<u64> {
+fnc inline Compiler::FindGlobal(Token id) -> Option<u64> {
   return this->global_pool->Find(id.len, id.start);
 }
 
@@ -808,7 +827,7 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
     get = OpCode::GetUpvalue;
     get = OpCode::SetUpvalue;
   } else {
-    this->ErrorAtCurr("Undefined variable");
+    this->ErrorAtToken("Undefined variable", this->prev);
     return;
   }
 
@@ -825,15 +844,15 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
   this->Emit(IntToBytes(&unwrapped), 4);
 }
 
-fnc Compiler::Emit(u8 byte) -> void {
+fnc inline Compiler::Emit(u8 byte) -> void {
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
-fnc Compiler::Emit(u8* bytes, u32 count) -> void {
+fnc inline Compiler::Emit(u8* bytes, u32 count) -> void {
   this->CurrentChunk()->AddInstruction(bytes, count, this->prev.line);
 }
 
-fnc Compiler::Emit(OpCode op) -> void {
+fnc inline Compiler::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }

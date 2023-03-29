@@ -121,6 +121,20 @@ struct LocalsList {
   ScopedLocals* head = nullptr;
 };
 
+struct Upvalue {
+  u8 index;
+  bool local;
+};
+
+struct ScopedUpvalues {
+  Upvalue upvalues[M_MAX_LOCALS_COUNT];
+  ScopedUpvalues* prev = nullptr;
+};
+
+struct UpvaluesList {
+  ScopedUpvalues* head = nullptr;
+};
+
 class Compiler;
 using ParseFunction = void (*)(Compiler*, bool);
 
@@ -188,6 +202,7 @@ class Compiler {
   fnc Declaration() -> BlockState;
   fnc Expression(bool nested = false) -> void;
   fnc EndCompilation() -> void;
+  fnc ErrorAtToken(const char* message, Token id) -> void;
   fnc ErrorAtCurr(const char* message) -> void;
   fnc GetPrecedence(Precedence prec) -> void;
   fnc GetParseRule(Token::Lexeme lexeme) -> const ParseRule*;
@@ -204,7 +219,7 @@ class Compiler {
   fnc CodeBlock() -> BlockState;
   fnc AddGlobal(Token id) -> u64;
   fnc AddLocal(Token id) -> void;
-  fnc AddUpvalue(Token id) -> void;
+  fnc AddUpvalue(u8 index, bool local) -> u32;
   fnc FindLocal(Token id, ScopedLocals* scope) -> Option<u64>;
   fnc FindLocal(Token id) -> Option<u64>;
   fnc FindUpvalue(Token id) -> Option<u64>;
@@ -249,9 +264,13 @@ class Compiler {
 
   ChunkManager chunk_manager;
   Object::Function *curr_func = nullptr;
+
   ScopedLocals locals;
   LocalsList locals_list;
   u32 scope_depth = 0;
+
+  ScopedUpvalues upvalues;
+  UpvaluesList upvalues_list;
 
   Scanner scanner;
   StringPool* string_pool = nullptr;
