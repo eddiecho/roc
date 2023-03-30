@@ -13,12 +13,18 @@ enum class ObjectType {
   String,
   Function,
   Closure,
+  Upvalue,
 };
 
 class Object {
  public:
   class String;
   struct StringData {};
+
+  class Upvalue;
+  struct UpvalueData {
+    Value* location;
+  };
 
   class Function;
   struct FunctionData {
@@ -30,6 +36,8 @@ class Object {
   class Closure;
   struct ClosureData {
     FunctionData* function;
+    Object::Upvalue** upvalues;
+    u32 upvalue_count;
   };
 
   bool operator==(const Object* o) const {
@@ -52,6 +60,7 @@ class Object {
     StringData string;
     FunctionData function;
     ClosureData closure;
+    UpvalueData upvalue;
 
     Data() { memset(this, 0, sizeof(Data)); }
     ~Data() {}
@@ -112,7 +121,6 @@ class Object::Function : public Object {
 class Object::Closure : public Object {
  public:
   Closure() noexcept;
-  Closure(Object::Function* function) noexcept;
 
   fnc operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Closure) return false;
@@ -120,8 +128,24 @@ class Object::Closure : public Object {
     return this->as.closure.function == o->as.closure.function;
   }
 
+  fnc Init(Object::Function* function) -> void;
+  fnc Deinit() -> void;
   fnc Print() const -> void;
   fnc inline Unwrap() -> Object::FunctionData* {
     return this->as.closure.function;
   }
+};
+
+class Object::Upvalue : public Object {
+ public:
+  Upvalue() noexcept;
+
+  fnc operator==(const Object* o) const -> bool {
+    if (o->type != ObjectType::Upvalue) return false;
+
+    return this->as.upvalue.location == o->as.upvalue.location;
+  }
+
+  fnc Init(Value* location) -> void;
+  fnc Print() const -> void;
 };

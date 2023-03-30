@@ -25,6 +25,10 @@ fnc Object::Print() const -> void {
       static_cast<const Object::Closure*>(this)->Print();
       return;
     }
+    case ObjectType::Upvalue: {
+      static_cast<const Object::Upvalue*>(this)->Print();
+      return;
+    }
   }
 }
 
@@ -107,13 +111,36 @@ Object::Closure::Closure() noexcept {
   this->as.closure.function = nullptr;
 }
 
-Object::Closure::Closure(Object::Function* function) noexcept {
+fnc Object::Closure::Init(Object::Function* function) -> void {
   this->type = ObjectType::Closure;
   this->name_len = function->name_len;
   this->name = function->name;
   this->as.closure.function = &function->as.function;
+
+  auto upvalues_count = function->as.function.upvalue_count;
+  this->as.closure.upvalue_count = upvalues_count;
+  this->as.closure.upvalues = reinterpret_cast<Object::Upvalue**>(
+      malloc(sizeof(Object::Upvalue*) * upvalues_count));
+}
+
+fnc Object::Closure::Deinit() -> void {
+  free(this->as.closure.upvalues);
 }
 
 fnc Object::Closure::Print() const -> void {
   printf("Function: %s", this->name);
+}
+
+Object::Upvalue::Upvalue() noexcept {
+  this->type = ObjectType::Upvalue;
+  this->as.upvalue.location = nullptr;
+}
+
+fnc Object::Upvalue::Init(Value* value) -> void {
+  this->type = ObjectType::Upvalue;
+  this->as.upvalue.location = value;
+}
+
+fnc Object::Upvalue::Print() const -> void {
+  printf("upvalue");
 }

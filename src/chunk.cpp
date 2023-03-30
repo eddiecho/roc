@@ -170,6 +170,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     case OpCode::Return: {
       return this->SimpleInstruction("OP_RETURN", offset);
     }
+    case OpCode::ReturnVoid: {
+      return this->SimpleInstruction("OP_RETURN", offset);
+    }
     case OpCode::String: {
       return this->GlobalInstruction("OP_STRING", offset);
     }
@@ -199,6 +202,12 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
     }
     case OpCode::GetLocal: {
       return this->GlobalInstruction("OP_GETLOCAL", offset);
+    }
+    case OpCode::SetUpvalue: {
+      return this->GlobalInstruction("OP_SETUPVALUE", offset);
+    }
+    case OpCode::GetUpvalue: {
+      return this->GlobalInstruction("OP_GETUPVALUE", offset);
     }
     case OpCode::Jump: {
       return this->JumpInstruction("OP_JUMP", 1, offset);

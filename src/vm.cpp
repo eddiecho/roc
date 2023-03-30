@@ -92,6 +92,7 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   }
 
   StackFrame* ret = &this->frames[this->frame_count++];
+  ret->type = FrameType::Closure;
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk.BaseInstructionPointer();
   // the -1 is so that slot 0 of locals is a reference to Object::Function being called
@@ -112,6 +113,7 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
   }
 
   StackFrame* ret = &this->frames[this->frame_count++];
+  ret->type = FrameType::Function;
   ret->function = function;
   ret->inst_ptr = function->as.function.chunk.BaseInstructionPointer();
   // the -1 is so that slot 0 of locals is a reference to Object::Function being called
@@ -291,6 +293,20 @@ fnc VirtualMachine::Interpret(
         this->Push(local);
         break;
       }
+      case OpCode::SetUpvalue: {
+        u32 index = READ_INT();
+        // lmao thats a lot of indirection
+        auto upval = frame->closure->as.closure.upvalues[index];
+        *upval->as.upvalue.location = this->Peek();
+        break;
+      }
+      case OpCode::GetUpvalue: {
+        u32 index = READ_INT();
+        auto upval = frame->closure->as.closure.upvalues[index];
+        auto val = upval->as.upvalue.location;
+        this->Push(*val);
+        break;
+      }
       case OpCode::Jump: {
         u32 offset = READ_INT();
         frame->inst_ptr += offset;
@@ -365,7 +381,18 @@ fnc VirtualMachine::Interpret(
       case OpCode::Closure: {
         u32 idx = READ_INT();
 
-        auto inner_func = frame->closure->Unwrap();
+        Object::FunctionData* inner_func;
+        switch (frame->type) {
+          case FrameType::Closure: {
+            inner_func = frame->closure->Unwrap();
+            break;
+          }
+          case FrameType::Function: {
+            inner_func = &frame->function->as.function;
+            break;
+          }
+        }
+
         auto func_val = inner_func->chunk.locals[idx];
 
         Assert(func_val.type == ValueType::Object);
@@ -376,13 +403,20 @@ fnc VirtualMachine::Interpret(
 
         auto closure_idx = this->object_pool->Alloc();
         auto closure = static_cast<Object::Closure*>(this->object_pool->Nth(closure_idx));
-        closure->type = ObjectType::Closure;
-        closure->name = function->name;
-        closure->name_len = function->name_len;
-        closure->as.closure.function = &function->as.function;
+        closure->Init(function);
 
-        // @FIXME(eddie) - should this be on the stack or in locals?
         this->Push(Value(closure));
+        for (int i = 0; i < closure->as.closure.upvalue_count; i++) {
+          u8 local = READ_BYTE();
+          u8 index = READ_BYTE();
+          if (local) {
+            closure->as.closure.upvalues[i] = this->CaptureUpvalue(frame->locals + index);
+          } else {
+            // so if its in a nested closure, this check should always be true...
+            closure->as.closure.upvalues[i] = frame->closure->as.closure.upvalues[index];
+          }
+        }
+
         break;
       }
       default: {
@@ -398,3 +432,13 @@ fnc VirtualMachine::Interpret(
 
   return this->Peek();
 }
+
+fnc inline VirtualMachine::CaptureUpvalue(Value* local) -> Object::Upvalue* {
+  auto index = this->object_pool->Alloc();
+  auto obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
+  obj->type = ObjectType::Upvalue;
+  obj->as.upvalue.location = local;
+
+  return obj;
+}
+

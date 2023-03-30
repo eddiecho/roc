@@ -41,11 +41,21 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 #define VM_STACK_MAX 128
 #define VM_LOCAL_MAX VM_STACK_MAX * 4
 
+enum class FrameType {
+  Closure,
+  Function,
+};
+
 // @TODO(eddie) - extract out instruction pointer, and put it
 // directly into VirtualMachine to remove some indirection
 struct StackFrame {
-  Object::Closure* closure = nullptr;
-  Object::Function* function = nullptr;
+  FrameType type;
+
+  union {
+    Object::Closure* closure;
+    Object::Function* function;
+  };
+
   Chunk* chunk = nullptr;
   u8* inst_ptr;
   Value* locals;
@@ -72,6 +82,7 @@ class VirtualMachine {
   fnc Pop() -> Value;
   fnc Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
   fnc Invoke(Object::Function* closure, u32 argc) -> Result<size_t, InterpretError>;
+  fnc CaptureUpvalue(Value* local) -> Object::Upvalue*;
 
  private:
   StackFrame frames[VM_STACK_MAX];

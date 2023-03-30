@@ -282,8 +282,8 @@ fnc Scanner::ScanToken() -> Token {
   }
 }
 
-auto BlockState::Merge(BlockState other) -> void {
-  this->raw |= other.raw;
+fnc CompilerState::Merge(CompilerState other) -> void {
+  this->value |= other.value;
 }
 
 Compiler::Compiler() noexcept {}
@@ -387,7 +387,7 @@ fnc inline Compiler::CurrentChunk() -> Chunk* {
 fnc Compiler::Compile() -> Result<Object*, CompileError> {
   this->Advance();
 
-  while (!this->MatchAndAdvance(Token::Lexeme::Eof)) {
+  while (this->curr.type != Token::Lexeme::Eof) {
     this->Declaration();
   }
 
@@ -398,9 +398,7 @@ fnc Compiler::Compile() -> Result<Object*, CompileError> {
   return this->curr_func;
 }
 
-fnc Compiler::Declaration() -> BlockState {
-  BlockState state = {};
-
+fnc Compiler::Declaration() -> void {
   switch (this->curr.type) {
     default: {
       this->Statement();
@@ -413,13 +411,11 @@ fnc Compiler::Declaration() -> BlockState {
     }
     case Token::Lexeme::Function: {
       this->Advance();
-      state.Merge(this->FunctionDeclaration());
+      this->FunctionDeclaration();
     }
   }
 
   if (this->state.panic) this->SyncOnError();
-
-  return state;
 }
 
 fnc Compiler::Statement() -> void {
@@ -429,11 +425,14 @@ fnc Compiler::Statement() -> void {
   // var/func/struct declarations
 
   if (this->curr.type == Token::Lexeme::Return) {
+    this->Advance();
+
     if (this->scope_depth == 0) {
       this->ErrorAtCurr("Can not have top level return statement");
     }
 
-    if (this->MatchAndAdvance(Token::Lexeme::Semicolon)) {
+    if (this->curr.type == Token::Lexeme::Semicolon) {
+      this->Advance();
       this->Emit(OpCode::ReturnVoid);
     } else {
       this->Expression();
@@ -466,9 +465,10 @@ fnc Compiler::Expression(bool nested) -> void {
       this->PatchJump(if_jump_idx);
       this->Emit(OpCode::Pop);
 
-      if (this->MatchAndAdvance(Token::Lexeme::Else)) {
+      if (this->curr.type == Token::Lexeme::Else) {
         this->Statement();
       }
+
       this->PatchJump(else_jump_idx);
       break;
     }
@@ -585,16 +585,13 @@ fnc Compiler::EndScope() -> void {
   }
 }
 
-fnc Compiler::CodeBlock() -> BlockState {
-  BlockState state = {};
-
+fnc Compiler::CodeBlock() -> void {
   while (this->curr.type != Token::Lexeme::RightBrace
     && this->curr.type != Token::Lexeme::Eof) {
-    state.raw |= this->Declaration().raw;
+     this->Declaration();
   }
 
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
-  return state;
 }
 
 fnc Compiler::Advance() -> void {
@@ -656,14 +653,16 @@ fnc Compiler::VariableDeclaration() -> void {
     this->AddLocal(this->prev);
   }
 
-  if (in_for_loop && this->MatchAndAdvance(Token::Lexeme::In)) {
+  if (in_for_loop && this->curr.type == Token::Lexeme::In) {
+    this->Advance();
     this->Expression();
-  } else if (this->MatchAndAdvance(Token::Lexeme::Equal)) {
+  } else if (this->curr.type == Token::Lexeme::Equal) {
+    this->Advance();
     this->Expression();
   }
 }
 
-fnc Compiler::FunctionDeclaration() -> BlockState {
+fnc Compiler::FunctionDeclaration() -> void {
   auto declaration_line = this->curr.line;
   // @FIXME(eddie) - these are chunky copies
   auto curr_func = this->curr_func;
@@ -704,7 +703,10 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
 
   u32 func_start = this->prev.line;
 
-  BlockState state = {};
+  CompilerState new_state = {};
+  auto old_state = this->state;
+  this->state = new_state;
+
   this->BeginScope();
 
   this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
@@ -720,22 +722,30 @@ fnc Compiler::FunctionDeclaration() -> BlockState {
   this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
   this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
 
-  state.raw |= this->CodeBlock().raw;
+  this->CodeBlock();
 
   this->EndScope();
+
+  auto save_state = this->state;
+  auto save_upvalues = this->upvalues;
 
   // reset the current function to whatever it was before
   this->locals = *this->locals.prev;
   this->upvalues = *this->upvalues.prev;
   this->curr_func = curr_func;
+  this->state = old_state;
 
-  if (state.has_captures) {
+  if (save_state.has_captures) {
     u32 func_idx = this->CurrentChunk()->AddLocal(Value(new_func), declaration_line);
     this->Emit(OpCode::Closure);
     this->Emit(IntToBytes(&func_idx), 4);
+
+    for (int i = 0; i < new_func->as.function.upvalue_count; i++) {
+      this->Emit(save_upvalues.upvalues[i].local ? 1 : 0);
+      this->Emit(save_upvalues.upvalues[i].index);
+    }
   }
 
-  return state;
 }
 
 fnc Compiler::AddGlobal(Token id) -> u64 {
@@ -776,16 +786,20 @@ fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
 }
 
 fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
-  auto looking_at = this->curr_func->next;
   auto curr_locals = this->locals.prev;
 
-  while (looking_at != nullptr && curr_locals != nullptr) {
-    auto idx = this->FindLocal(id, curr_locals);
+  auto idx = this->FindLocal(id, curr_locals);
+  if (!idx.IsNone()) {
+    return this->AddUpvalue(idx, true);
+  }
+
+  curr_locals = curr_locals->prev;
+  while (curr_locals != nullptr) {
+    idx = this->FindLocal(id, curr_locals);
     if (!idx.IsNone()) {
-      return this->AddUpvalue(idx, true);
+      return this->AddUpvalue(idx, false);
     }
 
-    looking_at = looking_at->next;
     curr_locals = curr_locals->prev;
   }
 
@@ -826,12 +840,14 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
   } else if (idx = this->FindUpvalue(this->prev); !idx.IsNone()) {
     get = OpCode::GetUpvalue;
     get = OpCode::SetUpvalue;
+    this->state.has_captures = 1;
   } else {
     this->ErrorAtToken("Undefined variable", this->prev);
     return;
   }
 
-  if (this->MatchAndAdvance(Token::Lexeme::Equal) && assignment) {
+  if (this->curr.type == Token::Lexeme::Equal && assignment) {
+    this->Advance();
     this->Expression();
 
     this->Emit(set);
@@ -875,10 +891,6 @@ fnc Compiler::GetParseRule(Token::Lexeme token) -> const ParseRule* {
 
 fnc Compiler::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
-  if (this->prev.type == Token::Lexeme::Return) {
-    this->Advance();
-  }
-
   const ParseRule* rule = this->GetParseRule(this->prev.type);
 
   if (rule->prefix == nullptr) {

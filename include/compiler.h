@@ -176,15 +176,17 @@ enum class CompileError {
 using CompileResult = Result<Object*, CompileError>;
 using ParseRuleMap = absl::flat_hash_map<Token::Lexeme, ParseRule>;
 
-struct BlockState {
+struct CompilerState {
   union {
-    u32 raw;
     struct {
-      unsigned char has_captures: 1;
+      u64 error : 1;
+      u64 panic : 1;
+      u64 has_captures: 1;
     };
+    u64 value = 0;
   };
 
-  fnc Merge(BlockState other) -> void;
+  fnc Merge(CompilerState other) -> void;
 };
 
 class Compiler {
@@ -199,7 +201,7 @@ class Compiler {
   fnc Advance() -> void;
   fnc inline MatchAndAdvance(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
-  fnc Declaration() -> BlockState;
+  fnc Declaration() -> void;
   fnc Expression(bool nested = false) -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtToken(const char* message, Token id) -> void;
@@ -210,13 +212,13 @@ class Compiler {
   fnc SyncOnError() -> void;
   fnc inline CurrentChunk() -> Chunk*;
 
-  fnc FunctionDeclaration() -> BlockState;
+  fnc FunctionDeclaration() -> void;
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
   fnc Identifier(const char* err) -> u32;
   fnc BeginScope() -> void;
   fnc EndScope() -> void;
-  fnc CodeBlock() -> BlockState;
+  fnc CodeBlock() -> void;
   fnc AddGlobal(Token id) -> u64;
   fnc AddLocal(Token id) -> void;
   fnc AddUpvalue(u8 index, bool local) -> u32;
@@ -254,13 +256,7 @@ class Compiler {
   Token curr;
   Token prev;
 
-  union {
-    struct {
-      u64 error : 1;
-      u64 panic : 1;
-    } state;
-    u64 value = 0;
-  };
+  CompilerState state;
 
   ChunkManager chunk_manager;
   Object::Function *curr_func = nullptr;
