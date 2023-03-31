@@ -109,34 +109,14 @@ struct Local {
   u32 depth;
 };
 
-#define M_MAX_LOCALS_COUNT 256
-struct ScopedLocals {
-  u32 locals_count = 0;
-  Local locals[M_MAX_LOCALS_COUNT];
-  ScopedLocals* prev = nullptr;
-};
-
-// For resolving upvalues in closures
-struct LocalsList {
-  ScopedLocals* head = nullptr;
-};
-
 struct Upvalue {
   u8 index;
   bool local;
 };
 
-struct ScopedUpvalues {
-  Upvalue upvalues[M_MAX_LOCALS_COUNT];
-  ScopedUpvalues* prev = nullptr;
-};
-
-struct UpvaluesList {
-  ScopedUpvalues* head = nullptr;
-};
-
 class Compiler;
-using ParseFunction = void (*)(Compiler*, bool);
+class CompilerEngine;
+using ParseFunction = void (*)(CompilerEngine*, bool);
 
 struct ParseRule {
   ParseFunction prefix;
@@ -157,16 +137,16 @@ struct ParseRule {
 // i would make these part of Compiler, but you can't take pointers
 // to member fnctions to build the parser table
 namespace Grammar {
-fnc static Number(Compiler* compiler, bool assign) -> void;
-fnc static Parenthesis(Compiler* compiler, bool assign) -> void;
-fnc static Unary(Compiler* compiler, bool assign) -> void;
-fnc static Binary(Compiler* compiler, bool assign) -> void;
-fnc static Literal(Compiler* compiler, bool assign) -> void;
-fnc static String(Compiler* compiler, bool assign) -> void;
-fnc static Variable(Compiler* compiler, bool assign) -> void;
-fnc static AndOp(Compiler* compiler, bool assign) -> void;
-fnc static OrOp(Compiler* compiler, bool assign) -> void;
-fnc static InvokeOp(Compiler* compiler, bool assign) -> void;
+fnc static Number(CompilerEngine* compiler, bool assign) -> void;
+fnc static Parenthesis(CompilerEngine* compiler, bool assign) -> void;
+fnc static Unary(CompilerEngine* compiler, bool assign) -> void;
+fnc static Binary(CompilerEngine* compiler, bool assign) -> void;
+fnc static Literal(CompilerEngine* compiler, bool assign) -> void;
+fnc static String(CompilerEngine* compiler, bool assign) -> void;
+fnc static Variable(CompilerEngine* compiler, bool assign) -> void;
+fnc static AndOp(CompilerEngine* compiler, bool assign) -> void;
+fnc static OrOp(CompilerEngine* compiler, bool assign) -> void;
+fnc static InvokeOp(CompilerEngine* compiler, bool assign) -> void;
 }  // namespace Grammar
 
 enum class CompileError {
@@ -190,11 +170,34 @@ struct CompilerState {
 };
 
 class Compiler {
+  friend CompilerEngine;
+
  public:
   Compiler() noexcept;
   fnc Init(const char* src,
            StringPool* string_pool,
            GlobalPool* global_pool) -> void;
+  fnc Compile() -> CompileResult;
+
+ private:
+  constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
+  constexpr static const u32 GLOBAL_FUNCTION_NAME_LEN = 15;
+  constexpr static const u32 MAX_LOCALS_COUNT = 256;
+  const static ParseRuleMap PARSE_RULES;
+
+ private:
+  ChunkManager chunk_manager;
+  Scanner scanner;
+  StringPool* string_pool = nullptr;
+  GlobalPool* global_pool = nullptr;
+};
+
+class CompilerEngine {
+  friend Compiler;
+
+ public:
+  fnc Init(Compiler* compiler) -> void;
+  fnc Init(Compiler* compiler, u32 name_length, const char* name) -> void;
   fnc Compile() -> CompileResult;
 
  private:
@@ -213,16 +216,18 @@ class Compiler {
   fnc inline CurrentChunk() -> Chunk*;
 
   fnc FunctionDeclaration() -> void;
+  fnc FunctionBody() -> void;
   fnc VariableDeclaration() -> void;
   fnc LoadVariable(bool assignment) -> void;
   fnc Identifier(const char* err) -> u32;
   fnc BeginScope() -> void;
   fnc EndScope() -> void;
   fnc CodeBlock() -> void;
+  fnc AddString(u32 length, const char* start) -> u32;
   fnc AddGlobal(Token id) -> u64;
   fnc AddLocal(Token id) -> void;
   fnc AddUpvalue(u8 index, bool local) -> u32;
-  fnc FindLocal(Token id, ScopedLocals* scope) -> Option<u64>;
+  fnc FindLocal(Token id, Local* locals) -> Option<u64>;
   fnc FindLocal(Token id) -> Option<u64>;
   fnc FindUpvalue(Token id) -> Option<u64>;
   fnc FindGlobal(Token id) -> Option<u64>;
@@ -235,42 +240,31 @@ class Compiler {
   fnc Emit(u8* bytes, u32 count) -> void;
   fnc Emit(OpCode opcode) -> void;
 
-  fnc friend Grammar::Number(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::Parenthesis(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::Unary(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::Binary(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::Literal(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::String(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::Variable(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::AndOp(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::OrOp(Compiler* compiler, bool assign) -> void;
-  fnc friend Grammar::InvokeOp(Compiler* compiler, bool assign) -> void;
-
- private:
-  constexpr static const u32 MAX_LOCALS_COUNT = M_MAX_LOCALS_COUNT;
-  constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
-  constexpr static const u32 GLOBAL_FUNCTION_NAME_LEN = 15;
-  const static ParseRuleMap PARSE_RULES;
+  fnc friend Grammar::Number(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::Unary(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::Binary(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::Literal(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::String(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::Variable(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void;
+  fnc friend Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void;
 
  private:
   Token curr;
   Token prev;
 
-  CompilerState state;
+  Compiler* compiler;
+  CompilerEngine* parent;
 
-  ChunkManager chunk_manager;
+  CompilerState state;
   Object::Function *curr_func = nullptr;
 
-  ScopedLocals locals;
-  LocalsList locals_list;
   u32 scope_depth = 0;
-
-  ScopedUpvalues upvalues;
-  UpvaluesList upvalues_list;
-
-  Scanner scanner;
-  StringPool* string_pool = nullptr;
-  GlobalPool* global_pool = nullptr;
+  u32 locals_count = 0;
+  Local locals[Compiler::MAX_LOCALS_COUNT];
+  Upvalue upvalues[Compiler::MAX_LOCALS_COUNT];
 };
 
 #undef VM_LEXEME_TYPE

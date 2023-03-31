@@ -360,31 +360,44 @@ fnc Compiler::Init(const char* src,
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
+}
 
-  auto top_level_func_idx = this->global_pool->Alloc(
-      Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
-  this->curr_func = static_cast<Object::Function*>(this->global_pool->Nth(top_level_func_idx));
-  this->curr_func->type = ObjectType::Function;
-  Chunk* chunk = this->chunk_manager.Alloc();
-  this->curr_func->as.function.chunk = *chunk;
-  this->curr_func->as.function.arity = 0;
-  this->curr_func->as.function.upvalue_count = 0;
-  this->curr_func->next = nullptr;
+fnc Compiler::Compile() -> Result<Object*, CompileError> {
+  CompilerEngine engine = {};
+  engine.Init(this);
 
-  // steal the first local slot for the top level function
+  return engine.Compile();
+}
+
+fnc inline CompilerEngine::Init(Compiler* compiler) -> void {
+  this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
+}
+
+fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name) -> void {
+  this->compiler = compiler;
+  this->parent = nullptr;
+
+  auto func_idx = compiler->global_pool->Alloc(name_length, name);
+  auto curr_func = static_cast<Object::Function*>(compiler->global_pool->Nth(func_idx));
+
+  auto name_idx = this->AddString(name_length, name);
+  auto interned_name = compiler->string_pool->Nth(name_idx);
+
+  Chunk* chunk = compiler->chunk_manager.Alloc();
+  curr_func->Init(chunk, name_length, interned_name->name);
+
+  this->curr_func = curr_func;
+
+  // steal the first local slot for function
   // makes the rest cleaner i guess
   // especially when you have to call functions or something
-  Local* top_level_declaration = &this->locals.locals[this->locals.locals_count++];
+  Local* top_level_declaration = &this->locals[this->locals_count++];
   top_level_declaration->depth = 0;
   top_level_declaration->id.start = "";
   top_level_declaration->id.len = 0;
 }
 
-fnc inline Compiler::CurrentChunk() -> Chunk* {
-  return &this->curr_func->as.function.chunk;
-}
-
-fnc Compiler::Compile() -> Result<Object*, CompileError> {
+fnc CompilerEngine::Compile() -> CompileResult {
   this->Advance();
 
   while (this->curr.type != Token::Lexeme::Eof) {
@@ -398,7 +411,11 @@ fnc Compiler::Compile() -> Result<Object*, CompileError> {
   return this->curr_func;
 }
 
-fnc Compiler::Declaration() -> void {
+fnc inline CompilerEngine::CurrentChunk() -> Chunk* {
+  return &this->curr_func->as.function.chunk;
+}
+
+fnc CompilerEngine::Declaration() -> void {
   switch (this->curr.type) {
     default: {
       this->Statement();
@@ -418,7 +435,7 @@ fnc Compiler::Declaration() -> void {
   if (this->state.panic) this->SyncOnError();
 }
 
-fnc Compiler::Statement() -> void {
+fnc CompilerEngine::Statement() -> void {
   // @NOTE(eddie)
   // the only kinds of statements in this lang are
   // return/yield
@@ -447,7 +464,7 @@ fnc Compiler::Statement() -> void {
   }
 }
 
-fnc Compiler::Expression(bool nested) -> void {
+fnc CompilerEngine::Expression(bool nested) -> void {
   switch (this->curr.type) {
     case Token::Lexeme::If: {
       this->Advance();
@@ -521,7 +538,7 @@ fnc Compiler::Expression(bool nested) -> void {
   }
 }
 
-fnc Compiler::Jump(OpCode kind) -> u32 {
+fnc CompilerEngine::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
   auto place = IntToBytes(&placeholder);
@@ -530,7 +547,7 @@ fnc Compiler::Jump(OpCode kind) -> u32 {
   return this->CurrentChunk()->Count() - 4;
 }
 
-fnc Compiler::PatchJump(u64 offset) -> void {
+fnc CompilerEngine::PatchJump(u64 offset) -> void {
   u32 jump = this->CurrentChunk()->Count() - offset - 4;
 
   // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
@@ -540,14 +557,14 @@ fnc Compiler::PatchJump(u64 offset) -> void {
   *as_int = jump;
 }
 
-fnc Compiler::Loop(u64 loop_start) -> void {
+fnc CompilerEngine::Loop(u64 loop_start) -> void {
   this->Emit(OpCode::Loop);
   u32 offset = this->CurrentChunk()->Count() - loop_start + 2;
 
   this->Emit(IntToBytes(&offset), 4);
 }
 
-fnc Compiler::SyncOnError() -> void {
+fnc CompilerEngine::SyncOnError() -> void {
   this->state.panic = 0;
 
   while (this->curr.type != Token::Lexeme::Eof) {
@@ -570,22 +587,22 @@ fnc Compiler::SyncOnError() -> void {
   }
 }
 
-fnc Compiler::BeginScope() -> void {
+fnc CompilerEngine::BeginScope() -> void {
   this->scope_depth++;
 }
 
-fnc Compiler::EndScope() -> void {
+fnc CompilerEngine::EndScope() -> void {
   this->scope_depth--;
 
   // @TODO(eddie) - PopN opcode, because this sucks
-  while (this->locals.locals_count > 0
-    && this->locals.locals[this->locals.locals_count - 1].depth > this->scope_depth) {
+  while (this->locals_count > 0
+    && this->locals[this->locals_count - 1].depth > this->scope_depth) {
     this->Emit(OpCode::Pop);
-    this->locals.locals_count--;
+    this->locals_count--;
   }
 }
 
-fnc Compiler::CodeBlock() -> void {
+fnc CompilerEngine::CodeBlock() -> void {
   while (this->curr.type != Token::Lexeme::RightBrace
     && this->curr.type != Token::Lexeme::Eof) {
      this->Declaration();
@@ -594,13 +611,13 @@ fnc Compiler::CodeBlock() -> void {
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
 }
 
-fnc Compiler::Advance() -> void {
+fnc CompilerEngine::Advance() -> void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->prev = this->curr;
 
   while (1) {
-    token = this->scanner.ScanToken();
+    token = this->compiler->scanner.ScanToken();
     this->curr = token;
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -619,7 +636,7 @@ fnc Compiler::Advance() -> void {
 }
 
 // @TODO(eddie) - just get rid of this
-fnc inline Compiler::MatchAndAdvance(Token::Lexeme type) -> bool {
+fnc inline CompilerEngine::MatchAndAdvance(Token::Lexeme type) -> bool {
   if (this->curr.type == type) {
     this->Advance();
     return true;
@@ -628,7 +645,7 @@ fnc inline Compiler::MatchAndAdvance(Token::Lexeme type) -> bool {
   return false;
 }
 
-fnc inline Compiler::ErrorAtToken(const char* message, Token id) -> void {
+fnc inline CompilerEngine::ErrorAtToken(const char* message, Token id) -> void {
   if (this->state.panic) return;
 
   fprintf(stderr, "[line %d] Error", id.line);
@@ -639,11 +656,11 @@ fnc inline Compiler::ErrorAtToken(const char* message, Token id) -> void {
   this->state.error = 1;
 }
 
-fnc inline Compiler::ErrorAtCurr(const char* message) -> void {
+fnc inline CompilerEngine::ErrorAtCurr(const char* message) -> void {
   this->ErrorAtToken(message, this->curr);
 }
 
-fnc Compiler::VariableDeclaration() -> void {
+fnc CompilerEngine::VariableDeclaration() -> void {
   bool in_for_loop = this->curr.type == Token::Lexeme::For;
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
@@ -662,53 +679,41 @@ fnc Compiler::VariableDeclaration() -> void {
   }
 }
 
-fnc Compiler::FunctionDeclaration() -> void {
+fnc CompilerEngine::FunctionDeclaration() -> void {
   auto declaration_line = this->curr.line;
-  // @FIXME(eddie) - these are chunky copies
-  auto curr_func = this->curr_func;
-  auto curr_locals = this->locals;
-  auto curr_upvalues = this->upvalues;
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
-  auto new_func_idx = this->AddGlobal(this->prev);
-  Object::Function* new_func = static_cast<Object::Function*>(
-      this->global_pool->Nth(new_func_idx));
-
-  auto chunk = this->chunk_manager.Alloc();
-  new_func->type = ObjectType::Function;
-  new_func->as.function.chunk = *chunk;
-  new_func->as.function.arity = 0;
-  new_func->as.function.upvalue_count = 0;
-  new_func->name_len = this->prev.len;
-  new_func->next = curr_func;
-
-  u64 name_idx = this->string_pool->Alloc(this->prev.len, this->prev.start);
-  new_func->name = this->string_pool->Nth(name_idx)->name;
-
-  ScopedLocals new_locals = {};
-  new_locals.prev = &curr_locals;
-  this->locals = new_locals;
-  this->curr_func = new_func;
-
-  // see Compiler::Init() for why we need this
-  Local* base_local = &this->locals.locals[this->locals.locals_count++];
-  base_local->depth = 0;
-  base_local->id.start = "";
-  base_local->id.len = 0;
-
-  ScopedUpvalues new_upvalues = {};
-  new_upvalues.prev = &curr_upvalues;
-  this->upvalues = new_upvalues;
+  CompilerEngine new_engine = {};
+  new_engine.Init(this->compiler, this->prev.len, this->prev.start);
+  new_engine.curr = this->curr;
+  new_engine.prev = this->prev;
+  new_engine.parent = this;
 
   u32 func_start = this->prev.line;
 
-  CompilerState new_state = {};
-  auto old_state = this->state;
-  this->state = new_state;
+  new_engine.FunctionBody();
 
+  this->curr = new_engine.curr;
+  this->prev = new_engine.prev;
+  // is this necessary?
+  // new_engine.EndCompilation();
+  auto func = new_engine.curr_func;
+
+  if (new_engine.state.has_captures) {
+    u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);
+    this->Emit(OpCode::Closure);
+    this->Emit(IntToBytes(&func_idx), 4);
+
+    for (int i = 0; i < func->as.function.upvalue_count; i++) {
+      this->Emit(this->upvalues[i].local ? 1 : 0);
+      this->Emit(this->upvalues[i].index);
+    }
+  }
+}
+
+fnc CompilerEngine::FunctionBody() -> void {
   this->BeginScope();
-
   this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
 
   if (this->curr.type != Token::Lexeme::RightParens) {
@@ -723,60 +728,42 @@ fnc Compiler::FunctionDeclaration() -> void {
   this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
 
   this->CodeBlock();
-
   this->EndScope();
-
-  auto save_state = this->state;
-  auto save_upvalues = this->upvalues;
-
-  // reset the current function to whatever it was before
-  this->locals = *this->locals.prev;
-  this->upvalues = *this->upvalues.prev;
-  this->curr_func = curr_func;
-  this->state = old_state;
-
-  if (save_state.has_captures) {
-    u32 func_idx = this->CurrentChunk()->AddLocal(Value(new_func), declaration_line);
-    this->Emit(OpCode::Closure);
-    this->Emit(IntToBytes(&func_idx), 4);
-
-    for (int i = 0; i < new_func->as.function.upvalue_count; i++) {
-      this->Emit(save_upvalues.upvalues[i].local ? 1 : 0);
-      this->Emit(save_upvalues.upvalues[i].index);
-    }
-  }
-
 }
 
-fnc Compiler::AddGlobal(Token id) -> u64 {
-  return this->global_pool->Alloc(id.len, id.start);
+fnc inline CompilerEngine::AddString(u32 length, const char* start) -> u32 {
+  return this->compiler->string_pool->Alloc(length, start);
 }
 
-fnc Compiler::AddLocal(Token id) -> void {
+fnc inline CompilerEngine::AddGlobal(Token id) -> u64 {
+  return this->compiler->global_pool->Alloc(id.len, id.start);
+}
+
+fnc CompilerEngine::AddLocal(Token id) -> void {
   // @TODO(eddie) - this sucks
-  if (this->locals.locals_count == Compiler::MAX_LOCALS_COUNT) {
+  if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
     this->ErrorAtCurr("Too many locals in current scope");
   }
 
-  Local* local = &this->locals.locals[this->locals.locals_count++];
+  Local* local = &this->locals[this->locals_count++];
   local->id = id;
   local->depth = this->scope_depth;
 }
 
-fnc Compiler::AddUpvalue(u8 index, bool local) -> u32 {
+fnc CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
   u32 count = this->curr_func->as.function.upvalue_count;
-  this->upvalues.upvalues[count].local = local;
-  this->upvalues.upvalues[count].index = index;
+  this->upvalues[count].local = local;
+  this->upvalues[count].index = index;
   return this->curr_func->as.function.upvalue_count++;
 }
 
-fnc inline Compiler::FindLocal(Token id) -> Option<u64> {
-  return this->FindLocal(id, &this->locals);
+fnc inline CompilerEngine::FindLocal(Token id) -> Option<u64> {
+  return this->FindLocal(id, this->locals);
 }
 
-fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
-  for (int i = scope->locals_count - 1; i >= 0; i--) {
-    Local* local = &scope->locals[i];
+fnc CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
+  for (int i = this->locals_count - 1; i >= 0; i--) {
+    Local* local = &this->locals[i];
     if (local->id.IdentifiersEqual(id)) {
       return i;
     }
@@ -785,29 +772,24 @@ fnc Compiler::FindLocal(Token id, ScopedLocals* scope) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc Compiler::FindUpvalue(Token id) -> Option<u64> {
-  auto curr_locals = this->locals.prev;
+fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
+  if (this->parent == nullptr) return OptionType::None;
 
-  auto idx = this->FindLocal(id, curr_locals);
+  auto idx = this->FindLocal(id, this->parent->locals);
   if (!idx.IsNone()) {
     return this->AddUpvalue(idx, true);
   }
 
-  curr_locals = curr_locals->prev;
-  while (curr_locals != nullptr) {
-    idx = this->FindLocal(id, curr_locals);
-    if (!idx.IsNone()) {
-      return this->AddUpvalue(idx, false);
-    }
-
-    curr_locals = curr_locals->prev;
+  idx = this->parent->FindUpvalue(id);
+  if (!idx.IsNone()) {
+    return this->AddUpvalue(idx, false);
   }
 
   return OptionType::None;
 }
 
-fnc inline Compiler::FindGlobal(Token id) -> Option<u64> {
-  return this->global_pool->Find(id.len, id.start);
+fnc inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
+  return this->compiler->global_pool->Find(id.len, id.start);
 }
 
 /*
@@ -818,10 +800,10 @@ fnc inline Compiler::FindGlobal(Token id) -> Option<u64> {
  *
  * Locals are stored directly into a Chunk's locals array
  * A Local's name is erased at runtime @TODO(eddie) - this bad from a debugging POV
- * Lookups are handled in Compiler, we store an array of names
+ * Lookups are handled in CompilerEngine, we store an array of names
  * here, and lookups return an index into the locals array
 */
-fnc Compiler::LoadVariable(bool assignment) -> void {
+fnc CompilerEngine::LoadVariable(bool assignment) -> void {
   OpCode get = {};
   OpCode set = {};
 
@@ -860,20 +842,20 @@ fnc Compiler::LoadVariable(bool assignment) -> void {
   this->Emit(IntToBytes(&unwrapped), 4);
 }
 
-fnc inline Compiler::Emit(u8 byte) -> void {
+fnc inline CompilerEngine::Emit(u8 byte) -> void {
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
-fnc inline Compiler::Emit(u8* bytes, u32 count) -> void {
+fnc inline CompilerEngine::Emit(u8* bytes, u32 count) -> void {
   this->CurrentChunk()->AddInstruction(bytes, count, this->prev.line);
 }
 
-fnc inline Compiler::Emit(OpCode op) -> void {
+fnc inline CompilerEngine::Emit(OpCode op) -> void {
   u8 byte = static_cast<u8>(op);
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
-fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
+fnc CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
   if (this->curr.type == type) {
     this->Advance();
 
@@ -883,13 +865,13 @@ fnc Compiler::Consume(Token::Lexeme type, const char* message) -> void {
   this->ErrorAtCurr(message);
 }
 
-fnc Compiler::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
+fnc CompilerEngine::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
 
-fnc Compiler::GetParseRule(Token::Lexeme token) -> const ParseRule* {
-  return &this->PARSE_RULES.at(token);
+fnc CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
+  return &this->compiler->PARSE_RULES.at(token);
 }
 
-fnc Compiler::GetPrecedence(Precedence precedence) -> void {
+fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
   const ParseRule* rule = this->GetParseRule(this->prev.type);
 
@@ -918,17 +900,17 @@ fnc Compiler::GetPrecedence(Precedence precedence) -> void {
 }
 
 // @STDLIB
-fnc static Grammar::Number(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Number(CompilerEngine* compiler, bool assign) -> void {
   f64 value = strtod(compiler->prev.start, nullptr);
   compiler->CurrentChunk()->AddLocal(Value(value), compiler->prev.line);
 }
 
-fnc static Grammar::Parenthesis(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void {
   compiler->Expression(true);
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
-fnc static Grammar::Unary(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
   Token::Lexeme op = compiler->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
@@ -946,7 +928,7 @@ fnc static Grammar::Unary(Compiler* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::Binary(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Binary(CompilerEngine* compiler, bool assign) -> void {
   Token::Lexeme op = compiler->prev.type;
 
   int higher = static_cast<int>(Precedence::Term) + 1;
@@ -1002,7 +984,7 @@ fnc static Grammar::Binary(Compiler* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::Literal(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Literal(CompilerEngine* compiler, bool assign) -> void {
   switch (compiler->prev.type) {
     default:
       return;  // unreachable
@@ -1017,22 +999,22 @@ fnc static Grammar::Literal(Compiler* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::String(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
   // skip the closing quote
   u32 length = compiler->prev.len - 2;
   char* start = const_cast<char*>(compiler->prev.start + 1);
 
-  u32 index = compiler->string_pool->Alloc(length, start);
+  u32 index = compiler->AddString(length, start);
 
   compiler->Emit(OpCode::String);
   compiler->Emit(IntToBytes(&index), 4);
 }
 
-fnc static Grammar::Variable(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::Variable(CompilerEngine* compiler, bool assign) -> void {
   compiler->LoadVariable(assign);
 }
 
-fnc static Grammar::AndOp(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
   u32 short_circuit = compiler->Jump(OpCode::JumpFalse);
 
   compiler->Emit(OpCode::Pop);
@@ -1040,7 +1022,7 @@ fnc static Grammar::AndOp(Compiler* compiler, bool assign) -> void {
   compiler->PatchJump(short_circuit);
 }
 
-fnc static Grammar::OrOp(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void {
   u32 short_circuit = compiler->Jump(OpCode::JumpTrue);
 
   compiler->Emit(OpCode::Pop);
@@ -1048,7 +1030,7 @@ fnc static Grammar::OrOp(Compiler* compiler, bool assign) -> void {
   compiler->PatchJump(short_circuit);
 }
 
-fnc static Grammar::InvokeOp(Compiler* compiler, bool assign) -> void {
+fnc static Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void {
   u32 arg_count = 0;
   if (compiler->curr.type != Token::Lexeme::RightParens) {
     do {

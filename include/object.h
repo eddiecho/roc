@@ -114,6 +114,7 @@ class Object::Function : public Object {
     return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
+  fnc Init(Chunk* chunk, u32 name_len, const char* name) -> void;
   fnc Print() const -> void;
   fnc inline Unwrap() -> Object::FunctionData;
 };

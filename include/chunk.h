@@ -41,6 +41,7 @@ enum class OpCode : u8 {
 using Bytecode = DynamicArray<u8>;
 using LocalVariables = DynamicArray<Value>;
 class Compiler;
+class CompilerEngine;
 class VirtualMachine;
 
 class Chunk {
@@ -50,6 +51,7 @@ class Chunk {
   Chunk() noexcept;
 
   friend Compiler;
+  friend CompilerEngine;
   friend VirtualMachine;
 
   fnc Init() -> void;

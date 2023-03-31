@@ -104,6 +104,17 @@ fnc inline Object::Function::Unwrap() -> Object::FunctionData {
   return this->as.function;
 }
 
+fnc Object::Function::Init(Chunk* chunk, u32 name_len, const char* name) -> void {
+  this->type = ObjectType::Function;
+  this->as.function.arity = 0;
+  this->as.function.upvalue_count = 0;
+  this->as.function.chunk = *chunk;
+  this->next = nullptr;
+
+  this->name_len = name_len;
+  this->name = name;
+}
+
 Object::Closure::Closure() noexcept {
   this->type = ObjectType::Closure;
   this->name_len = 0;
