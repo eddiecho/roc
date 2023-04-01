@@ -379,7 +379,7 @@ fnc VirtualMachine::Interpret(
         break;
       }
       case OpCode::Closure: {
-        u32 idx = READ_INT();
+//         u32 idx = READ_INT();
 
         Object::FunctionData* inner_func;
         switch (frame->type) {
@@ -393,10 +393,11 @@ fnc VirtualMachine::Interpret(
           }
         }
 
-        auto func_val = inner_func->chunk.locals[idx];
+        auto func_obj = this->Pop();
+        // auto func_val = inner_func->chunk.locals[idx];
 
-        Assert(func_val.type == ValueType::Object);
-        auto obj = func_val.as.object;
+        Assert(func_obj.type == ValueType::Object);
+        auto obj = func_obj.as.object;
 
         Assert(obj->type == ObjectType::Function);
         auto function = static_cast<Object::Function*>(obj);
@@ -405,8 +406,6 @@ fnc VirtualMachine::Interpret(
         auto closure = static_cast<Object::Closure*>(this->object_pool->Nth(closure_idx));
         closure->Init(function);
 
-        // pop off the function value and replace with the closure
-        this->Pop();
         this->Push(Value(closure));
 
         for (int i = 0; i < closure->as.closure.upvalue_count; i++) {

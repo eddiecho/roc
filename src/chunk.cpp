@@ -230,20 +230,15 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       auto location = this->bytecode.data + offset + 1;
       auto as_int = reinterpret_cast<u32*>(location);
       u32 func_idx = *location;
-      auto obj = this->locals[func_idx];
 
       Assert(obj.type == ValueType::Object);
       printf("%-16s %4d ", "OP_CLOSURE", func_idx);
-      obj.Print();
       printf("\n");
 
-      offset++;
-      offset += sizeof(u32);
+      offset += 2;
 
-      auto unwrapped = obj.as.object;
-      Assert(unwrapped->type = ObjectType::Function);
-      auto function = static_cast<Object::Function*>(unwrapped);
-      for (int i = 0; i < function->as.function.upvalue_count; i++) {
+      u8 upvalue_count = this->bytecode[offset];
+      for (int i = 0; i < upvalue_count; i++) {
         bool local = this->bytecode[offset++];
         u32 index = this->bytecode[offset++];
         printf("%04d    | %s %d\n", offset - 2, local ? "local" : "upvalue", index);

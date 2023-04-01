@@ -259,6 +259,7 @@ class CompilerEngine {
   CompilerEngine* parent;
 
   CompilerState state;
+  u32 curr_func_idx = 0;
   Object::Function *curr_func = nullptr;
 
   u32 scope_depth = 0;

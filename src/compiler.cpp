@@ -387,6 +387,7 @@ fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name) 
   curr_func->Init(chunk, name_length, interned_name->name);
 
   this->curr_func = curr_func;
+  this->curr_func_idx = func_idx;
 
   // steal the first local slot for function
   // makes the rest cleaner i guess
@@ -700,10 +701,16 @@ fnc CompilerEngine::FunctionDeclaration() -> void {
   // new_engine.EndCompilation();
   auto func = new_engine.curr_func;
 
+  /*
+  u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);
+  this->Emit(OpCode::GetLocal);
+  this->Emit(IntToBytes(&func_idx), 4);
+  */
+
   if (new_engine.state.has_captures) {
-    u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);
     this->Emit(OpCode::Closure);
-    this->Emit(IntToBytes(&func_idx), 4);
+    this->Emit(IntToBytes(&new_engine.curr_func_idx), 4);
+    this->Emit(func->as.function.upvalue_count);
 
     for (int i = 0; i < func->as.function.upvalue_count; i++) {
       this->Emit(this->upvalues[i].local ? 1 : 0);
@@ -817,6 +824,14 @@ fnc CompilerEngine::LoadVariable(bool assignment) -> void {
     get = OpCode::GetLocal;
     set = OpCode::SetLocal;
   } else if (idx = this->FindGlobal(this->prev); !idx.IsNone()) {
+
+    /*
+    auto obj = this->compiler->global_pool->Nth(idx.Get());
+    if (obj->type == ObjectType::Function) {
+      return;
+    }
+    */
+
     get = OpCode::GetGlobal;
     set = OpCode::SetGlobal;
   } else if (idx = this->FindUpvalue(this->prev); !idx.IsNone()) {
