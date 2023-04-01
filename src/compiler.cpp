@@ -821,7 +821,7 @@ fnc CompilerEngine::LoadVariable(bool assignment) -> void {
     set = OpCode::SetGlobal;
   } else if (idx = this->FindUpvalue(this->prev); !idx.IsNone()) {
     get = OpCode::GetUpvalue;
-    get = OpCode::SetUpvalue;
+    set = OpCode::SetUpvalue;
     this->state.has_captures = 1;
   } else {
     this->ErrorAtToken("Undefined variable", this->prev);

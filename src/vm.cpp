@@ -405,7 +405,10 @@ fnc VirtualMachine::Interpret(
         auto closure = static_cast<Object::Closure*>(this->object_pool->Nth(closure_idx));
         closure->Init(function);
 
+        // pop off the function value and replace with the closure
+        this->Pop();
         this->Push(Value(closure));
+
         for (int i = 0; i < closure->as.closure.upvalue_count; i++) {
           u8 local = READ_BYTE();
           u8 index = READ_BYTE();

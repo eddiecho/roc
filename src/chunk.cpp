@@ -4,6 +4,8 @@
 
 #include "common.h"
 #include "memory.h"
+#include "object.h"
+#include "utils.h"
 #include "value.h"
 
 fnc Chunk::Init() -> void {
@@ -225,12 +227,29 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       return this->ByteInstruction("OP_INVOKE", offset) + 3;
     }
     case OpCode::Closure: {
-      u8 closure_idx = this->bytecode[offset + 1 ];
-      printf("%-16s %4d ", "OP_CLOSURE", closure_idx);
-      this->locals[closure_idx].Print();
+      auto location = this->bytecode.data + offset + 1;
+      auto as_int = reinterpret_cast<u32*>(location);
+      u32 func_idx = *location;
+      auto obj = this->locals[func_idx];
+
+      Assert(obj.type == ValueType::Object);
+      printf("%-16s %4d ", "OP_CLOSURE", func_idx);
+      obj.Print();
       printf("\n");
 
-      return offset + 4;
+      offset++;
+      offset += sizeof(u32);
+
+      auto unwrapped = obj.as.object;
+      Assert(unwrapped->type = ObjectType::Function);
+      auto function = static_cast<Object::Function*>(unwrapped);
+      for (int i = 0; i < function->as.function.upvalue_count; i++) {
+        bool local = this->bytecode[offset++];
+        u32 index = this->bytecode[offset++];
+        printf("%04d    | %s %d\n", offset - 2, local ? "local" : "upvalue", index);
+      }
+
+      return offset;
     }
     default: {
       printf("Unknown opcode %d\n", byte);
