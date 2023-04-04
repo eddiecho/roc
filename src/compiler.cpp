@@ -413,7 +413,7 @@ fnc CompilerEngine::Compile() -> CompileResult {
 }
 
 fnc inline CompilerEngine::CurrentChunk() -> Chunk* {
-  return &this->curr_func->as.function.chunk;
+  return this->curr_func->as.function.chunk;
 }
 
 fnc CompilerEngine::Declaration() -> void {
@@ -882,7 +882,7 @@ fnc CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
 
 fnc CompilerEngine::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
 
-fnc CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
+fnc inline CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
   return &this->compiler->PARSE_RULES.at(token);
 }
 

@@ -108,7 +108,7 @@ fnc Object::Function::Init(Chunk* chunk, u32 name_len, const char* name) -> void
   this->type = ObjectType::Function;
   this->as.function.arity = 0;
   this->as.function.upvalue_count = 0;
-  this->as.function.chunk = *chunk;
+  this->as.function.chunk = chunk;
   this->next = nullptr;
 
   this->name_len = name_len;
@@ -119,19 +119,28 @@ Object::Closure::Closure() noexcept {
   this->type = ObjectType::Closure;
   this->name_len = 0;
   this->name = 0;
-  this->as.closure.function = nullptr;
+  this->as.closure = {};
 }
 
-fnc Object::Closure::Init(Object::Function* function) -> void {
+fnc Object::Closure::Init(const Object::Function* function) -> void {
   this->type = ObjectType::Closure;
   this->name_len = function->name_len;
   this->name = function->name;
-  this->as.closure.function = &function->as.function;
+  this->as.closure.upvalue_count = function->as.function.upvalue_count;
+  this->as.closure.arity = function->as.function.arity;
+  this->as.closure.chunk = function->as.function.chunk;
 
   auto upvalues_count = function->as.function.upvalue_count;
   this->as.closure.upvalue_count = upvalues_count;
   this->as.closure.upvalues = reinterpret_cast<Object::Upvalue**>(
       malloc(sizeof(Object::Upvalue*) * upvalues_count));
+}
+
+fnc Object::Closure::Init(const Object* obj) -> void {
+  Assert(obj->type == ObjectType::Function);
+  auto function = static_cast<const Object::Function*>(obj);
+
+  this->Init(obj);
 }
 
 fnc Object::Closure::Deinit() -> void {

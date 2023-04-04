@@ -30,14 +30,12 @@ class Object {
   struct FunctionData {
     u32 arity;
     u32 upvalue_count;
-    Chunk chunk;
+    Chunk *chunk;
   };
 
   class Closure;
-  struct ClosureData {
-    FunctionData* function;
+  struct ClosureData : FunctionData {
     Object::Upvalue** upvalues;
-    u32 upvalue_count;
   };
 
   bool operator==(const Object* o) const {
@@ -126,15 +124,17 @@ class Object::Closure : public Object {
   fnc operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Closure) return false;
 
-    return this->as.closure.function == o->as.closure.function;
+    if (o->as.closure.arity != this->as.closure.arity) return false;
+    if (o->name_len != this->name_len) return false;
+    if (o->as.closure.upvalue_count != this->as.closure.upvalue_count) return false;
+
+    return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
-  fnc Init(Object::Function* function) -> void;
+  fnc Init(const Object* function) -> void;
+  fnc Init(const Object::Function* function) -> void;
   fnc Deinit() -> void;
   fnc Print() const -> void;
-  fnc inline Unwrap() -> Object::FunctionData* {
-    return this->as.closure.function;
-  }
 };
 
 class Object::Upvalue : public Object {

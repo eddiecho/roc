@@ -235,7 +235,7 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       printf("%-16s %4d ", "OP_CLOSURE", func_idx);
       printf("\n");
 
-      offset += 2;
+      offset += sizeof(u32) + 2;
 
       u8 upvalue_count = this->bytecode[offset];
       for (int i = 0; i < upvalue_count; i++) {

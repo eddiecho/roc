@@ -63,11 +63,11 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   for (int i = this->frame_count - 1; i >= 0; i--) {
     StackFrame* frame = &this->frames[i];
     auto closure = frame->closure;
-    auto func = closure->Unwrap();
+    auto func = closure->as.closure;
 
-    u64 inst = frame->inst_ptr - func->chunk.BaseInstructionPointer() - 1;
+    u64 inst = frame->inst_ptr - func.chunk->BaseInstructionPointer() - 1;
 
-    auto line_range = func->chunk.lines[inst];
+    auto line_range = func.chunk->lines[inst];
     auto name = frame->closure == nullptr ? frame->function->name : frame->closure->name;
     fprintf(stderr, "[line %lu] in ", line_range.val);
     fprintf(stderr, "%s\n", name);
@@ -80,7 +80,7 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
 }
 
 fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError> {
-  auto inner_func = *closure->Unwrap();
+  const auto inner_func = closure->as.closure;
 
   if (argc != inner_func.arity) {
     return this->RuntimeError("Expected %d arguments to function but got %d",
@@ -94,10 +94,10 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->type = FrameType::Closure;
   ret->closure = closure;
-  ret->inst_ptr = inner_func.chunk.BaseInstructionPointer();
+  ret->inst_ptr = inner_func.chunk->BaseInstructionPointer();
   // the -1 is so that slot 0 of locals is a reference to Object::Function being called
   ret->locals = this->stack_top - argc - 1;
-  ret->chunk = &inner_func.chunk;
+  ret->chunk = inner_func.chunk;
 
   return this->frame_count - 1;
 }
@@ -115,10 +115,10 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
   StackFrame* ret = &this->frames[this->frame_count++];
   ret->type = FrameType::Function;
   ret->function = function;
-  ret->inst_ptr = function->as.function.chunk.BaseInstructionPointer();
+  ret->inst_ptr = function->as.function.chunk->BaseInstructionPointer();
   // the -1 is so that slot 0 of locals is a reference to Object::Function being called
   ret->locals = this->stack_top - argc - 1;
-  ret->chunk = &function->as.function.chunk;
+  ret->chunk = function->as.function.chunk;
 
   return this->frame_count - 1;
 }
@@ -336,87 +336,72 @@ fnc VirtualMachine::Interpret(
       case OpCode::Invoke: {
         u32 argc = READ_INT();
         auto function_base = this->Peek(argc);
-        if (function_base.IsObject()) {
-
-          auto function_obj = function_base.as.object;
-          switch (function_obj->type) {
-            default:
-              return this->RuntimeError("Can not invoke non function object");
-            case ObjectType::Function: {
-              auto new_function = static_cast<Object::Function*>(function_obj);
-              auto new_frame_result = this->Invoke(new_function, argc);
-              if (new_frame_result.IsError()) {
-                return new_frame_result.Err();
-              }
-
-              frame = &this->frames[new_frame_result.Get()];
-              break;
-            }
-            case ObjectType::Closure: {
-              auto new_closure = static_cast<Object::Closure*>(function_base.as.object);
-              auto new_frame_result = this->Invoke(new_closure, argc);
-              if (new_frame_result.IsError()) {
-                return new_frame_result.Err();
-              }
-
-              frame = &this->frames[new_frame_result.Get()];
-              break;
-            }
-          }
-
-          #if 1
-            auto it = function_map.find(function_obj->name);
-            if (it == function_map.end()) {
-              printf("====== Function: %s\n", function_obj->name);
-              frame->chunk->Disassemble();
-              function_map.insert(function_obj->name);
-            }
-          #endif
-
-        } else {
+        if (!function_base.IsObject()) {
           return this->RuntimeError("Can not invoke non function object");
         }
+
+        auto function_obj = function_base.as.object;
+        switch (function_obj->type) {
+          default:
+            return this->RuntimeError("Can not invoke non function object");
+          case ObjectType::Function: {
+            auto new_function = static_cast<Object::Function*>(function_obj);
+            auto new_frame_result = this->Invoke(new_function, argc);
+            if (new_frame_result.IsError()) {
+              return new_frame_result.Err();
+            }
+
+            frame = &this->frames[new_frame_result.Get()];
+            break;
+          }
+          case ObjectType::Closure: {
+            auto new_closure = static_cast<Object::Closure*>(function_base.as.object);
+            auto new_frame_result = this->Invoke(new_closure, argc);
+            if (new_frame_result.IsError()) {
+              return new_frame_result.Err();
+            }
+
+            frame = &this->frames[new_frame_result.Get()];
+            break;
+          }
+        }
+
+        #if 1
+          auto it = function_map.find(function_obj->name);
+          if (it == function_map.end()) {
+            printf("====== Function: %s\n", function_obj->name);
+            frame->chunk->Disassemble();
+            function_map.insert(function_obj->name);
+          }
+        #endif
+
         break;
       }
       case OpCode::Closure: {
-//         u32 idx = READ_INT();
-
-        Object::FunctionData* inner_func;
-        switch (frame->type) {
-          case FrameType::Closure: {
-            inner_func = frame->closure->Unwrap();
-            break;
-          }
-          case FrameType::Function: {
-            inner_func = &frame->function->as.function;
-            break;
-          }
-        }
-
-        auto func_obj = this->Pop();
-        // auto func_val = inner_func->chunk.locals[idx];
+        const u32 idx = READ_INT();
+        Value func_obj = this->object_pool->Nth(idx);
 
         Assert(func_obj.type == ValueType::Object);
         auto obj = func_obj.as.object;
 
         Assert(obj->type == ObjectType::Function);
-        auto function = static_cast<Object::Function*>(obj);
+        const auto function = static_cast<const Object::Function*>(obj);
 
-        auto closure_idx = this->object_pool->Alloc();
-        auto closure = static_cast<Object::Closure*>(this->object_pool->Nth(closure_idx));
+        // dirty, disgusting pointer memory shenanigans
+        // these alias to the same memory location
+        auto closure = static_cast<Object::Closure*>(obj);
         closure->Init(function);
 
-        this->Push(Value(closure));
+        u8 upvalue_count = READ_BYTE();
+        Assert(upvalue_count == closure->as.closure.upvalue_count);
 
-        for (int i = 0; i < closure->as.closure.upvalue_count; i++) {
-          u8 local = READ_BYTE();
-          u8 index = READ_BYTE();
-          if (local) {
-            closure->as.closure.upvalues[i] = this->CaptureUpvalue(frame->locals + index);
-          } else {
+        for (int i = 0; i < upvalue_count; i++) {
+          const u8 local = READ_BYTE();
+          const u8 index = READ_BYTE();
+          closure->as.closure.upvalues[i] = local ?
+            this->CaptureUpvalue(frame->locals + index) :
             // so if its in a nested closure, this check should always be true...
-            closure->as.closure.upvalues[i] = frame->closure->as.closure.upvalues[index];
-          }
+            frame->closure->as.closure.upvalues[index];
         }
 
         break;
@@ -436,7 +421,7 @@ fnc VirtualMachine::Interpret(
 }
 
 fnc inline VirtualMachine::CaptureUpvalue(Value* local) -> Object::Upvalue* {
-  auto index = this->object_pool->Alloc();
+  const auto index = this->object_pool->Alloc();
   auto obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
   obj->type = ObjectType::Upvalue;
   obj->as.upvalue.location = local;
