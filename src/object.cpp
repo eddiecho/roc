@@ -32,12 +32,12 @@ fnc Object::Print() const -> void {
   }
 }
 
-fnc Object::IsTruthy() -> bool {
+fnc Object::IsTruthy() const -> const bool {
   switch (this->type) {
     default:
       return true;
     case ObjectType::String: {
-      return static_cast<Object::String*>(this)->name_len > 0;
+      return static_cast<const Object::String*>(this)->name_len > 0;
     }
   }
 }
@@ -154,11 +154,15 @@ fnc Object::Closure::Print() const -> void {
 Object::Upvalue::Upvalue() noexcept {
   this->type = ObjectType::Upvalue;
   this->as.upvalue.location = nullptr;
+  this->as.upvalue.closed_value = {};
+  this->as.upvalue.next = nullptr;
 }
 
 fnc Object::Upvalue::Init(Value* value) -> void {
   this->type = ObjectType::Upvalue;
   this->as.upvalue.location = value;
+  this->as.upvalue.closed_value = {};
+  this->as.upvalue.next = nullptr;
 }
 
 fnc Object::Upvalue::Print() const -> void {

@@ -396,6 +396,7 @@ fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name) 
   top_level_declaration->depth = 0;
   top_level_declaration->id.start = "";
   top_level_declaration->id.len = 0;
+  top_level_declaration->captured = false;
 }
 
 fnc CompilerEngine::Compile() -> CompileResult {
@@ -598,7 +599,13 @@ fnc CompilerEngine::EndScope() -> void {
   // @TODO(eddie) - PopN opcode, because this sucks
   while (this->locals_count > 0
     && this->locals[this->locals_count - 1].depth > this->scope_depth) {
-    this->Emit(OpCode::Pop);
+
+    auto local = this->locals[this->locals_count - 1];
+    auto op = local.captured ?
+      OpCode::CloseUpvalue :
+      OpCode::Pop;
+
+    this->Emit(op);
     this->locals_count--;
   }
 }
@@ -755,6 +762,7 @@ fnc CompilerEngine::AddLocal(Token id) -> void {
   Local* local = &this->locals[this->locals_count++];
   local->id = id;
   local->depth = this->scope_depth;
+  local->captured = false;
 }
 
 fnc CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
@@ -784,7 +792,9 @@ fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
 
   auto idx = this->FindLocal(id, this->parent->locals);
   if (!idx.IsNone()) {
-    return this->AddUpvalue(idx, true);
+    auto got = idx.Get();
+    this->parent->locals[got].captured = true;
+    return this->AddUpvalue(got, true);
   }
 
   idx = this->parent->FindUpvalue(id);

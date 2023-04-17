@@ -24,6 +24,8 @@ class Object {
   class Upvalue;
   struct UpvalueData {
     Value* location;
+    Object::Upvalue* next;
+    Value closed_value;
   };
 
   class Function;
@@ -43,7 +45,7 @@ class Object {
   }
 
   fnc Print() const -> void;
-  fnc IsTruthy() -> bool;
+  fnc IsTruthy() const -> const bool;
 
  public:
   ObjectType type;

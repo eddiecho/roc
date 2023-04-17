@@ -107,6 +107,7 @@ enum class Precedence : u8 {
 struct Local {
   Token id;
   u32 depth;
+  bool captured = false;
 };
 
 struct Upvalue {

@@ -83,6 +83,7 @@ class VirtualMachine {
   fnc Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
   fnc Invoke(Object::Function* closure, u32 argc) -> Result<size_t, InterpretError>;
   fnc CaptureUpvalue(Value* local) -> Object::Upvalue*;
+  fnc CloseUpvalues(Value* local) -> void;
 
  private:
   StackFrame frames[VM_STACK_MAX];
@@ -90,6 +91,8 @@ class VirtualMachine {
 
   Value stack[VM_LOCAL_MAX];
   Value* stack_top;
+
+  Object::Upvalue* open_upvalues = nullptr;
 
   // @NOTE(eddie) - the string_pool manages its own Objects for strings
   StringPool* string_pool = nullptr;

@@ -44,7 +44,7 @@ struct Value {
     this->as.object = object;
   }
 
-  fnc operator==(const Value other) -> bool {
+  fnc operator==(const Value other) const -> const bool {
     // @TODO(eddie) - type deduction
     if (this->type != other.type) return false;
 

@@ -162,6 +162,7 @@ fnc VirtualMachine::Interpret(
 
     switch (instruction) {
       case OpCode::ReturnVoid: {
+        this->CloseUpvalues(frame->locals);
         this->frame_count--;
         if (this->frame_count == 0) {
           return this->Pop();
@@ -173,6 +174,7 @@ fnc VirtualMachine::Interpret(
       }
       case OpCode::Return: {
         Value ret_val = this->Pop();
+        this->CloseUpvalues(frame->locals);
         this->frame_count--;
 
         this->stack_top = this->frames[this->frame_count].locals;
@@ -406,6 +408,11 @@ fnc VirtualMachine::Interpret(
 
         break;
       }
+      case OpCode::CloseUpvalue: {
+        this->CloseUpvalues(this->stack_top - 1);
+        this->Pop();
+        break;
+      }
       default: {
         printf("Unimplemented OpCode %d reached???\n", static_cast<u8>(instruction));
         break;
@@ -421,11 +428,41 @@ fnc VirtualMachine::Interpret(
 }
 
 fnc inline VirtualMachine::CaptureUpvalue(Value* local) -> Object::Upvalue* {
+  // this search should usually be fine,
+  // because you really shouldn't be capturing too many upvalues in the first place
+  Object::Upvalue* prev_upvalue = nullptr;
+  auto upvalue = this->open_upvalues;
+  // locals should be on a stack
+  while (upvalue != nullptr && upvalue->as.upvalue.location > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->as.upvalue.next;
+  }
+
+  if (upvalue != nullptr && upvalue->as.upvalue.location == local) {
+    return upvalue;
+  }
+
   const auto index = this->object_pool->Alloc();
   auto obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
-  obj->type = ObjectType::Upvalue;
-  obj->as.upvalue.location = local;
+  obj->Init(local);
+  obj->as.upvalue.next = upvalue;
+
+  if (prev_upvalue == nullptr) {
+    this->open_upvalues = obj;
+  } else {
+    prev_upvalue->next = obj;
+  }
 
   return obj;
 }
 
+fnc inline VirtualMachine::CloseUpvalues(Value* local) -> void {
+  while (this->open_upvalues != nullptr &&
+    this->open_upvalues->as.upvalue.location >= local) {
+
+    auto upvalue = this->open_upvalues;
+    upvalue->as.upvalue.closed_value = *upvalue->as.upvalue.location;
+    upvalue->as.upvalue.location = &upvalue->as.upvalue.closed_value;
+    this->open_upvalues = upvalue->as.upvalue.next;
+  }
+}

@@ -1,5 +1,6 @@
 #include "global_pool.h"
 
+#include <memory>
 #include <string>
 
 #include "common.h"

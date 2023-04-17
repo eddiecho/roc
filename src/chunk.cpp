@@ -246,6 +246,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
 
       return offset;
     }
+    case OpCode::CloseUpvalue: {
+      return this->SimpleInstruction("OP_CLOSE_UPVALUE", offset);
+    }
     default: {
       printf("Unknown opcode %d\n", byte);
       return offset + 1;

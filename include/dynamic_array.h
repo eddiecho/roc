@@ -47,8 +47,7 @@ template <typename T>
 fnc DynamicArray<T>::Init(u64 size) -> void {
   this->count = 0;
   this->capacity_ = size;
-  using type = T;
-  this->data = GROW_ARRAY(type, nullptr, 0, size);
+  this->data = GROW_ARRAY(T, nullptr, 0, size);
 }
 
 template <typename T>
@@ -56,8 +55,7 @@ fnc DynamicArray<T>::Append(T item) -> u64 {
   if (this->capacity_ < this->count + 1) {
     u64 old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
-    using type = T;
-    this->data = GROW_ARRAY(type, this->data, old_capacity, this->capacity_);
+    this->data = GROW_ARRAY(T, this->data, old_capacity, this->capacity_);
   }
 
   this->data[this->count] = item;
@@ -68,16 +66,14 @@ fnc DynamicArray<T>::Append(T item) -> u64 {
 
 template <typename T>
 fnc DynamicArray<T>::Append(T* items, u64 size) -> u64 {
-  using type = T;
-
   while (this->capacity_ < this->count + size) {
     u64 old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
 
-    this->data = GROW_ARRAY(type, this->data, old_capacity, this->capacity_);
+    this->data = GROW_ARRAY(T, this->data, old_capacity, this->capacity_);
   }
 
-  std::memcpy(&this->data[this->count], items, sizeof(type) * size);
+  std::memcpy(&this->data[this->count], items, sizeof(T) * size);
   this->count += size;
 
   return this->count - size;
@@ -85,7 +81,6 @@ fnc DynamicArray<T>::Append(T* items, u64 size) -> u64 {
 
 template <typename T>
 fnc DynamicArray<T>::Deinit() -> void {
-  using type = T;
-  FREE_ARRAY(type, this->data, this->capacity_);
+  FREE_ARRAY(T, this->data, this->capacity_);
   this->Init();
 }

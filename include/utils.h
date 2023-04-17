@@ -127,3 +127,16 @@ struct Option {
 
   operator bool() { return !this->IsNone(); }
 };
+
+
+#define c_macro_var(name) concat(name, __LINE__)
+#define c_defer(start, end) for (    \
+  int c_macro_var(_i_) = (start, 0); \
+  !c_macro_var(_i_);                 \
+  (c_macro_var(_i_) += 1, end)       \
+
+/*
+c_defer(begin(), end()) {
+
+}
+*/

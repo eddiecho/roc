@@ -36,6 +36,7 @@ enum class OpCode : u8 {
   Loop,
   Invoke,
   Closure,
+  CloseUpvalue,
 };
 
 using Bytecode = DynamicArray<u8>;

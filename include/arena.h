@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <memory>
 #include <type_traits>
 
 #include "common.h"
@@ -19,19 +20,15 @@ template <Nodeable T>
 class Arena {
  public:
   Arena() {
-    using type = T;
-
     this->count = 0;
     this->capacity = DEFAULT_ARENA_SIZE;
-    this->data = reinterpret_cast<T*>(malloc(DEFAULT_ARENA_SIZE * sizeof(type)));
+    this->data = reinterpret_cast<T*>(malloc(DEFAULT_ARENA_SIZE * sizeof(T)));
   };
 
   Arena(u64 size) {
-    using type = T;
-
     this->count = 0;
     this->capacity = size;
-    this->data = reinterpret_cast<T*>(malloc(size * sizeof(type)));
+    this->data = reinterpret_cast<T*>(malloc(size * sizeof(T)));
   };
 
   ~Arena() {
@@ -55,8 +52,7 @@ class Arena {
   u64 capacity;
   u64 count;
   T* data;
-  // @TODO(eddie) - unique_ptr
-  Arena* next = nullptr;
+  Arena<T>* next = nullptr;
   T* first_free = nullptr;
 
 };
@@ -79,8 +75,7 @@ fnc Arena<T>::Push() -> u64 {
 
 template <Nodeable T>
 fnc Arena<T>::AllocatedBytes() const -> u64 {
-  using type = T;
-  return this->count * sizeof(type);
+  return this->count * sizeof(T);
 }
 
 template <Nodeable T>
