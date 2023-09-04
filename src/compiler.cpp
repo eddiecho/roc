@@ -466,7 +466,7 @@ fnc CompilerEngine::Statement() -> void {
   }
 }
 
-fnc CompilerEngine::Expression(bool nested) -> void {
+fnc CompilerEngine::Expression(const bool nested) -> void {
   switch (this->curr.type) {
     case Token::Lexeme::If: {
       this->Advance();
@@ -474,13 +474,13 @@ fnc CompilerEngine::Expression(bool nested) -> void {
       // uhm, does this mean nested if expressions work?
       this->Expression(true);
 
-      u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
+      const u32 if_jump_idx = this->Jump(OpCode::JumpFalse);
       this->Emit(OpCode::Pop);
 
       // this is the block after
       this->Statement();
 
-      u32 else_jump_idx = this->Jump(OpCode::Jump);
+      const u32 else_jump_idx = this->Jump(OpCode::Jump);
       this->PatchJump(if_jump_idx);
       this->Emit(OpCode::Pop);
 
@@ -493,11 +493,11 @@ fnc CompilerEngine::Expression(bool nested) -> void {
     }
     case Token::Lexeme::While: {
       this->Advance();
-      u64 loop_start = this->CurrentChunk()->Count();
+      const u64 loop_start = this->CurrentChunk()->Count();
 
       this->Expression(true);
 
-      u32 exit_jump = this->Jump(OpCode::JumpFalse);
+      const u32 exit_jump = this->Jump(OpCode::JumpFalse);
       this->Emit(OpCode::Pop);
 
       this->Statement();
@@ -543,18 +543,18 @@ fnc CompilerEngine::Expression(bool nested) -> void {
 fnc CompilerEngine::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
-  auto place = IntToBytes(&placeholder);
+  const auto place = IntToBytes(&placeholder);
   this->Emit(place, 4);
 
   return this->CurrentChunk()->Count() - 4;
 }
 
 fnc CompilerEngine::PatchJump(u64 offset) -> void {
-  u32 jump = this->CurrentChunk()->Count() - offset - 4;
+  const u32 jump = this->CurrentChunk()->Count() - offset - 4;
 
   // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
   // so! we just ignore it by doing disgusting bit reinterpreting
-  auto code = this->CurrentChunk()->bytecode.data + offset;
+  const auto code = this->CurrentChunk()->bytecode.data + offset;
   auto as_int = reinterpret_cast<u32*>(code);
   *as_int = jump;
 }
@@ -600,8 +600,8 @@ fnc CompilerEngine::EndScope() -> void {
   while (this->locals_count > 0
     && this->locals[this->locals_count - 1].depth > this->scope_depth) {
 
-    auto local = this->locals[this->locals_count - 1];
-    auto op = local.captured ?
+    const auto local = this->locals[this->locals_count - 1];
+    const auto op = local.captured ?
       OpCode::CloseUpvalue :
       OpCode::Pop;
 
@@ -669,7 +669,7 @@ fnc inline CompilerEngine::ErrorAtCurr(const char* message) -> void {
 }
 
 fnc CompilerEngine::VariableDeclaration() -> void {
-  bool in_for_loop = this->curr.type == Token::Lexeme::For;
+  const bool in_for_loop = this->curr.type == Token::Lexeme::For;
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
   if (this->scope_depth == 0) {
@@ -688,7 +688,7 @@ fnc CompilerEngine::VariableDeclaration() -> void {
 }
 
 fnc CompilerEngine::FunctionDeclaration() -> void {
-  auto declaration_line = this->curr.line;
+  const auto declaration_line = this->curr.line;
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
 
@@ -698,7 +698,7 @@ fnc CompilerEngine::FunctionDeclaration() -> void {
   new_engine.prev = this->prev;
   new_engine.parent = this;
 
-  u32 func_start = this->prev.line;
+  const u32 func_start = this->prev.line;
 
   new_engine.FunctionBody();
 
@@ -706,7 +706,7 @@ fnc CompilerEngine::FunctionDeclaration() -> void {
   this->prev = new_engine.prev;
   // is this necessary?
   // new_engine.EndCompilation();
-  auto func = new_engine.curr_func;
+  const auto func = new_engine.curr_func;
 
   /*
   u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);
@@ -766,7 +766,7 @@ fnc CompilerEngine::AddLocal(Token id) -> void {
 }
 
 fnc CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
-  u32 count = this->curr_func->as.function.upvalue_count;
+  const u32 count = this->curr_func->as.function.upvalue_count;
   this->upvalues[count].local = local;
   this->upvalues[count].index = index;
   return this->curr_func->as.function.upvalue_count++;
@@ -778,7 +778,7 @@ fnc inline CompilerEngine::FindLocal(Token id) -> Option<u64> {
 
 fnc CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
   for (int i = this->locals_count - 1; i >= 0; i--) {
-    Local* local = &this->locals[i];
+    const Local* local = &this->locals[i];
     if (local->id.IdentifiersEqual(id)) {
       return i;
     }
@@ -792,7 +792,7 @@ fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
 
   auto idx = this->FindLocal(id, this->parent->locals);
   if (!idx.IsNone()) {
-    auto got = idx.Get();
+    const auto got = idx.Get();
     this->parent->locals[got].captured = true;
     return this->AddUpvalue(got, true);
   }
@@ -876,7 +876,7 @@ fnc inline CompilerEngine::Emit(u8* bytes, u32 count) -> void {
 }
 
 fnc inline CompilerEngine::Emit(OpCode op) -> void {
-  u8 byte = static_cast<u8>(op);
+  const u8 byte = static_cast<u8>(op);
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
@@ -905,9 +905,9 @@ fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
     return;
   }
 
-  u32 assignment_prec = static_cast<u32>(Precedence::Assignment);
-  u32 curr_prec = static_cast<u32>(precedence);
-  bool assign = curr_prec <= assignment_prec;
+  const u32 assignment_prec = static_cast<u32>(Precedence::Assignment);
+  const u32 curr_prec = static_cast<u32>(precedence);
+  const bool assign = curr_prec <= assignment_prec;
 
   rule->prefix(this, assign);
 
@@ -926,7 +926,7 @@ fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
 
 // @STDLIB
 fnc static Grammar::Number(CompilerEngine* compiler, bool assign) -> void {
-  f64 value = strtod(compiler->prev.start, nullptr);
+  const f64 value = strtod(compiler->prev.start, nullptr);
   compiler->CurrentChunk()->AddLocal(Value(value), compiler->prev.line);
 }
 
@@ -936,7 +936,7 @@ fnc static Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void {
 }
 
 fnc static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
-  Token::Lexeme op = compiler->prev.type;
+  const Token::Lexeme op = compiler->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
   switch (op) {
@@ -954,10 +954,10 @@ fnc static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
 }
 
 fnc static Grammar::Binary(CompilerEngine* compiler, bool assign) -> void {
-  Token::Lexeme op = compiler->prev.type;
+  const Token::Lexeme op = compiler->prev.type;
 
-  int higher = static_cast<int>(Precedence::Term) + 1;
-  auto next_higher = static_cast<Precedence>(higher);
+  const int higher = static_cast<int>(Precedence::Term) + 1;
+  const auto next_higher = static_cast<Precedence>(higher);
   compiler->GetPrecedence(next_higher);
 
   switch (op) {
@@ -1026,10 +1026,8 @@ fnc static Grammar::Literal(CompilerEngine* compiler, bool assign) -> void {
 
 fnc static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
   // skip the closing quote
-  u32 length = compiler->prev.len - 2;
-  char* start = const_cast<char*>(compiler->prev.start + 1);
-
-  u32 index = compiler->AddString(length, start);
+  const u32 length = compiler->prev.len - 2;
+  u32 index = compiler->AddString(length, compiler->prev.start + 1);
 
   compiler->Emit(OpCode::String);
   compiler->Emit(IntToBytes(&index), 4);
@@ -1048,7 +1046,7 @@ fnc static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
 }
 
 fnc static Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void {
-  u32 short_circuit = compiler->Jump(OpCode::JumpTrue);
+  const u32 short_circuit = compiler->Jump(OpCode::JumpTrue);
 
   compiler->Emit(OpCode::Pop);
   compiler->GetPrecedence(Precedence::Or);

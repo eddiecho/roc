@@ -73,16 +73,16 @@ struct Result {
     this->as.obj = t;
   };
 
-  fnc IsError() -> bool {
+  fnc IsError() const -> bool {
     return this->type == ResultType::Error;
   }
 
-  fnc Get() -> T {
+  fnc Get() const -> T {
     Assert(this->type == ResultType::Ok);
     return this->as.obj;
   }
 
-  fnc Err() -> E {
+  fnc Err() const -> E {
     Assert(this->type == ResultType::Error);
     return this->as.err;
   }
@@ -116,11 +116,11 @@ struct Option {
     this->data = t;
   }
 
-  fnc IsNone() -> bool {
+  fnc IsNone() const -> bool {
     return this->type == OptionType::None;
   }
 
-  fnc Get() -> T {
+  fnc Get() const -> T {
     Assert(this->type == OptionType::Some);
     return this->data;
   }

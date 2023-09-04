@@ -206,7 +206,7 @@ class CompilerEngine {
   fnc inline MatchAndAdvance(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
   fnc Declaration() -> void;
-  fnc Expression(bool nested = false) -> void;
+  fnc Expression(const bool nested = false) -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtToken(const char* message, Token id) -> void;
   fnc ErrorAtCurr(const char* message) -> void;
