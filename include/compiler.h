@@ -1,8 +1,8 @@
 #pragma once
 
 #include <unordered_map>
-#include "absl/container/flat_hash_map.h"
 
+#include "absl/container/flat_hash_map.h"
 #include "chunk.h"
 #include "common.h"
 #include "dynamic_array.h"
@@ -10,26 +10,27 @@
 #include "object.h"
 #include "string_pool.h"
 
-#define VM_LEXEME_TYPE                                                        \
-  X(Eof)                                                                      \
-  X(Error)                                                                    \
-  X(Comment)                                                                  \
-  X(LeftParens)                                                               \
-  X(RightParens)                                                              \
-  X(LeftBrace)                                                                \
-  X(RightBrace)                                                               \
-  X(Comma)                                                                    \
-  X(Dot)                                                                      \
-  X(Minus)                                                                    \
-  X(Plus)                                                                     \
-  X(Semicolon)                                                                \
-  X(Colon)                                                                    \
-  X(Slash)                                                                    \
-  X(Star)                                                                     \
-  X(Bang) X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual)      \
-      X(Less) X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else)   \
-          X(False) X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) \
-              X(Var) X(While) X(In)
+#define VM_LEXEME_TYPE                                                       \
+  X(Eof)                                                                     \
+  X(Error)                                                                   \
+  X(Comment)                                                                 \
+  X(LeftParens)                                                              \
+  X(RightParens)                                                             \
+  X(LeftBrace)                                                               \
+  X(RightBrace)                                                              \
+  X(Comma)                                                                   \
+  X(Dot)                                                                     \
+  X(Minus)                                                                   \
+  X(Plus)                                                                    \
+  X(Semicolon)                                                               \
+  X(Colon)                                                                   \
+  X(Slash)                                                                   \
+  X(Star)                                                                    \
+  X(Bang)                                                                    \
+  X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual) X(Less)     \
+      X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else) X(False) \
+          X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) X(Var)  \
+              X(While) X(In)
 
 struct Token {
   enum class Lexeme {
@@ -162,12 +163,12 @@ struct CompilerState {
     struct {
       u64 error : 1;
       u64 panic : 1;
-      u64 has_captures: 1;
+      u64 has_captures : 1;
     };
     u64 value = 0;
   };
 
-  fnc Merge(CompilerState other) -> void;
+  fnc Merge(CompilerState other)->void;
 };
 
 class Compiler {
@@ -261,7 +262,7 @@ class CompilerEngine {
 
   CompilerState state;
   u32 curr_func_idx = 0;
-  Object::Function *curr_func = nullptr;
+  Object::Function* curr_func = nullptr;
 
   u32 scope_depth = 0;
   u32 locals_count = 0;

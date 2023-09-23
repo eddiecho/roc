@@ -3,8 +3,6 @@
 #include <cstring>
 #include <string>
 
-#include "absl/hash/hash.h"
-
 #include "chunk.h"
 #include "common.h"
 #include "utils.h"
@@ -32,7 +30,7 @@ class Object {
   struct FunctionData {
     u32 arity;
     u32 upvalue_count;
-    Chunk *chunk;
+    Chunk* chunk;
   };
 
   class Closure;
@@ -40,12 +38,10 @@ class Object {
     Object::Upvalue** upvalues;
   };
 
-  bool operator==(const Object* o) const {
-    return this->type == o->type;
-  }
+  bool operator==(const Object* o) const { return this->type == o->type; }
 
-  fnc Print() const -> void;
-  fnc IsTruthy() const -> const bool;
+  fnc Print() const->void;
+  fnc IsTruthy() const->const bool;
 
  public:
   ObjectType type;

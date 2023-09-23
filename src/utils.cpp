@@ -35,4 +35,3 @@ fnc Utils::ReadFile(const char* path) -> char* {
 
   return buffer;
 }
-

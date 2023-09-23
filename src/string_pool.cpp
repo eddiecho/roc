@@ -26,7 +26,7 @@ fnc StringPool::Alloc(u64 length, const char* start) -> u64 {
   auto obj_idx = this->object_pool->Alloc();
   auto obj = static_cast<Object::String*>(this->object_pool->Nth(obj_idx));
 
-  u64 data_ptr = this->char_data->Append(const_cast<char *>(start), length);
+  u64 data_ptr = this->char_data->Append(const_cast<char*>(start), length);
   this->char_data->Append(0);
   obj->Init(length, this->char_data->data + data_ptr);
 

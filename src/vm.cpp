@@ -3,21 +3,21 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "absl/container/flat_hash_set.h"
 #include <string>
 
+#include "absl/container/flat_hash_set.h"
 #include "common.h"
 #include "dynamic_array.h"
 #include "object.h"
 #include "utils.h"
 #include "value.h"
 
-fnc VirtualMachine::Init() -> void {
+fnc VirtualMachine::Init()->void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-fnc VirtualMachine::Deinit() -> void {
+fnc VirtualMachine::Deinit()->void {
   this->stack_top = this->stack;
   this->frame_count = 0;
 
@@ -68,7 +68,8 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
     u64 inst = frame->inst_ptr - func.chunk->BaseInstructionPointer() - 1;
 
     auto line_range = func.chunk->lines[inst];
-    auto name = frame->closure == nullptr ? frame->function->name : frame->closure->name;
+    auto name = frame->closure == nullptr ? frame->function->name
+                                          : frame->closure->name;
     fprintf(stderr, "[line %lu] in ", line_range.val);
     fprintf(stderr, "%s\n", name);
   }
@@ -79,12 +80,13 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   return InterpretError::RuntimeError;
 }
 
-fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError> {
+fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
+    ->Result<size_t, InterpretError> {
   const auto inner_func = closure->as.closure;
 
   if (argc != inner_func.arity) {
     return this->RuntimeError("Expected %d arguments to function but got %d",
-                        inner_func.arity, argc);
+                              inner_func.arity, argc);
   }
 
   if (this->frame_count == VM_STACK_MAX) {
@@ -95,14 +97,16 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc) -> Result<size_t,
   ret->type = FrameType::Closure;
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk->BaseInstructionPointer();
-  // the -1 is so that slot 0 of locals is a reference to Object::Function being called
+  // the -1 is so that slot 0 of locals is a reference to Object::Function being
+  // called
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = inner_func.chunk;
 
   return this->frame_count - 1;
 }
 
-fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_t, InterpretError> {
+fnc VirtualMachine::Invoke(Object::Function* function, u32 argc)
+    ->Result<size_t, InterpretError> {
   if (argc != function->as.function.arity) {
     return this->RuntimeError("Expected %d arguments to function but got %d",
                               function->as.function.arity, argc);
@@ -116,7 +120,8 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
   ret->type = FrameType::Function;
   ret->function = function;
   ret->inst_ptr = function->as.function.chunk->BaseInstructionPointer();
-  // the -1 is so that slot 0 of locals is a reference to Object::Function being called
+  // the -1 is so that slot 0 of locals is a reference to Object::Function being
+  // called
   ret->locals = this->stack_top - argc - 1;
   ret->chunk = function->as.function.chunk;
 
@@ -124,13 +129,11 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc) -> Result<size_
 }
 
 // @TODO(eddie) - big sweep through all the opcodes
-// basically everything is actually a 64bit int, but im truncating it down to 32s
-fnc VirtualMachine::Interpret(
-  Object* obj,
-  StringPool* string_pool,
-  Arena<Object>* object_pool
-) -> InterpretResult {
-
+// basically everything is actually a 64bit int, but im truncating it down to
+// 32s
+fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
+                              Arena<Object>* object_pool)
+    ->InterpretResult {
   Assert(obj != nullptr);
   auto function = static_cast<Object::Function*>(obj);
 
@@ -151,12 +154,13 @@ fnc VirtualMachine::Interpret(
 #endif
 
 #define READ_BYTE() (*frame->inst_ptr++)
-#define READ_INT() *(u32*)(frame->inst_ptr); (frame->inst_ptr += sizeof(u32))
+#define READ_INT()          \
+  *(u32*)(frame->inst_ptr); \
+  (frame->inst_ptr += sizeof(u32))
 #define READ_CONSTANT() (frame->chunk->locals[READ_BYTE()])
 
   u8 byte;
   while (1) {
-
     byte = READ_BYTE();
     auto instruction = static_cast<OpCode>(byte);
 
@@ -199,7 +203,7 @@ fnc VirtualMachine::Interpret(
         u32 idx = READ_INT();
 
         auto str = this->string_pool->Nth(idx);
-        Value constant = Value(str);
+        auto constant = Value(str);
         this->Push(constant);
         break;
       }
@@ -357,7 +361,8 @@ fnc VirtualMachine::Interpret(
             break;
           }
           case ObjectType::Closure: {
-            auto new_closure = static_cast<Object::Closure*>(function_base.as.object);
+            auto new_closure =
+                static_cast<Object::Closure*>(function_base.as.object);
             auto new_frame_result = this->Invoke(new_closure, argc);
             if (new_frame_result.IsError()) {
               return new_frame_result.Err();
@@ -368,14 +373,14 @@ fnc VirtualMachine::Interpret(
           }
         }
 
-        #if 1
-          auto it = function_map.find(function_obj->name);
-          if (it == function_map.end()) {
-            printf("====== Function: %s\n", function_obj->name);
-            frame->chunk->Disassemble();
-            function_map.insert(function_obj->name);
-          }
-        #endif
+#if 1
+        auto it = function_map.find(function_obj->name);
+        if (it == function_map.end()) {
+          printf("====== Function: %s\n", function_obj->name);
+          frame->chunk->Disassemble();
+          function_map.insert(function_obj->name);
+        }
+#endif
 
         break;
       }
@@ -400,10 +405,11 @@ fnc VirtualMachine::Interpret(
         for (int i = 0; i < upvalue_count; i++) {
           const u8 local = READ_BYTE();
           const u8 index = READ_BYTE();
-          closure->as.closure.upvalues[i] = local ?
-            this->CaptureUpvalue(frame->locals + index) :
-            // so if its in a nested closure, this check should always be true...
-            frame->closure->as.closure.upvalues[index];
+          closure->as.closure.upvalues[i] =
+              local ? this->CaptureUpvalue(frame->locals + index) :
+                    // so if its in a nested closure, this check should always
+                    // be true...
+                  frame->closure->as.closure.upvalues[index];
         }
 
         break;
@@ -414,7 +420,8 @@ fnc VirtualMachine::Interpret(
         break;
       }
       default: {
-        printf("Unimplemented OpCode %d reached???\n", static_cast<u8>(instruction));
+        printf("Unimplemented OpCode %d reached???\n",
+               static_cast<u8>(instruction));
         break;
       }
     }
@@ -427,9 +434,10 @@ fnc VirtualMachine::Interpret(
   return this->Peek();
 }
 
-fnc inline VirtualMachine::CaptureUpvalue(Value* local) -> Object::Upvalue* {
+fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   // this search should usually be fine,
-  // because you really shouldn't be capturing too many upvalues in the first place
+  // because you really shouldn't be capturing too many upvalues in the first
+  // place
   Object::Upvalue* prev_upvalue = nullptr;
   auto upvalue = this->open_upvalues;
   // locals should be on a stack
@@ -456,10 +464,9 @@ fnc inline VirtualMachine::CaptureUpvalue(Value* local) -> Object::Upvalue* {
   return obj;
 }
 
-fnc inline VirtualMachine::CloseUpvalues(Value* local) -> void {
+fnc inline VirtualMachine::CloseUpvalues(Value* local)->void {
   while (this->open_upvalues != nullptr &&
-    this->open_upvalues->as.upvalue.location >= local) {
-
+         this->open_upvalues->as.upvalue.location >= local) {
     auto upvalue = this->open_upvalues;
     upvalue->as.upvalue.closed_value = *upvalue->as.upvalue.location;
     upvalue->as.upvalue.location = &upvalue->as.upvalue.closed_value;

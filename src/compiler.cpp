@@ -146,8 +146,7 @@ fnc Scanner::NumberToken() -> const Token {
 
 // @STDLIB
 fnc Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
-                           Token::Lexeme possible) const
-    -> const Token::Lexeme {
+                          Token::Lexeme possible) const->const Token::Lexeme {
   if (this->curr - this->start == start + length &&
       memcmp(this->start + start, rest, length) == 0) {
     return possible;
@@ -282,11 +281,11 @@ fnc Scanner::ScanToken() -> Token {
   }
 }
 
-fnc CompilerState::Merge(CompilerState other) -> void {
+fnc CompilerState::Merge(CompilerState other)->void {
   this->value |= other.value;
 }
 
-Compiler::Compiler() noexcept {}
+Compiler::Compiler() noexcept = default;
 
 const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftParens,
@@ -332,7 +331,8 @@ const ParseRuleMap Compiler::PARSE_RULES = {
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::Identifier, ParseRule(&Grammar::Variable, nullptr, Precedence::None)},
+    {Token::Lexeme::Identifier,
+     ParseRule(&Grammar::Variable, nullptr, Precedence::None)},
 
     // @TODO(eddie)
     {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -353,32 +353,34 @@ const ParseRuleMap Compiler::PARSE_RULES = {
 
 };
 
-fnc Compiler::Init(const char* src,
-                   StringPool* string_pool,
+fnc Compiler::Init(const char* src, StringPool* string_pool,
                    GlobalPool* global_pool)
-    -> void {
+    ->void {
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
 }
 
-fnc Compiler::Compile() -> Result<Object*, CompileError> {
+fnc Compiler::Compile()->Result<Object*, CompileError> {
   CompilerEngine engine = {};
   engine.Init(this);
 
   return engine.Compile();
 }
 
-fnc inline CompilerEngine::Init(Compiler* compiler) -> void {
-  this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
+fnc inline CompilerEngine::Init(Compiler* compiler)->void {
+  this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN,
+             Compiler::GLOBAL_FUNCTION_NAME);
 }
 
-fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name) -> void {
+fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name)
+    ->void {
   this->compiler = compiler;
   this->parent = nullptr;
 
   auto func_idx = compiler->global_pool->Alloc(name_length, name);
-  auto curr_func = static_cast<Object::Function*>(compiler->global_pool->Nth(func_idx));
+  auto curr_func =
+      static_cast<Object::Function*>(compiler->global_pool->Nth(func_idx));
 
   auto name_idx = this->AddString(name_length, name);
   auto interned_name = compiler->string_pool->Nth(name_idx);
@@ -459,14 +461,14 @@ fnc CompilerEngine::Statement() -> void {
     }
 
   } else {
-    // technically, expressions without a corresponding assignment or the above are called
-    // "expression statements"
-    // basically just calling a function and discarding the return value
+    // technically, expressions without a corresponding assignment or the above
+    // are called "expression statements" basically just calling a function and
+    // discarding the return value
     this->Expression();
   }
 }
 
-fnc CompilerEngine::Expression(const bool nested) -> void {
+fnc CompilerEngine::Expression(const bool nested)->void {
   switch (this->curr.type) {
     case Token::Lexeme::If: {
       this->Advance();
@@ -533,14 +535,15 @@ fnc CompilerEngine::Expression(const bool nested) -> void {
       this->GetPrecedence(Precedence::Assignment);
 
       if (!nested)
-        this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after non block expression.");
+        this->Consume(Token::Lexeme::Semicolon,
+                      "Expected semicolon ';' after non block expression.");
 
       break;
     }
   }
 }
 
-fnc CompilerEngine::Jump(OpCode kind) -> u32 {
+fnc CompilerEngine::Jump(OpCode kind)->u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
   const auto place = IntToBytes(&placeholder);
@@ -589,37 +592,32 @@ fnc CompilerEngine::SyncOnError() -> void {
   }
 }
 
-fnc CompilerEngine::BeginScope() -> void {
-  this->scope_depth++;
-}
+fnc CompilerEngine::BeginScope()->void { this->scope_depth++; }
 
-fnc CompilerEngine::EndScope() -> void {
+fnc CompilerEngine::EndScope()->void {
   this->scope_depth--;
 
   // @TODO(eddie) - PopN opcode, because this sucks
-  while (this->locals_count > 0
-    && this->locals[this->locals_count - 1].depth > this->scope_depth) {
-
+  while (this->locals_count > 0 &&
+         this->locals[this->locals_count - 1].depth > this->scope_depth) {
     const auto local = this->locals[this->locals_count - 1];
-    const auto op = local.captured ?
-      OpCode::CloseUpvalue :
-      OpCode::Pop;
+    const auto op = local.captured ? OpCode::CloseUpvalue : OpCode::Pop;
 
     this->Emit(op);
     this->locals_count--;
   }
 }
 
-fnc CompilerEngine::CodeBlock() -> void {
-  while (this->curr.type != Token::Lexeme::RightBrace
-    && this->curr.type != Token::Lexeme::Eof) {
-     this->Declaration();
+fnc CompilerEngine::CodeBlock()->void {
+  while (this->curr.type != Token::Lexeme::RightBrace &&
+         this->curr.type != Token::Lexeme::Eof) {
+    this->Declaration();
   }
 
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
 }
 
-fnc CompilerEngine::Advance() -> void {
+fnc CompilerEngine::Advance()->void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->prev = this->curr;
@@ -726,34 +724,37 @@ fnc CompilerEngine::FunctionDeclaration() -> void {
   }
 }
 
-fnc CompilerEngine::FunctionBody() -> void {
+fnc CompilerEngine::FunctionBody()->void {
   this->BeginScope();
-  this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
+  this->Consume(Token::Lexeme::LeftParens,
+                "Functions require function parameters starting with '(");
 
   if (this->curr.type != Token::Lexeme::RightParens) {
     do {
       this->curr_func->as.function.arity++;
       this->VariableDeclaration();
 
-    } while(this->MatchAndAdvance(Token::Lexeme::Comma));
+    } while (this->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
-  this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
-  this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
+  this->Consume(Token::Lexeme::RightParens,
+                "No closing parentheses for function parameters");
+  this->Consume(Token::Lexeme::LeftBrace,
+                "Expect code block following function declaration");
 
   this->CodeBlock();
   this->EndScope();
 }
 
-fnc inline CompilerEngine::AddString(u32 length, const char* start) -> u32 {
+fnc inline CompilerEngine::AddString(u32 length, const char* start)->u32 {
   return this->compiler->string_pool->Alloc(length, start);
 }
 
-fnc inline CompilerEngine::AddGlobal(Token id) -> u64 {
+fnc inline CompilerEngine::AddGlobal(Token id)->u64 {
   return this->compiler->global_pool->Alloc(id.len, id.start);
 }
 
-fnc CompilerEngine::AddLocal(Token id) -> void {
+fnc CompilerEngine::AddLocal(Token id)->void {
   // @TODO(eddie) - this sucks
   if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
     this->ErrorAtCurr("Too many locals in current scope");
@@ -816,11 +817,11 @@ fnc inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
  * does not exist at runtime.
  *
  * Locals are stored directly into a Chunk's locals array
- * A Local's name is erased at runtime @TODO(eddie) - this bad from a debugging POV
- * Lookups are handled in CompilerEngine, we store an array of names
- * here, and lookups return an index into the locals array
-*/
-fnc CompilerEngine::LoadVariable(bool assignment) -> void {
+ * A Local's name is erased at runtime @TODO(eddie) - this bad from a debugging
+ * POV Lookups are handled in CompilerEngine, we store an array of names here,
+ * and lookups return an index into the locals array
+ */
+fnc CompilerEngine::LoadVariable(bool assignment)->void {
   OpCode get = {};
   OpCode set = {};
 
@@ -911,8 +912,7 @@ fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
 
   rule->prefix(this, assign);
 
-  while (precedence <=
-         this->GetParseRule(this->curr.type)->precedence) {
+  while (precedence <= this->GetParseRule(this->curr.type)->precedence) {
     this->Advance();
     const ParseRule* prev_rule = this->GetParseRule(this->prev.type);
     prev_rule->infix(this, assign);
@@ -1062,7 +1062,8 @@ fnc static Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void {
     } while (compiler->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
-  compiler->Consume(Token::Lexeme::RightParens, "Expected closing parenthesis ')' after arguments");
+  compiler->Consume(Token::Lexeme::RightParens,
+                    "Expected closing parenthesis ')' after arguments");
 
   compiler->Emit(OpCode::Invoke);
   compiler->Emit(IntToBytes(&arg_count), 4);

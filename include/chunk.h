@@ -7,7 +7,7 @@
 #include "value.h"
 
 enum class OpCode : u8 {
-  Constant,             // 0
+  Constant,  // 0
   ConstantLong,
   Add,
   Subtract,
@@ -18,7 +18,7 @@ enum class OpCode : u8 {
   ReturnVoid,
   True,
   False,
-  Not,                  // 10
+  Not,  // 10
   Equality,
   Greater,
   Less,
@@ -28,7 +28,7 @@ enum class OpCode : u8 {
   GetGlobal,
   SetLocal,
   GetLocal,
-  SetUpvalue,           // 20
+  SetUpvalue,  // 20
   GetUpvalue,
   Jump,
   JumpFalse,

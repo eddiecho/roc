@@ -1,14 +1,15 @@
 #include "object.h"
 
 #include <stdio.h>
+
 #include <string>
 
 #include "common.h"
 #include "memory.h"
 #include "utils.h"
 
-fnc Object::Print() const -> void {
-  switch(this->type) {
+fnc Object::Print() const->void {
+  switch (this->type) {
     default: {
       printf("Unknown object type\n");
       return;

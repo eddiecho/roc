@@ -1,3 +1,4 @@
+.PHONY: cmake
 cmake:
 	cmake -S . -B build
 
@@ -6,6 +7,7 @@ FULL_WIN_DIR := $(join ${WIN_HOME_DIR}, $(WIN_DIR))
 TOP_LEVEL = $(shell find . -maxdepth 1 -type f)
 SRC_DIRS = cmake include src test
 
+.PHONY: sync
 sync:
 	@for ff in $(TOP_LEVEL) ; do \
 		rsync -ruvhP $$ff $(FULL_WIN_DIR) ; \
@@ -14,9 +16,11 @@ sync:
 		rsync -ruvhP $$dd $(FULL_WIN_DIR) ; \
 	done
 
+.PHONY: build
 build:
 	@$(MAKE) --no-print-directory --directory build
 
+.PHONY: test
 test:
 ifndef testregex
 	ctest --test-dir build/test --output-on-failure
@@ -27,6 +31,7 @@ endif
 SOURCES = $(shell find src/ -name '*.cpp')
 HEADERS = $(shell find include/ -name '*.h')
 
+.PHONY: fmt
 fmt:
 	@for src in $(SOURCES) ; do \
 		echo "Formatting $$src..." ; \
@@ -65,6 +70,7 @@ fmt:
 	done
 	@echo "Done"
 
+.PHONY: tidy
 tidy:
 	@for src in $(HEADERS) ; \
 	do \
@@ -88,13 +94,9 @@ tidy:
 	done
 	@echo "Done"
 
+.PHONY: cloc
 cloc:
 	cloc src/ include/ test/
 
-release:
-	@$(MAKE) sync;
-	@$(MAKE) build;
-	@$(MAKE) test
-
-.PHONY: build fmt sync tidy test cmake cloc release
-
+.PHONY: release
+release: sync fmt tidy build test

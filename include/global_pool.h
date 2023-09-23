@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "absl/container/flat_hash_map.h"
-
 #include "arena.h"
 #include "common.h"
 #include "dynamic_array.h"

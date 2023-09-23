@@ -4,7 +4,6 @@
 #include <stdio.h>
 
 #include "absl/container/flat_hash_set.h"
-
 #include "arena.h"
 #include "chunk.h"
 #include "common.h"

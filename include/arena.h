@@ -3,18 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <memory>
-#include <type_traits>
-
 #include "common.h"
 #include "memory.h"
 
 #define DEFAULT_ARENA_SIZE 128
 
 template <typename T>
-concept Nodeable = requires {
-  T::next;
-};
+concept Nodeable = requires { T::next; };
 
 template <Nodeable T>
 class Arena {
