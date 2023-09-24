@@ -142,7 +142,7 @@ auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexem
   return Token::Lexeme::Identifier;
 }
 
-auto Scanner::IdentifierType() -> const Token::Lexeme {
+auto Scanner::IdentifierType() -> Token::Lexeme {
   while (IsIdentifier(this->Peek())) {
     this->Pop();
   }
@@ -498,28 +498,28 @@ auto CompilerEngine::Expression(const bool nested) -> void {
   }
 }
 
-auto CompilerEngine::Jump(OpCode kind) -> u32 {
-  this->Emit(kind);
+auto CompilerEngine::Jump(OpCode opcode) -> u32 {
+  this->Emit(opcode);
   int placeholder = 0xFFFFFFFF;
-  const auto place = IntToBytes(&placeholder);
+  auto *const place = IntToBytes(&placeholder);
   this->Emit(place, 4);
 
   return this->CurrentChunk()->Count() - 4;
 }
 
-auto CompilerEngine::PatchJump(u64 offset) -> void {
-  const u32 jump = this->CurrentChunk()->Count() - offset - 4;
+auto CompilerEngine::PatchJump(u64 jump_idx) -> void {
+  const u32 jump = this->CurrentChunk()->Count() - jump_idx - 4;
 
   // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
   // so! we just ignore it by doing disgusting bit reinterpreting
-  const auto code = this->CurrentChunk()->bytecode.data + offset;
-  auto as_int = reinterpret_cast<u32*>(code);
+  auto *code = this->CurrentChunk()->bytecode.data + jump_idx;
+  auto *as_int = reinterpret_cast<u32*>(code);
   *as_int = jump;
 }
 
-auto CompilerEngine::Loop(u64 loop_start) -> void {
+auto CompilerEngine::Loop(u64 loop_idx) -> void {
   this->Emit(OpCode::Loop);
-  u32 offset = this->CurrentChunk()->Count() - loop_start + 2;
+  u32 offset = this->CurrentChunk()->Count() - loop_idx + 2;
 
   this->Emit(IntToBytes(&offset), 4);
 }
@@ -575,7 +575,7 @@ auto CompilerEngine::Advance() -> void {
   Token token;
   this->prev = this->curr;
 
-  while (1) {
+  while (true) {
     token = this->compiler->scanner.ScanToken();
     this->curr = token;
 
@@ -655,7 +655,7 @@ auto CompilerEngine::FunctionDeclaration() -> void {
   this->prev = new_engine.prev;
   // is this necessary?
   // new_engine.EndCompilation();
-  const auto func = new_engine.curr_func;
+  auto *const func = new_engine.curr_func;
 
   /*
   u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);
@@ -721,7 +721,7 @@ auto CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
 
 auto inline CompilerEngine::FindLocal(Token id) -> Option<u64> { return this->FindLocal(id, this->locals); }
 
-auto CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
+auto CompilerEngine::FindLocal(Token id, Local* locals) -> Option<u64> {
   for (int i = this->locals_count - 1; i >= 0; i--) {
     const Local* local = &this->locals[i];
     if (local->id.IdentifiersEqual(id)) {
@@ -834,8 +834,8 @@ auto CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
 
 auto CompilerEngine::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
 
-auto inline CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
-  return &this->compiler->PARSE_RULES.at(token);
+auto inline CompilerEngine::GetParseRule(Token::Lexeme lexeme) -> const ParseRule* {
+  return &this->compiler->PARSE_RULES.at(lexeme);
 }
 
 auto CompilerEngine::GetPrecedence(Precedence precedence) -> void {

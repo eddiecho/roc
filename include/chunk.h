@@ -66,7 +66,7 @@ class Chunk {
   auto BaseInstructionPointer() const -> u8*;
 
  private:
-  auto PrintAtOffset(int offset) const -> const int;
+  auto PrintAtOffset(int offset) const -> int;
   auto SimpleInstruction(const char* name, int offset) const -> int;
   auto ConstantInstruction(int offset) const -> int;
   auto ConstantLongInstruction(int offset) const -> int;

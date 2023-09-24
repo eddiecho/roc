@@ -100,7 +100,7 @@ class Scanner {
   auto StringToken() -> const Token;
   auto NumberToken() -> const Token;
   auto IdentifierToken() -> const Token;
-  auto IdentifierType() -> const Token::Lexeme;
+  auto IdentifierType() -> Token::Lexeme;
 
  private:
   const char* start;

@@ -127,7 +127,7 @@ auto Chunk::GlobalInstruction(const char* name, int offset) const -> int {
 
 // @TODO(eddie) - just make every single opcode 64bits
 // @FIXME(eddie) - another pass needed
-auto Chunk::PrintAtOffset(int offset) const -> const int {
+auto Chunk::PrintAtOffset(int offset) const -> int {
   printf("%04d ", offset);
 
   const u32 line_idx = this->lines.Search(offset);
