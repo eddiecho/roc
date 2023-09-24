@@ -501,7 +501,7 @@ auto CompilerEngine::Expression(const bool nested) -> void {
 auto CompilerEngine::Jump(OpCode opcode) -> u32 {
   this->Emit(opcode);
   int placeholder = 0xFFFFFFFF;
-  auto *const place = IntToBytes(&placeholder);
+  auto* const place = IntToBytes(&placeholder);
   this->Emit(place, 4);
 
   return this->CurrentChunk()->Count() - 4;
@@ -512,8 +512,8 @@ auto CompilerEngine::PatchJump(u64 jump_idx) -> void {
 
   // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
   // so! we just ignore it by doing disgusting bit reinterpreting
-  auto *code = this->CurrentChunk()->bytecode.data + jump_idx;
-  auto *as_int = reinterpret_cast<u32*>(code);
+  auto* code = this->CurrentChunk()->bytecode.data + jump_idx;
+  auto* as_int = reinterpret_cast<u32*>(code);
   *as_int = jump;
 }
 
@@ -655,7 +655,7 @@ auto CompilerEngine::FunctionDeclaration() -> void {
   this->prev = new_engine.prev;
   // is this necessary?
   // new_engine.EndCompilation();
-  auto *const func = new_engine.curr_func;
+  auto* const func = new_engine.curr_func;
 
   /*
   u32 func_idx = this->CurrentChunk()->AddLocal(Value(func), func_start);

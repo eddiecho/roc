@@ -60,4 +60,4 @@ cloc:
 	cloc src/ include/ test/
 
 .PHONY: release
-release: sync fmt tidy build test
+release: sync build test
