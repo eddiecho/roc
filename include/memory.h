@@ -12,6 +12,6 @@
 #define ALLOCATE(type, count) \
   (type*)Reallocate(nullptr, 0, sizeof(type) * (count))
 
-fnc Reallocate(void* ptr, size_t old_size, size_t new_size)->void*;
-fnc Collect()->void;
-fnc static MarkRoots()->void;
+auto Reallocate(void* ptr, size_t old_size, size_t new_size)->void*;
+auto Collect()->void;
+auto static MarkRoots()->void;

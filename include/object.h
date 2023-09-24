@@ -40,8 +40,8 @@ class Object {
 
   auto operator==(const Object* o) const -> bool { return this->type == o->type; }
 
-  fnc Print() const->void;
-  fnc IsTruthy() const->const bool;
+  auto Print() const->void;
+  auto IsTruthy() const->const bool;
 
  public:
   Object() = default;
@@ -78,7 +78,7 @@ class Object::String : public Object {
     return ret;
   }
 
-  fnc operator==(const Object* o) const -> bool {
+  auto operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::String) return false;
 
     const auto *other = static_cast<const Object::String*>(o);
@@ -87,23 +87,23 @@ class Object::String : public Object {
     return std::memcmp(this->name, other->name, this->name_len) == 0;
   }
 
-  fnc operator==(Object::String& o) const -> bool {
+  auto operator==(Object::String& o) const -> bool {
     if (this->name_len != o.name_len) return false;
 
     return std::memcmp(this->name, o.name, this->name_len) == 0;
   }
 
-  fnc Print() const -> void;
-  fnc IsTruthy() -> bool;
-  fnc Init(u32 name_len, const char* name) -> void;
-  fnc Init(const Object::String&& str) -> void;
+  auto Print() const -> void;
+  auto IsTruthy() -> bool;
+  auto Init(u32 name_len, const char* name) -> void;
+  auto Init(const Object::String&& str) -> void;
 };
 
 class Object::Function : public Object {
  public:
   Function() noexcept;
 
-  fnc operator==(const Object* o) const -> bool {
+  auto operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Function) return false;
     if (o->as.function.arity != this->as.function.arity) return false;
     if (o->name_len != this->name_len) return false;
@@ -111,16 +111,16 @@ class Object::Function : public Object {
     return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
-  fnc Init(Chunk* chunk, u32 name_len, const char* name) -> void;
-  fnc Print() const -> void;
-  fnc inline Unwrap() -> Object::FunctionData;
+  auto Init(Chunk* chunk, u32 name_len, const char* name) -> void;
+  auto Print() const -> void;
+  auto inline Unwrap() -> Object::FunctionData;
 };
 
 class Object::Closure : public Object {
  public:
   Closure() noexcept;
 
-  fnc operator==(const Object* o) const -> bool {
+  auto operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Closure) return false;
 
     if (o->as.closure.arity != this->as.closure.arity) return false;
@@ -130,22 +130,22 @@ class Object::Closure : public Object {
     return std::memcmp(this->name, o->name, this->name_len) == 0;
   }
 
-  fnc Init(const Object* function) -> void;
-  fnc Init(const Object::Function* function) -> void;
-  fnc Deinit() -> void;
-  fnc Print() const -> void;
+  auto Init(const Object* function) -> void;
+  auto Init(const Object::Function* function) -> void;
+  auto Deinit() -> void;
+  auto Print() const -> void;
 };
 
 class Object::Upvalue : public Object {
  public:
   Upvalue() noexcept;
 
-  fnc operator==(const Object* o) const -> bool {
+  auto operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::Upvalue) return false;
 
     return this->as.upvalue.location == o->as.upvalue.location;
   }
 
-  fnc Init(Value* location) -> void;
-  fnc Print() const -> void;
+  auto Init(Value* location) -> void;
+  auto Print() const -> void;
 };

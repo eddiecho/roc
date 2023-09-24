@@ -33,15 +33,15 @@ class Arena {
     }
   };
 
-  fnc Alloc() -> u64;
-  fnc Alloc(u64 len) -> u64;
-  fnc Free(T* entry) -> void;
-  fnc Clear() -> void;
-  fnc AllocatedBytes() const -> u64;
-  fnc Nth(u64 idx) -> T*;
+  auto Alloc() -> u64;
+  auto Alloc(u64 len) -> u64;
+  auto Free(T* entry) -> void;
+  auto Clear() -> void;
+  auto AllocatedBytes() const -> u64;
+  auto Nth(u64 idx) -> T*;
 
  private:
-  fnc Push() -> u64;
+  auto Push() -> u64;
 
  private:
   u64 capacity;
@@ -53,7 +53,7 @@ class Arena {
 };
 
 template <Nodeable T>
-fnc Arena<T>::Push() -> u64 {
+auto Arena<T>::Push() -> u64 {
   if (this->count == this->capacity) {
     if (this->next == nullptr) {
       // @FIXME(eddie) - does this work?
@@ -69,17 +69,17 @@ fnc Arena<T>::Push() -> u64 {
 }
 
 template <Nodeable T>
-fnc Arena<T>::AllocatedBytes() const -> u64 {
+auto Arena<T>::AllocatedBytes() const -> u64 {
   return this->count * sizeof(T);
 }
 
 template <Nodeable T>
-fnc Arena<T>::Clear() -> void {
+auto Arena<T>::Clear() -> void {
   this->count = 0;
 }
 
 template <Nodeable T>
-fnc Arena<T>::Alloc() -> u64 {
+auto Arena<T>::Alloc() -> u64 {
   T* result = this->first_free;
   if (result != nullptr) {
     this->first_free = this->first_free->next;
@@ -92,7 +92,7 @@ fnc Arena<T>::Alloc() -> u64 {
 }
 
 template <Nodeable T>
-fnc Arena<T>::Free(T* entry) -> void {
+auto Arena<T>::Free(T* entry) -> void {
   entry->next = this->first_free;
   this->first_free = entry;
 
@@ -100,7 +100,7 @@ fnc Arena<T>::Free(T* entry) -> void {
 }
 
 template <Nodeable T>
-fnc Arena<T>::Nth(u64 idx) -> T* {
+auto Arena<T>::Nth(u64 idx) -> T* {
   if (idx > this->capacity) return this->next->Nth(idx - this->capacity);
 
   return &this->data[idx];

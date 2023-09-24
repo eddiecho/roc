@@ -19,7 +19,7 @@
 static VirtualMachine VIRTUAL_MACHINE;
 static Compiler COMPILER;
 
-fnc static RunFile(const char* path) -> InterpretResult {
+auto static RunFile(const char* path) -> InterpretResult {
   char* src = Utils::ReadFile(path);
   defer(free(src));
 
@@ -41,7 +41,7 @@ fnc static RunFile(const char* path) -> InterpretResult {
   return VIRTUAL_MACHINE.Interpret(function, &string_pool, &object_pool);
 }
 
-fnc static Repl() -> void {
+auto static Repl() -> void {
   char line[1024];
   InterpretResult status;
   StringPool string_pool;
@@ -71,7 +71,7 @@ fnc static Repl() -> void {
   }
 }
 
-fnc main(int argc, char** argv) -> int {
+auto main(int argc, char** argv) -> int {
   std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
             << Roc_VERSION_MINOR << std::endl;
 

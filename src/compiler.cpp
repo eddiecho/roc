@@ -31,22 +31,22 @@ Token::Token(const char* error) noexcept {
   this->line = 0;
 }
 
-fnc Token::IdentifiersEqual(Token other) const -> bool {
+auto Token::IdentifiersEqual(Token other) const -> bool {
   if (this->len != other.len) return false;
 
   return memcmp(this->start, other.start, this->len) == 0;
 }
 
-fnc static constexpr IsDigit(const char c) -> const bool {
+auto static constexpr IsDigit(const char c) -> const bool {
   return c >= '0' && c <= '9';
 }
 
-fnc static IsWhitespace(const char c) -> const bool {
+auto static IsWhitespace(const char c) -> const bool {
   return c == ' ' || c == '\n' || c == '\t' || c == '\r';
 }
 
 // @STDLIB
-fnc static IsIdentifier(const char c) -> const bool {
+auto static IsIdentifier(const char c) -> const bool {
   return !ispunct(c) && !isspace(c);
 }
 
@@ -57,24 +57,24 @@ Scanner::Scanner() noexcept {
   this->row = 0;
 }
 
-fnc Scanner::Init(const char* src) -> void {
+auto Scanner::Init(const char* src) -> void {
   this->start = src;
   this->curr = src;
   this->line = 0;
   this->row = 0;
 }
 
-fnc constexpr inline Scanner::IsEnd() const -> const bool {
+auto constexpr inline Scanner::IsEnd() const -> const bool {
   return *this->curr == '\0';
 }
 
-fnc inline Scanner::Pop() -> char {
+auto inline Scanner::Pop() -> char {
   this->curr++;
   this->row++;
   return this->curr[-1];
 }
 
-fnc inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
+auto inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   return Token{
       type,
       this->start,
@@ -83,22 +83,22 @@ fnc inline Scanner::MakeToken(Token::Lexeme type) const -> const Token {
   };
 }
 
-fnc inline Scanner::Match(char expected) -> bool {
+auto inline Scanner::Match(char expected) -> bool {
   if (this->IsEnd()) return false;
   if (*this->curr != expected) return false;
   this->curr++;
   return true;
 }
 
-fnc constexpr inline Scanner::Peek() const -> const char {
+auto constexpr inline Scanner::Peek() const -> const char {
   return *this->curr;
 }
 
-fnc constexpr inline Scanner::PeekNext() const -> const char {
+auto constexpr inline Scanner::PeekNext() const -> const char {
   return this->IsEnd() ? '\0' : this->curr[1];
 }
 
-fnc Scanner::SkipWhitespace() -> void {
+auto Scanner::SkipWhitespace() -> void {
   while (1) {
     switch (this->Peek()) {
       case ' ':
@@ -119,7 +119,7 @@ fnc Scanner::SkipWhitespace() -> void {
   }
 }
 
-fnc Scanner::StringToken() -> const Token {
+auto Scanner::StringToken() -> const Token {
   while (this->Peek() != '"' && !this->IsEnd()) {
     if (this->Peek() == '\n') this->line++;
     this->Pop();
@@ -131,7 +131,7 @@ fnc Scanner::StringToken() -> const Token {
   return this->MakeToken(Token::Lexeme::String);
 }
 
-fnc Scanner::NumberToken() -> const Token {
+auto Scanner::NumberToken() -> const Token {
   while (IsDigit(this->Peek())) this->Pop();
 
   // you get one .
@@ -145,7 +145,7 @@ fnc Scanner::NumberToken() -> const Token {
 }
 
 // @STDLIB
-fnc Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
+auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
                           Token::Lexeme possible) const->const Token::Lexeme {
   if (this->curr - this->start == start + length &&
       memcmp(this->start + start, rest, length) == 0) {
@@ -155,7 +155,7 @@ fnc Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
   return Token::Lexeme::Identifier;
 }
 
-fnc Scanner::IdentifierType() -> const Token::Lexeme {
+auto Scanner::IdentifierType() -> const Token::Lexeme {
   while (IsIdentifier(this->Peek())) {
     this->Pop();
   }
@@ -204,12 +204,12 @@ fnc Scanner::IdentifierType() -> const Token::Lexeme {
   return Token::Lexeme::Identifier;
 }
 
-fnc Scanner::IdentifierToken() -> const Token {
+auto Scanner::IdentifierToken() -> const Token {
   Token::Lexeme type = this->IdentifierType();
   return this->MakeToken(type);
 }
 
-fnc Scanner::ScanToken() -> Token {
+auto Scanner::ScanToken() -> Token {
   this->SkipWhitespace();
   this->start = this->curr;
 
@@ -281,7 +281,7 @@ fnc Scanner::ScanToken() -> Token {
   }
 }
 
-fnc CompilerState::Merge(CompilerState other)->void {
+auto CompilerState::Merge(CompilerState other)->void {
   this->value |= other.value;
 }
 
@@ -353,7 +353,7 @@ const ParseRuleMap Compiler::PARSE_RULES = {
 
 };
 
-fnc Compiler::Init(const char* src, StringPool* string_pool,
+auto Compiler::Init(const char* src, StringPool* string_pool,
                    GlobalPool* global_pool)
     ->void {
   this->string_pool = string_pool;
@@ -361,19 +361,19 @@ fnc Compiler::Init(const char* src, StringPool* string_pool,
   this->scanner.Init(src);
 }
 
-fnc Compiler::Compile()->Result<Object*, CompileError> {
+auto Compiler::Compile()->Result<Object*, CompileError> {
   CompilerEngine engine = {};
   engine.Init(this);
 
   return engine.Compile();
 }
 
-fnc inline CompilerEngine::Init(Compiler* compiler)->void {
+auto inline CompilerEngine::Init(Compiler* compiler)->void {
   this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN,
              Compiler::GLOBAL_FUNCTION_NAME);
 }
 
-fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name)
+auto CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name)
     ->void {
   this->compiler = compiler;
   this->parent = nullptr;
@@ -401,7 +401,7 @@ fnc CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name)
   top_level_declaration->captured = false;
 }
 
-fnc CompilerEngine::Compile() -> CompileResult {
+auto CompilerEngine::Compile() -> CompileResult {
   this->Advance();
 
   while (this->curr.type != Token::Lexeme::Eof) {
@@ -415,11 +415,11 @@ fnc CompilerEngine::Compile() -> CompileResult {
   return this->curr_func;
 }
 
-fnc inline CompilerEngine::CurrentChunk() -> Chunk* {
+auto inline CompilerEngine::CurrentChunk() -> Chunk* {
   return this->curr_func->as.function.chunk;
 }
 
-fnc CompilerEngine::Declaration() -> void {
+auto CompilerEngine::Declaration() -> void {
   switch (this->curr.type) {
     default: {
       this->Statement();
@@ -439,7 +439,7 @@ fnc CompilerEngine::Declaration() -> void {
   if (this->state.panic) this->SyncOnError();
 }
 
-fnc CompilerEngine::Statement() -> void {
+auto CompilerEngine::Statement() -> void {
   // @NOTE(eddie)
   // the only kinds of statements in this lang are
   // return/yield
@@ -468,7 +468,7 @@ fnc CompilerEngine::Statement() -> void {
   }
 }
 
-fnc CompilerEngine::Expression(const bool nested)->void {
+auto CompilerEngine::Expression(const bool nested)->void {
   switch (this->curr.type) {
     case Token::Lexeme::If: {
       this->Advance();
@@ -543,7 +543,7 @@ fnc CompilerEngine::Expression(const bool nested)->void {
   }
 }
 
-fnc CompilerEngine::Jump(OpCode kind)->u32 {
+auto CompilerEngine::Jump(OpCode kind)->u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
   const auto place = IntToBytes(&placeholder);
@@ -552,7 +552,7 @@ fnc CompilerEngine::Jump(OpCode kind)->u32 {
   return this->CurrentChunk()->Count() - 4;
 }
 
-fnc CompilerEngine::PatchJump(u64 offset) -> void {
+auto CompilerEngine::PatchJump(u64 offset) -> void {
   const u32 jump = this->CurrentChunk()->Count() - offset - 4;
 
   // I HAVE NO FUCKING CLUE WHICH ENDIAN IS WHICH
@@ -562,14 +562,14 @@ fnc CompilerEngine::PatchJump(u64 offset) -> void {
   *as_int = jump;
 }
 
-fnc CompilerEngine::Loop(u64 loop_start) -> void {
+auto CompilerEngine::Loop(u64 loop_start) -> void {
   this->Emit(OpCode::Loop);
   u32 offset = this->CurrentChunk()->Count() - loop_start + 2;
 
   this->Emit(IntToBytes(&offset), 4);
 }
 
-fnc CompilerEngine::SyncOnError() -> void {
+auto CompilerEngine::SyncOnError() -> void {
   this->state.panic = 0;
 
   while (this->curr.type != Token::Lexeme::Eof) {
@@ -592,9 +592,9 @@ fnc CompilerEngine::SyncOnError() -> void {
   }
 }
 
-fnc CompilerEngine::BeginScope()->void { this->scope_depth++; }
+auto CompilerEngine::BeginScope()->void { this->scope_depth++; }
 
-fnc CompilerEngine::EndScope()->void {
+auto CompilerEngine::EndScope()->void {
   this->scope_depth--;
 
   // @TODO(eddie) - PopN opcode, because this sucks
@@ -608,7 +608,7 @@ fnc CompilerEngine::EndScope()->void {
   }
 }
 
-fnc CompilerEngine::CodeBlock()->void {
+auto CompilerEngine::CodeBlock()->void {
   while (this->curr.type != Token::Lexeme::RightBrace &&
          this->curr.type != Token::Lexeme::Eof) {
     this->Declaration();
@@ -617,7 +617,7 @@ fnc CompilerEngine::CodeBlock()->void {
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
 }
 
-fnc CompilerEngine::Advance()->void {
+auto CompilerEngine::Advance()->void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->prev = this->curr;
@@ -642,7 +642,7 @@ fnc CompilerEngine::Advance()->void {
 }
 
 // @TODO(eddie) - just get rid of this
-fnc inline CompilerEngine::MatchAndAdvance(Token::Lexeme type) -> bool {
+auto inline CompilerEngine::MatchAndAdvance(Token::Lexeme type) -> bool {
   if (this->curr.type == type) {
     this->Advance();
     return true;
@@ -651,7 +651,7 @@ fnc inline CompilerEngine::MatchAndAdvance(Token::Lexeme type) -> bool {
   return false;
 }
 
-fnc inline CompilerEngine::ErrorAtToken(const char* message, Token id) -> void {
+auto inline CompilerEngine::ErrorAtToken(const char* message, Token id) -> void {
   if (this->state.panic) return;
 
   fprintf(stderr, "[line %d] Error", id.line);
@@ -662,11 +662,11 @@ fnc inline CompilerEngine::ErrorAtToken(const char* message, Token id) -> void {
   this->state.error = 1;
 }
 
-fnc inline CompilerEngine::ErrorAtCurr(const char* message) -> void {
+auto inline CompilerEngine::ErrorAtCurr(const char* message) -> void {
   this->ErrorAtToken(message, this->curr);
 }
 
-fnc CompilerEngine::VariableDeclaration() -> void {
+auto CompilerEngine::VariableDeclaration() -> void {
   const bool in_for_loop = this->curr.type == Token::Lexeme::For;
 
   this->Consume(Token::Lexeme::Identifier, "Expected variable name");
@@ -685,7 +685,7 @@ fnc CompilerEngine::VariableDeclaration() -> void {
   }
 }
 
-fnc CompilerEngine::FunctionDeclaration() -> void {
+auto CompilerEngine::FunctionDeclaration() -> void {
   const auto declaration_line = this->curr.line;
 
   this->Consume(Token::Lexeme::Identifier, "Expected function name");
@@ -724,7 +724,7 @@ fnc CompilerEngine::FunctionDeclaration() -> void {
   }
 }
 
-fnc CompilerEngine::FunctionBody()->void {
+auto CompilerEngine::FunctionBody()->void {
   this->BeginScope();
   this->Consume(Token::Lexeme::LeftParens,
                 "Functions require function parameters starting with '(");
@@ -746,15 +746,15 @@ fnc CompilerEngine::FunctionBody()->void {
   this->EndScope();
 }
 
-fnc inline CompilerEngine::AddString(u32 length, const char* start)->u32 {
+auto inline CompilerEngine::AddString(u32 length, const char* start)->u32 {
   return this->compiler->string_pool->Alloc(length, start);
 }
 
-fnc inline CompilerEngine::AddGlobal(Token id)->u64 {
+auto inline CompilerEngine::AddGlobal(Token id)->u64 {
   return this->compiler->global_pool->Alloc(id.len, id.start);
 }
 
-fnc CompilerEngine::AddLocal(Token id)->void {
+auto CompilerEngine::AddLocal(Token id)->void {
   // @TODO(eddie) - this sucks
   if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
     this->ErrorAtCurr("Too many locals in current scope");
@@ -766,18 +766,18 @@ fnc CompilerEngine::AddLocal(Token id)->void {
   local->captured = false;
 }
 
-fnc CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
+auto CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
   const u32 count = this->curr_func->as.function.upvalue_count;
   this->upvalues[count].local = local;
   this->upvalues[count].index = index;
   return this->curr_func->as.function.upvalue_count++;
 }
 
-fnc inline CompilerEngine::FindLocal(Token id) -> Option<u64> {
+auto inline CompilerEngine::FindLocal(Token id) -> Option<u64> {
   return this->FindLocal(id, this->locals);
 }
 
-fnc CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
+auto CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
   for (int i = this->locals_count - 1; i >= 0; i--) {
     const Local* local = &this->locals[i];
     if (local->id.IdentifiersEqual(id)) {
@@ -788,7 +788,7 @@ fnc CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
+auto CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
   if (this->parent == nullptr) return OptionType::None;
 
   auto idx = this->FindLocal(id, this->parent->locals);
@@ -806,7 +806,7 @@ fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
+auto inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
   return this->compiler->global_pool->Find(id.len, id.start);
 }
 
@@ -821,7 +821,7 @@ fnc inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
  * POV Lookups are handled in CompilerEngine, we store an array of names here,
  * and lookups return an index into the locals array
  */
-fnc CompilerEngine::LoadVariable(bool assignment)->void {
+auto CompilerEngine::LoadVariable(bool assignment)->void {
   OpCode get = {};
   OpCode set = {};
 
@@ -868,20 +868,20 @@ fnc CompilerEngine::LoadVariable(bool assignment)->void {
   this->Emit(IntToBytes(&unwrapped), 4);
 }
 
-fnc inline CompilerEngine::Emit(u8 byte) -> void {
+auto inline CompilerEngine::Emit(u8 byte) -> void {
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
-fnc inline CompilerEngine::Emit(u8* bytes, u32 count) -> void {
+auto inline CompilerEngine::Emit(u8* bytes, u32 count) -> void {
   this->CurrentChunk()->AddInstruction(bytes, count, this->prev.line);
 }
 
-fnc inline CompilerEngine::Emit(OpCode op) -> void {
+auto inline CompilerEngine::Emit(OpCode op) -> void {
   const u8 byte = static_cast<u8>(op);
   this->CurrentChunk()->AddInstruction(byte, this->prev.line);
 }
 
-fnc CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
+auto CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
   if (this->curr.type == type) {
     this->Advance();
 
@@ -891,13 +891,13 @@ fnc CompilerEngine::Consume(Token::Lexeme type, const char* message) -> void {
   this->ErrorAtCurr(message);
 }
 
-fnc CompilerEngine::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
+auto CompilerEngine::EndCompilation() -> void { this->Emit(OpCode::ReturnVoid); }
 
-fnc inline CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
+auto inline CompilerEngine::GetParseRule(Token::Lexeme token) -> const ParseRule* {
   return &this->compiler->PARSE_RULES.at(token);
 }
 
-fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
+auto CompilerEngine::GetPrecedence(Precedence precedence) -> void {
   this->Advance();
   const ParseRule* rule = this->GetParseRule(this->prev.type);
 
@@ -925,17 +925,17 @@ fnc CompilerEngine::GetPrecedence(Precedence precedence) -> void {
 }
 
 // @STDLIB
-fnc static Grammar::Number(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Number(CompilerEngine* compiler, bool assign) -> void {
   const f64 value = strtod(compiler->prev.start, nullptr);
   compiler->CurrentChunk()->AddLocal(Value(value), compiler->prev.line);
 }
 
-fnc static Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void {
   compiler->Expression(true);
   compiler->Consume(Token::Lexeme::RightParens, "Expect ')' after expression");
 }
 
-fnc static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
   const Token::Lexeme op = compiler->prev.type;
   compiler->GetPrecedence(Precedence::Unary);
 
@@ -953,7 +953,7 @@ fnc static Grammar::Unary(CompilerEngine* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::Binary(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Binary(CompilerEngine* compiler, bool assign) -> void {
   const Token::Lexeme op = compiler->prev.type;
 
   const int higher = static_cast<int>(Precedence::Term) + 1;
@@ -1009,7 +1009,7 @@ fnc static Grammar::Binary(CompilerEngine* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::Literal(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Literal(CompilerEngine* compiler, bool assign) -> void {
   switch (compiler->prev.type) {
     default:
       return;  // unreachable
@@ -1024,7 +1024,7 @@ fnc static Grammar::Literal(CompilerEngine* compiler, bool assign) -> void {
   }
 }
 
-fnc static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
   // skip the closing quote
   const u32 length = compiler->prev.len - 2;
   u32 index = compiler->AddString(length, compiler->prev.start + 1);
@@ -1033,11 +1033,11 @@ fnc static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
   compiler->Emit(IntToBytes(&index), 4);
 }
 
-fnc static Grammar::Variable(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::Variable(CompilerEngine* compiler, bool assign) -> void {
   compiler->LoadVariable(assign);
 }
 
-fnc static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
   u32 short_circuit = compiler->Jump(OpCode::JumpFalse);
 
   compiler->Emit(OpCode::Pop);
@@ -1045,7 +1045,7 @@ fnc static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
   compiler->PatchJump(short_circuit);
 }
 
-fnc static Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void {
   const u32 short_circuit = compiler->Jump(OpCode::JumpTrue);
 
   compiler->Emit(OpCode::Pop);
@@ -1053,7 +1053,7 @@ fnc static Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void {
   compiler->PatchJump(short_circuit);
 }
 
-fnc static Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void {
+auto static Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void {
   u32 arg_count = 0;
   if (compiler->curr.type != Token::Lexeme::RightParens) {
     do {

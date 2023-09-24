@@ -12,10 +12,10 @@
 
 class StringPool {
  public:
-  fnc Init(Arena<Object>* object_pool) -> void;
-  fnc Deinit() -> void;
-  fnc Alloc(u64 length, const char* start) -> u64;
-  fnc Nth(u64 idx) -> Object*;
+  auto Init(Arena<Object>* object_pool) -> void;
+  auto Deinit() -> void;
+  auto Alloc(u64 length, const char* start) -> u64;
+  auto Nth(u64 idx) -> Object*;
 
  private:
   DynamicArray<char>* char_data = new DynamicArray<char>();

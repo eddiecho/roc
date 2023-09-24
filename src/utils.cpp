@@ -6,7 +6,7 @@
 #include "common.h"
 
 // @STDLIB
-fnc Utils::ReadFile(const char* path)->char* {
+auto Utils::ReadFile(const char* path)->char* {
   FILE* file;
 
 #ifdef _WIN32

@@ -10,14 +10,14 @@ struct PrivDefer {
 };
 
 template <typename F>
-fnc Deferfnc(F f) -> PrivDefer<F> {
+auto Deferauto(F f) -> PrivDefer<F> {
   return PrivDefer<F>(f);
 }
 
 #define DEFER_1(x, y) x##y
 #define DEFER_2(x, y) DEFER_1(x, y)
 #define DEFER_3(x) DEFER_2(x, __COUNTER__)
-#define defer(code) fnc DEFER_3(_defer_) = Deferfnc([&]() { code; })
+#define defer(code) auto DEFER_3(_defer_) = Deferauto([&]() { code; })
 
 #if DEBUG
 #define Assert(Expression) \
@@ -31,9 +31,9 @@ fnc Deferfnc(F f) -> PrivDefer<F> {
 #define IntToBytes(num) (reinterpret_cast<u8*>(num))
 
 namespace Utils {
-fnc ReadFile(const char* path) -> char*;
+auto ReadFile(const char* path) -> char*;
 
-fnc constexpr inline HashString(const char* str, u64 length) -> u32 {
+auto constexpr inline HashString(const char* str, u64 length) -> u32 {
   u32 hash = 2166136261U;
 
   for (u32 i = 0; i < length; i++) {
@@ -74,14 +74,14 @@ struct Result {
     this->as.obj = t;
   };
 
-  fnc IsError() const->bool { return this->type == ResultType::Error; }
+  auto IsError() const->bool { return this->type == ResultType::Error; }
 
-  fnc Get() const->T {
+  auto Get() const->T {
     Assert(this->type == ResultType::Ok);
     return this->as.obj;
   }
 
-  fnc Err() const->E {
+  auto Err() const->E {
     Assert(this->type == ResultType::Error);
     return this->as.err;
   }
@@ -112,9 +112,9 @@ struct Option {
     this->data = t;
   }
 
-  fnc IsNone() const->bool { return this->type == OptionType::None; }
+  auto IsNone() const->bool { return this->type == OptionType::None; }
 
-  fnc Get() const->T {
+  auto Get() const->T {
     Assert(this->type == OptionType::Some);
     return this->data;
   }

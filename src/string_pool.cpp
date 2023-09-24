@@ -5,18 +5,18 @@
 #include "common.h"
 #include "object.h"
 
-fnc StringPool::Init(Arena<Object>* object_pool) -> void {
+auto StringPool::Init(Arena<Object>* object_pool) -> void {
   this->object_pool = object_pool;
   this->char_data->Init(INIT_STR_POOL_SIZE);
 }
 
-fnc StringPool::Deinit() -> void {
+auto StringPool::Deinit() -> void {
   this->object_pool = nullptr;
   this->char_data->Deinit();
   this->intern_table.clear();
 }
 
-fnc StringPool::Alloc(u64 length, const char* start) -> u64 {
+auto StringPool::Alloc(u64 length, const char* start) -> u64 {
   std::string_view str {start, length};
   auto it = this->intern_table.find(str);
   if (it != this->intern_table.end()) {
@@ -35,7 +35,7 @@ fnc StringPool::Alloc(u64 length, const char* start) -> u64 {
   return obj_idx;
 }
 
-fnc StringPool::Nth(u64 index) -> Object* {
+auto StringPool::Nth(u64 index) -> Object* {
   return this->object_pool->Nth(index);
 }
 

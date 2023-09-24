@@ -5,7 +5,7 @@
 #include "common.h"
 
 // @STDLIB
-fnc Reallocate(void* ptr, size_t old_size, size_t new_size) -> void* {
+auto Reallocate(void* ptr, size_t old_size, size_t new_size) -> void* {
   if (new_size == 0) {
     free(ptr);
     return nullptr;
@@ -20,7 +20,7 @@ fnc Reallocate(void* ptr, size_t old_size, size_t new_size) -> void* {
   return result;
 }
 
-fnc Collect() -> void {
+auto Collect() -> void {
 #ifdef DEBUG_GC_LOG
   printf("-----GC begin\n");
 #endif
@@ -32,4 +32,4 @@ fnc Collect() -> void {
 #endif
 }
 
-fnc static MarkRoots() -> void {}
+auto static MarkRoots() -> void {}

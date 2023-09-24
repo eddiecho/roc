@@ -12,14 +12,14 @@ class DynamicArray {
  public:
   DynamicArray<T>() noexcept;
 
-  fnc Init() -> void;
-  fnc Init(u64 size) -> void;
-  fnc Append(T item) -> u64;
-  fnc Append(T* items, u64 size) -> u64;
-  fnc Deinit() -> void;
+  auto Init() -> void;
+  auto Init(u64 size) -> void;
+  auto Append(T item) -> u64;
+  auto Append(T* items, u64 size) -> u64;
+  auto Deinit() -> void;
 
-  fnc operator[](size_t idx) -> T& { return this->data[idx]; }
-  fnc operator[](size_t idx) const -> const T& { return this->data[idx]; }
+  auto operator[](size_t idx) -> T& { return this->data[idx]; }
+  auto operator[](size_t idx) const -> const T& { return this->data[idx]; }
 
  public:
   u64 count;
@@ -37,21 +37,21 @@ DynamicArray<T>::DynamicArray() noexcept {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Init() -> void {
+auto DynamicArray<T>::Init() -> void {
   this->count = 0;
   this->capacity_ = 0;
   this->data = nullptr;
 }
 
 template <typename T>
-fnc DynamicArray<T>::Init(u64 size) -> void {
+auto DynamicArray<T>::Init(u64 size) -> void {
   this->count = 0;
   this->capacity_ = size;
   this->data = GROW_ARRAY(T, nullptr, 0, size);
 }
 
 template <typename T>
-fnc DynamicArray<T>::Append(T item) -> u64 {
+auto DynamicArray<T>::Append(T item) -> u64 {
   if (this->capacity_ < this->count + 1) {
     u64 old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
@@ -65,7 +65,7 @@ fnc DynamicArray<T>::Append(T item) -> u64 {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Append(T* items, u64 size) -> u64 {
+auto DynamicArray<T>::Append(T* items, u64 size) -> u64 {
   while (this->capacity_ < this->count + size) {
     u64 old_capacity = this->capacity_;
     this->capacity_ = GROW_CAPACITY(old_capacity);
@@ -80,7 +80,7 @@ fnc DynamicArray<T>::Append(T* items, u64 size) -> u64 {
 }
 
 template <typename T>
-fnc DynamicArray<T>::Deinit() -> void {
+auto DynamicArray<T>::Deinit() -> void {
   FREE_ARRAY(T, this->data, this->capacity_);
   this->Init();
 }

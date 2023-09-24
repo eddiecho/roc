@@ -23,7 +23,7 @@ enum class InterpretError {
 #undef X
 };
 
-fnc static ErrorToString(InterpretError err) -> const char* {
+auto static ErrorToString(InterpretError err) -> const char* {
   switch (err) {
 #define X(ID)              \
   case InterpretError::ID: \
@@ -64,25 +64,25 @@ using InterpretResult = Result<Value, InterpretError>;
 
 class VirtualMachine {
  public:
-  fnc Init() -> void;
-  fnc Deinit() -> void;
-  fnc Interpret(
+  auto Init() -> void;
+  auto Deinit() -> void;
+  auto Interpret(
     Object* func,
     StringPool* string_pool,
     Arena<Object>* object_pool
   ) -> InterpretResult;
 
-  fnc RuntimeError(const char* msg, ...) -> InterpretError;
-  fnc Peek() const -> Value;
-  fnc Peek(int dist) const -> Value;
+  auto RuntimeError(const char* msg, ...) -> InterpretError;
+  auto Peek() const -> Value;
+  auto Peek(int dist) const -> Value;
 
  private:
-  fnc Push(Value value) -> void;
-  fnc Pop() -> Value;
-  fnc Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
-  fnc Invoke(Object::Function* closure, u32 argc) -> Result<size_t, InterpretError>;
-  fnc CaptureUpvalue(Value* local) -> Object::Upvalue*;
-  fnc CloseUpvalues(Value* local) -> void;
+  auto Push(Value value) -> void;
+  auto Pop() -> Value;
+  auto Invoke(Object::Closure* closure, u32 argc) -> Result<size_t, InterpretError>;
+  auto Invoke(Object::Function* closure, u32 argc) -> Result<size_t, InterpretError>;
+  auto CaptureUpvalue(Value* local) -> Object::Upvalue*;
+  auto CloseUpvalues(Value* local) -> void;
 
  private:
   StackFrame frames[VM_STACK_MAX];

@@ -48,8 +48,8 @@ struct Token {
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
   explicit Token(const char* error) noexcept;
 
-  fnc IdentifiersEqual(Token other) const -> bool;
-  fnc constexpr Print() const -> const char* {
+  auto IdentifiersEqual(Token other) const -> bool;
+  auto constexpr Print() const -> const char* {
     switch (this->type) {
 #define X(ID)      \
   case Lexeme::ID: \
@@ -66,23 +66,23 @@ struct Token {
 class Scanner {
  public:
   Scanner() noexcept;
-  fnc Init(const char* src) -> void;
-  fnc ScanToken() -> Token;
+  auto Init(const char* src) -> void;
+  auto ScanToken() -> Token;
 
  private:
-  fnc inline Match(char expected) -> bool;
-  fnc constexpr inline IsEnd() const -> const bool;
-  fnc inline Pop() -> char;
-  fnc inline MakeToken(Token::Lexeme type) const -> const Token;
-  fnc constexpr inline Peek() const -> const char;
-  fnc constexpr inline PeekNext() const -> const char;
-  fnc SkipWhitespace() -> void;
-  fnc CheckKeyword(u32 start, u32 length, const char* rest,
+  auto inline Match(char expected) -> bool;
+  auto constexpr inline IsEnd() const -> const bool;
+  auto inline Pop() -> char;
+  auto inline MakeToken(Token::Lexeme type) const -> const Token;
+  auto constexpr inline Peek() const -> const char;
+  auto constexpr inline PeekNext() const -> const char;
+  auto SkipWhitespace() -> void;
+  auto CheckKeyword(u32 start, u32 length, const char* rest,
                     Token::Lexeme possible) const -> const Token::Lexeme;
-  fnc StringToken() -> const Token;
-  fnc NumberToken() -> const Token;
-  fnc IdentifierToken() -> const Token;
-  fnc IdentifierType() -> const Token::Lexeme;
+  auto StringToken() -> const Token;
+  auto NumberToken() -> const Token;
+  auto IdentifierToken() -> const Token;
+  auto IdentifierType() -> const Token::Lexeme;
 
  private:
   const char* start;
@@ -137,18 +137,18 @@ struct ParseRule {
 };
 
 // i would make these part of Compiler, but you can't take pointers
-// to member fnctions to build the parser table
+// to member autotions to build the parser table
 namespace Grammar {
-fnc static Number(CompilerEngine* compiler, bool assign) -> void;
-fnc static Parenthesis(CompilerEngine* compiler, bool assign) -> void;
-fnc static Unary(CompilerEngine* compiler, bool assign) -> void;
-fnc static Binary(CompilerEngine* compiler, bool assign) -> void;
-fnc static Literal(CompilerEngine* compiler, bool assign) -> void;
-fnc static String(CompilerEngine* compiler, bool assign) -> void;
-fnc static Variable(CompilerEngine* compiler, bool assign) -> void;
-fnc static AndOp(CompilerEngine* compiler, bool assign) -> void;
-fnc static OrOp(CompilerEngine* compiler, bool assign) -> void;
-fnc static InvokeOp(CompilerEngine* compiler, bool assign) -> void;
+auto static Number(CompilerEngine* compiler, bool assign) -> void;
+auto static Parenthesis(CompilerEngine* compiler, bool assign) -> void;
+auto static Unary(CompilerEngine* compiler, bool assign) -> void;
+auto static Binary(CompilerEngine* compiler, bool assign) -> void;
+auto static Literal(CompilerEngine* compiler, bool assign) -> void;
+auto static String(CompilerEngine* compiler, bool assign) -> void;
+auto static Variable(CompilerEngine* compiler, bool assign) -> void;
+auto static AndOp(CompilerEngine* compiler, bool assign) -> void;
+auto static OrOp(CompilerEngine* compiler, bool assign) -> void;
+auto static InvokeOp(CompilerEngine* compiler, bool assign) -> void;
 }  // namespace Grammar
 
 enum class CompileError {
@@ -168,7 +168,7 @@ struct CompilerState {
     u64 value = 0;
   };
 
-  fnc Merge(CompilerState other)->void;
+  auto Merge(CompilerState other)->void;
 };
 
 class Compiler {
@@ -176,10 +176,10 @@ class Compiler {
 
  public:
   Compiler() noexcept;
-  fnc Init(const char* src,
+  auto Init(const char* src,
            StringPool* string_pool,
            GlobalPool* global_pool) -> void;
-  fnc Compile() -> CompileResult;
+  auto Compile() -> CompileResult;
 
  private:
   constexpr static const char* GLOBAL_FUNCTION_NAME = "GLOBAL_FUNCTION";
@@ -198,60 +198,60 @@ class CompilerEngine {
   friend Compiler;
 
  public:
-  fnc Init(Compiler* compiler) -> void;
-  fnc Init(Compiler* compiler, u32 name_length, const char* name) -> void;
-  fnc Compile() -> CompileResult;
+  auto Init(Compiler* compiler) -> void;
+  auto Init(Compiler* compiler, u32 name_length, const char* name) -> void;
+  auto Compile() -> CompileResult;
 
  private:
-  fnc Advance() -> void;
-  fnc inline MatchAndAdvance(Token::Lexeme type) -> bool;
-  fnc Consume(Token::Lexeme type, const char* message) -> void;
-  fnc Declaration() -> void;
-  fnc Expression(bool nested = false) -> void;
-  fnc EndCompilation() -> void;
-  fnc ErrorAtToken(const char* message, Token id) -> void;
-  fnc ErrorAtCurr(const char* message) -> void;
-  fnc GetPrecedence(Precedence prec) -> void;
-  fnc GetParseRule(Token::Lexeme lexeme) -> const ParseRule*;
-  fnc Statement() -> void;
-  fnc SyncOnError() -> void;
-  fnc inline CurrentChunk() -> Chunk*;
+  auto Advance() -> void;
+  auto inline MatchAndAdvance(Token::Lexeme type) -> bool;
+  auto Consume(Token::Lexeme type, const char* message) -> void;
+  auto Declaration() -> void;
+  auto Expression(bool nested = false) -> void;
+  auto EndCompilation() -> void;
+  auto ErrorAtToken(const char* message, Token id) -> void;
+  auto ErrorAtCurr(const char* message) -> void;
+  auto GetPrecedence(Precedence prec) -> void;
+  auto GetParseRule(Token::Lexeme lexeme) -> const ParseRule*;
+  auto Statement() -> void;
+  auto SyncOnError() -> void;
+  auto inline CurrentChunk() -> Chunk*;
 
-  fnc FunctionDeclaration() -> void;
-  fnc FunctionBody() -> void;
-  fnc VariableDeclaration() -> void;
-  fnc LoadVariable(bool assignment) -> void;
-  fnc Identifier(const char* err) -> u32;
-  fnc BeginScope() -> void;
-  fnc EndScope() -> void;
-  fnc CodeBlock() -> void;
-  fnc AddString(u32 length, const char* start) -> u32;
-  fnc AddGlobal(Token id) -> u64;
-  fnc AddLocal(Token id) -> void;
-  fnc AddUpvalue(u8 index, bool local) -> u32;
-  fnc FindLocal(Token id, Local* locals) -> Option<u64>;
-  fnc FindLocal(Token id) -> Option<u64>;
-  fnc FindUpvalue(Token id) -> Option<u64>;
-  fnc FindGlobal(Token id) -> Option<u64>;
+  auto FunctionDeclaration() -> void;
+  auto FunctionBody() -> void;
+  auto VariableDeclaration() -> void;
+  auto LoadVariable(bool assignment) -> void;
+  auto Identifier(const char* err) -> u32;
+  auto BeginScope() -> void;
+  auto EndScope() -> void;
+  auto CodeBlock() -> void;
+  auto AddString(u32 length, const char* start) -> u32;
+  auto AddGlobal(Token id) -> u64;
+  auto AddLocal(Token id) -> void;
+  auto AddUpvalue(u8 index, bool local) -> u32;
+  auto FindLocal(Token id, Local* locals) -> Option<u64>;
+  auto FindLocal(Token id) -> Option<u64>;
+  auto FindUpvalue(Token id) -> Option<u64>;
+  auto FindGlobal(Token id) -> Option<u64>;
 
-  fnc Jump(OpCode opcode) -> u32;
-  fnc PatchJump(u64 jump_idx) -> void;
-  fnc Loop(u64 loop_idx) -> void;
+  auto Jump(OpCode opcode) -> u32;
+  auto PatchJump(u64 jump_idx) -> void;
+  auto Loop(u64 loop_idx) -> void;
 
-  fnc Emit(u8 byte) -> void;
-  fnc Emit(u8* bytes, u32 count) -> void;
-  fnc Emit(OpCode opcode) -> void;
+  auto Emit(u8 byte) -> void;
+  auto Emit(u8* bytes, u32 count) -> void;
+  auto Emit(OpCode opcode) -> void;
 
-  fnc friend Grammar::Number(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::Unary(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::Binary(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::Literal(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::String(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::Variable(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void;
-  fnc friend Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Number(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Parenthesis(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Unary(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Binary(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Literal(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::String(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::Variable(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::OrOp(CompilerEngine* compiler, bool assign) -> void;
+  auto friend Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void;
 
  private:
   Token curr;

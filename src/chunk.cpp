@@ -8,27 +8,27 @@
 #include "utils.h"
 #include "value.h"
 
-fnc Chunk::Init() -> void {
+auto Chunk::Init() -> void {
   this->bytecode.Init();
   this->locals.Init();
   this->lines.Init();
 }
 
-fnc Chunk::Deinit() -> void {
+auto Chunk::Deinit() -> void {
   this->bytecode.Deinit();
   this->locals.Deinit();
   this->lines.Deinit();
 }
 
-fnc Chunk::Count() const -> u64 {
+auto Chunk::Count() const -> u64 {
   return this->bytecode.count;
 }
 
-fnc Chunk::BaseInstructionPointer() const -> u8* {
+auto Chunk::BaseInstructionPointer() const -> u8* {
   return this->bytecode.data;
 }
 
-fnc Chunk::AddLine(u64 line) -> void {
+auto Chunk::AddLine(u64 line) -> void {
   auto count = this->bytecode.count;
 
   if (this->lines.count == 0) {
@@ -41,18 +41,18 @@ fnc Chunk::AddLine(u64 line) -> void {
   }
 }
 
-fnc Chunk::AddInstruction(u8 byte, u64 line) -> u64 {
+auto Chunk::AddInstruction(u8 byte, u64 line) -> u64 {
   this->AddLine(line);
   return this->bytecode.Append(byte);
 }
 
-fnc Chunk::AddInstruction(u8* bytes, u64 count, u64 line) -> u64 {
+auto Chunk::AddInstruction(u8* bytes, u64 count, u64 line) -> u64 {
   this->AddLine(line);
   return this->bytecode.Append(bytes, count);
 }
 
 #define SMALL_CONST_POOL_SIZE 256
-fnc Chunk::AddLocal(Value val, u64 line) -> u64 {
+auto Chunk::AddLocal(Value val, u64 line) -> u64 {
   this->AddLine(line);
 
   const u32 idx = this->locals.count;
@@ -72,12 +72,12 @@ fnc Chunk::AddLocal(Value val, u64 line) -> u64 {
   return this->locals.Append(val);
 }
 
-fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
+auto Chunk::SimpleInstruction(const char* name, int offset) const -> int {
   printf("%s\n", name);
   return offset + 1;
 }
 
-fnc Chunk::ConstantInstruction(int offset) const -> int {
+auto Chunk::ConstantInstruction(int offset) const -> int {
   const u8 const_idx = this->bytecode[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   this->locals[const_idx].Print();
@@ -86,7 +86,7 @@ fnc Chunk::ConstantInstruction(int offset) const -> int {
   return offset + 2;
 }
 
-fnc Chunk::ConstantLongInstruction(int offset) const -> int {
+auto Chunk::ConstantLongInstruction(int offset) const -> int {
   const u8 one = this->bytecode[offset + 1];
   const u8 two = this->bytecode[offset + 2];
   const u8 thr = this->bytecode[offset + 3];
@@ -103,13 +103,13 @@ fnc Chunk::ConstantLongInstruction(int offset) const -> int {
   return offset + 4;
 }
 
-fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
+auto Chunk::ByteInstruction(const char* name, int offset) const -> int {
   const u8 idx = this->bytecode[offset + 1];
   printf("%-16s %4d\n", name, idx);
   return offset + 2;
 }
 
-fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
+auto Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
   auto *location = this->bytecode.data + 1;
   // auto *as_int = reinterpret_cast<u32*>(location);
   const u32 jmp = *location;
@@ -118,7 +118,7 @@ fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int 
   return offset + 5;
 }
 
-fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
+auto Chunk::GlobalInstruction(const char* name, int offset) const -> int {
   const u8 one = this->bytecode[offset + 1];
   const u8 two = this->bytecode[offset + 2];
   const u8 thr = this->bytecode[offset + 3];
@@ -131,7 +131,7 @@ fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
 
 // @TODO(eddie) - just make every single opcode 64bits
 // @FIXME(eddie) - another pass needed
-fnc Chunk::PrintAtOffset(int offset) const -> const int {
+auto Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
   const u32 line_idx = this->lines.Search(offset);
@@ -256,14 +256,14 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
   }
 }
 
-fnc Chunk::Disassemble() const -> const void {
+auto Chunk::Disassemble() const -> void {
   printf("==========\n");
   for (u32 offset = 0; offset < this->bytecode.count;) {
     offset = this->PrintAtOffset(offset);
   }
 }
 
-fnc ChunkManager::Alloc() -> Chunk* {
+auto ChunkManager::Alloc() -> Chunk* {
   if (this->capacity < this->count + 1) {
     auto old_cap = this->capacity;
     this->capacity = GROW_CAPACITY(old_cap);

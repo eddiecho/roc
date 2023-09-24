@@ -55,24 +55,24 @@ class Chunk {
   friend CompilerEngine;
   friend VirtualMachine;
 
-  fnc Init() -> void;
-  fnc Deinit() -> void;
-  fnc Disassemble() const -> const void;
-  fnc AddInstruction(u8 byte, u64 line) -> u64;
-  fnc AddInstruction(u8* bytes, u64 count, u64 line) -> u64;
-  fnc AddLine(u64 line) -> void;
-  fnc AddLocal(Value val, u64 line) -> u64;
-  fnc Count() const -> u64;
-  fnc BaseInstructionPointer() const -> u8*;
+  auto Init() -> void;
+  auto Deinit() -> void;
+  auto Disassemble() const -> void;
+  auto AddInstruction(u8 byte, u64 line) -> u64;
+  auto AddInstruction(u8* bytes, u64 count, u64 line) -> u64;
+  auto AddLine(u64 line) -> void;
+  auto AddLocal(Value val, u64 line) -> u64;
+  auto Count() const -> u64;
+  auto BaseInstructionPointer() const -> u8*;
 
  private:
-  fnc PrintAtOffset(int offset) const -> const int;
-  fnc SimpleInstruction(const char* name, int offset) const -> int;
-  fnc ConstantInstruction(int offset) const -> int;
-  fnc ConstantLongInstruction(int offset) const -> int;
-  fnc ByteInstruction(const char* name, int offset) const -> int;
-  fnc JumpInstruction(const char* name, int sign, int offset) const -> int;
-  fnc GlobalInstruction(const char* name, int offset) const -> int;
+  auto PrintAtOffset(int offset) const -> const int;
+  auto SimpleInstruction(const char* name, int offset) const -> int;
+  auto ConstantInstruction(int offset) const -> int;
+  auto ConstantLongInstruction(int offset) const -> int;
+  auto ByteInstruction(const char* name, int offset) const -> int;
+  auto JumpInstruction(const char* name, int sign, int offset) const -> int;
+  auto GlobalInstruction(const char* name, int offset) const -> int;
 
  private:
   Bytecode bytecode;
@@ -82,7 +82,7 @@ class Chunk {
 
 class ChunkManager {
  public:
-  fnc Alloc() -> Chunk*;
+  auto Alloc() -> Chunk*;
 
  private:
   u64 count = 0;

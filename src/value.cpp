@@ -3,7 +3,7 @@
 #include "common.h"
 #include "object.h"
 
-fnc Value::Print() const -> const void {
+auto Value::Print() const -> const void {
   switch (this->type) {
     default: {
       printf("Unknown type");
@@ -25,7 +25,7 @@ fnc Value::Print() const -> const void {
   }
 }
 
-fnc Value::IsTruthy() const -> bool {
+auto Value::IsTruthy() const -> bool {
   switch (this->type) {
     default:
       return false;
@@ -38,6 +38,6 @@ fnc Value::IsTruthy() const -> bool {
   }
 }
 
-fnc Value::IsObject() const -> bool {
+auto Value::IsObject() const -> bool {
   return this->type == ValueType::Object;
 }

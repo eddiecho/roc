@@ -14,11 +14,11 @@ using KeyType = std::string_view;
 
 class GlobalPool {
  public:
-  fnc Init(Arena<Object>* object_pool) -> void;
-  fnc Deinit() -> void;
-  fnc Alloc(u64 length, const char* start) -> u64;
-  fnc Nth(u64 idx) -> Object*;
-  fnc Find(u64 length, const char* start) -> Option<u64>;
+  auto Init(Arena<Object>* object_pool) -> void;
+  auto Deinit() -> void;
+  auto Alloc(u64 length, const char* start) -> u64;
+  auto Nth(u64 idx) -> Object*;
+  auto Find(u64 length, const char* start) -> Option<u64>;
 
  private:
   Arena<Object>* object_pool = nullptr;

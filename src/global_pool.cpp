@@ -6,16 +6,16 @@
 #include "common.h"
 #include "object.h"
 
-fnc GlobalPool::Init(Arena<Object>* object_pool) -> void {
+auto GlobalPool::Init(Arena<Object>* object_pool) -> void {
   this->object_pool = object_pool;
 }
 
-fnc GlobalPool::Deinit() -> void {
+auto GlobalPool::Deinit() -> void {
   this->object_pool = nullptr;
   this->index.clear();
 }
 
-fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
+auto GlobalPool::Alloc(u64 length, const char* start) -> u64 {
   auto idx = this->Find(length, start);
 
   if (!idx.IsNone()) {
@@ -30,7 +30,7 @@ fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
   return obj_idx;
 }
 
-fnc GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
+auto GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
   const KeyType key = {start, length};
   auto it = this->index.find(key);
   if (it != this->index.end()) {
@@ -40,6 +40,6 @@ fnc GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
   return OptionType::None;
 }
 
-fnc GlobalPool::Nth(u64 index) -> Object* {
+auto GlobalPool::Nth(u64 index) -> Object* {
   return this->object_pool->Nth(index);
 }

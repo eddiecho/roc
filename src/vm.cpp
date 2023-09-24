@@ -12,12 +12,12 @@
 #include "utils.h"
 #include "value.h"
 
-fnc VirtualMachine::Init()->void {
+auto VirtualMachine::Init()->void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-fnc VirtualMachine::Deinit()->void {
+auto VirtualMachine::Deinit()->void {
   this->stack_top = this->stack;
   this->frame_count = 0;
 
@@ -30,7 +30,7 @@ fnc VirtualMachine::Deinit()->void {
   }
 }
 
-fnc VirtualMachine::Push(Value value) -> void {
+auto VirtualMachine::Push(Value value) -> void {
   // TODO(eddie) - this is bad error handling
   if (this->stack_top - this->stack > VM_STACK_MAX) {
     exit(1);
@@ -40,20 +40,20 @@ fnc VirtualMachine::Push(Value value) -> void {
   this->stack_top++;
 }
 
-fnc VirtualMachine::Pop() -> Value {
+auto VirtualMachine::Pop() -> Value {
   this->stack_top--;
   return *this->stack_top;
 }
 
-fnc VirtualMachine::Peek() const -> Value {
+auto VirtualMachine::Peek() const -> Value {
   return this->stack_top[-1];
 }
 
-fnc VirtualMachine::Peek(int dist) const -> Value {
+auto VirtualMachine::Peek(int dist) const -> Value {
   return this->stack_top[-1 - dist];
 }
 
-fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
+auto VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   va_list args;
   va_start(args, msg);
   vfprintf(stderr, msg, args);
@@ -80,7 +80,7 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   return InterpretError::RuntimeError;
 }
 
-fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
+auto VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
     ->Result<size_t, InterpretError> {
   const auto inner_func = closure->as.closure;
 
@@ -105,7 +105,7 @@ fnc VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
   return this->frame_count - 1;
 }
 
-fnc VirtualMachine::Invoke(Object::Function* function, u32 argc)
+auto VirtualMachine::Invoke(Object::Function* function, u32 argc)
     ->Result<size_t, InterpretError> {
   if (argc != function->as.function.arity) {
     return this->RuntimeError("Expected %d arguments to function but got %d",
@@ -131,7 +131,7 @@ fnc VirtualMachine::Invoke(Object::Function* function, u32 argc)
 // @TODO(eddie) - big sweep through all the opcodes
 // basically everything is actually a 64bit int, but im truncating it down to
 // 32s
-fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
+auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
                               Arena<Object>* object_pool)
     ->InterpretResult {
   Assert(obj != nullptr);
@@ -434,7 +434,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
   return this->Peek();
 }
 
-fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
+auto inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   // this search should usually be fine,
   // because you really shouldn't be capturing too many upvalues in the first
   // place
@@ -464,7 +464,7 @@ fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   return obj;
 }
 
-fnc inline VirtualMachine::CloseUpvalues(Value* local)->void {
+auto inline VirtualMachine::CloseUpvalues(Value* local)->void {
   while (this->open_upvalues != nullptr &&
          this->open_upvalues->as.upvalue.location >= local) {
     auto *upvalue = this->open_upvalues;
