@@ -66,11 +66,7 @@ class VirtualMachine {
  public:
   auto Init() -> void;
   auto Deinit() -> void;
-  auto Interpret(
-    Object* func,
-    StringPool* string_pool,
-    Arena<Object>* object_pool
-  ) -> InterpretResult;
+  auto Interpret(Object* func, StringPool* string_pool, Arena<Object>* object_pool) -> InterpretResult;
 
   auto RuntimeError(const char* msg, ...) -> InterpretError;
   auto Peek() const -> Value;

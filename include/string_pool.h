@@ -22,5 +22,3 @@ class StringPool {
   Arena<Object>* object_pool = nullptr;
   absl::flat_hash_map<std::string_view, u64> intern_table;
 };
-
-

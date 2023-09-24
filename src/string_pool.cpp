@@ -17,14 +17,14 @@ auto StringPool::Deinit() -> void {
 }
 
 auto StringPool::Alloc(u64 length, const char* start) -> u64 {
-  std::string_view str {start, length};
+  std::string_view str{start, length};
   auto it = this->intern_table.find(str);
   if (it != this->intern_table.end()) {
     return it->second;
   }
 
   auto obj_idx = this->object_pool->Alloc();
-  auto *obj = static_cast<Object::String*>(this->object_pool->Nth(obj_idx));
+  auto* obj = static_cast<Object::String*>(this->object_pool->Nth(obj_idx));
 
   u64 data_ptr = this->char_data->Append(const_cast<char*>(start), length);
   this->char_data->Append(0);
@@ -35,7 +35,4 @@ auto StringPool::Alloc(u64 length, const char* start) -> u64 {
   return obj_idx;
 }
 
-auto StringPool::Nth(u64 index) -> Object* {
-  return this->object_pool->Nth(index);
-}
-
+auto StringPool::Nth(u64 index) -> Object* { return this->object_pool->Nth(index); }

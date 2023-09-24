@@ -10,27 +10,46 @@
 #include "object.h"
 #include "string_pool.h"
 
-#define VM_LEXEME_TYPE                                                       \
-  X(Eof)                                                                     \
-  X(Error)                                                                   \
-  X(Comment)                                                                 \
-  X(LeftParens)                                                              \
-  X(RightParens)                                                             \
-  X(LeftBrace)                                                               \
-  X(RightBrace)                                                              \
-  X(Comma)                                                                   \
-  X(Dot)                                                                     \
-  X(Minus)                                                                   \
-  X(Plus)                                                                    \
-  X(Semicolon)                                                               \
-  X(Colon)                                                                   \
-  X(Slash)                                                                   \
-  X(Star)                                                                    \
-  X(Bang)                                                                    \
-  X(BangEqual) X(Equal) X(EqualEqual) X(Greater) X(GreaterEqual) X(Less)     \
-      X(LessEqual) X(Identifier) X(String) X(Number) X(And) X(Else) X(False) \
-          X(For) X(Function) X(If) X(Or) X(Return) X(Struct) X(True) X(Var)  \
-              X(While) X(In)
+#define VM_LEXEME_TYPE \
+  X(Eof)               \
+  X(Error)             \
+  X(Comment)           \
+  X(LeftParens)        \
+  X(RightParens)       \
+  X(LeftBrace)         \
+  X(RightBrace)        \
+  X(Comma)             \
+  X(Dot)               \
+  X(Minus)             \
+  X(Plus)              \
+  X(Semicolon)         \
+  X(Colon)             \
+  X(Slash)             \
+  X(Star)              \
+  X(Bang)              \
+  X(BangEqual)         \
+  X(Equal)             \
+  X(EqualEqual)        \
+  X(Greater)           \
+  X(GreaterEqual)      \
+  X(Less)              \
+  X(LessEqual)         \
+  X(Identifier)        \
+  X(String)            \
+  X(Number)            \
+  X(And)               \
+  X(Else)              \
+  X(False)             \
+  X(For)               \
+  X(Function)          \
+  X(If)                \
+  X(Or)                \
+  X(Return)            \
+  X(Struct)            \
+  X(True)              \
+  X(Var)               \
+  X(While)             \
+  X(In)
 
 struct Token {
   enum class Lexeme {
@@ -77,8 +96,7 @@ class Scanner {
   auto constexpr inline Peek() const -> const char;
   auto constexpr inline PeekNext() const -> const char;
   auto SkipWhitespace() -> void;
-  auto CheckKeyword(u32 start, u32 length, const char* rest,
-                    Token::Lexeme possible) const -> const Token::Lexeme;
+  auto CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const -> const Token::Lexeme;
   auto StringToken() -> const Token;
   auto NumberToken() -> const Token;
   auto IdentifierToken() -> const Token;
@@ -91,19 +109,7 @@ class Scanner {
   u32 row;
 };
 
-enum class Precedence : u8 {
-  None,
-  Assignment,
-  Or,
-  And,
-  Equality,
-  Comparison,
-  Term,
-  Factor,
-  Unary,
-  Invoke,
-  Primary
-};
+enum class Precedence : u8 { None, Assignment, Or, And, Equality, Comparison, Term, Factor, Unary, Invoke, Primary };
 
 struct Local {
   Token id;
@@ -131,8 +137,7 @@ struct ParseRule {
     this->precedence = Precedence::None;
   }
 
-  ParseRule(ParseFunction prefix, ParseFunction infix,
-            Precedence precedence) noexcept
+  ParseRule(ParseFunction prefix, ParseFunction infix, Precedence precedence) noexcept
       : prefix{prefix}, infix{infix}, precedence{precedence} {}
 };
 
@@ -168,7 +173,7 @@ struct CompilerState {
     u64 value = 0;
   };
 
-  auto Merge(CompilerState other)->void;
+  auto Merge(CompilerState other) -> void;
 };
 
 class Compiler {
@@ -176,9 +181,7 @@ class Compiler {
 
  public:
   Compiler() noexcept;
-  auto Init(const char* src,
-           StringPool* string_pool,
-           GlobalPool* global_pool) -> void;
+  auto Init(const char* src, StringPool* string_pool, GlobalPool* global_pool) -> void;
   auto Compile() -> CompileResult;
 
  private:

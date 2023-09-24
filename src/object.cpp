@@ -1,14 +1,13 @@
 #include "object.h"
 
 #include <cstdio>
-
 #include <string>
 
 #include "common.h"
 #include "memory.h"
 #include "utils.h"
 
-auto Object::Print() const->void {
+auto Object::Print() const -> void {
   switch (this->type) {
     default: {
       printf("Unknown object type\n");
@@ -74,9 +73,7 @@ Object::String::String(const Object::String&& str) noexcept {
   this->name = str.name;
 }
 
-auto Object::String::Print() const -> void {
-  printf("String: %s", this->name);
-}
+auto Object::String::Print() const -> void { printf("String: %s", this->name); }
 
 auto Object::String::Init(u32 len, const char* name) -> void {
   this->type = ObjectType::String;
@@ -97,13 +94,9 @@ Object::Function::Function() noexcept {
   this->name_len = 0;
 }
 
-auto Object::Function::Print() const -> void {
-  printf("Function: %s", this->name);
-}
+auto Object::Function::Print() const -> void { printf("Function: %s", this->name); }
 
-auto inline Object::Function::Unwrap() -> Object::FunctionData {
-  return this->as.function;
-}
+auto inline Object::Function::Unwrap() -> Object::FunctionData { return this->as.function; }
 
 auto Object::Function::Init(Chunk* chunk, u32 name_len, const char* name) -> void {
   this->type = ObjectType::Function;
@@ -133,24 +126,19 @@ auto Object::Closure::Init(const Object::Function* function) -> void {
 
   auto upvalues_count = function->as.function.upvalue_count;
   this->as.closure.upvalue_count = upvalues_count;
-  this->as.closure.upvalues = reinterpret_cast<Object::Upvalue**>(
-      malloc(sizeof(Object::Upvalue*) * upvalues_count));
+  this->as.closure.upvalues = reinterpret_cast<Object::Upvalue**>(malloc(sizeof(Object::Upvalue*) * upvalues_count));
 }
 
 auto Object::Closure::Init(const Object* obj) -> void {
   Assert(obj->type == ObjectType::Function);
-  const auto *function = static_cast<const Object::Function*>(obj);
+  const auto* function = static_cast<const Object::Function*>(obj);
 
   this->Init(obj);
 }
 
-auto Object::Closure::Deinit() -> void {
-  free(this->as.closure.upvalues);
-}
+auto Object::Closure::Deinit() -> void { free(this->as.closure.upvalues); }
 
-auto Object::Closure::Print() const -> void {
-  printf("Function: %s", this->name);
-}
+auto Object::Closure::Print() const -> void { printf("Function: %s", this->name); }
 
 Object::Upvalue::Upvalue() noexcept {
   this->type = ObjectType::Upvalue;
@@ -166,6 +154,4 @@ auto Object::Upvalue::Init(Value* value) -> void {
   this->as.upvalue.next = nullptr;
 }
 
-auto Object::Upvalue::Print() const -> void {
-  printf("upvalue");
-}
+auto Object::Upvalue::Print() const -> void { printf("upvalue"); }

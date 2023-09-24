@@ -40,8 +40,8 @@ class Object {
 
   auto operator==(const Object* o) const -> bool { return this->type == o->type; }
 
-  auto Print() const->void;
-  auto IsTruthy() const->const bool;
+  auto Print() const -> void;
+  auto IsTruthy() const -> const bool;
 
  public:
   Object() = default;
@@ -81,7 +81,7 @@ class Object::String : public Object {
   auto operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::String) return false;
 
-    const auto *other = static_cast<const Object::String*>(o);
+    const auto* other = static_cast<const Object::String*>(o);
     if (this->name_len != other->name_len) return false;
 
     return std::memcmp(this->name, other->name, this->name_len) == 0;

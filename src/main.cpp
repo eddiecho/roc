@@ -35,7 +35,7 @@ auto static RunFile(const char* path) -> InterpretResult {
   }
 
   Assert(compile_res.Get().type == ObjectType::Function);
-  auto *function = static_cast<Object::Function*>(compile_res.Get());
+  auto* function = static_cast<Object::Function*>(compile_res.Get());
   VIRTUAL_MACHINE.Init();
 
   return VIRTUAL_MACHINE.Interpret(function, &string_pool, &object_pool);
@@ -65,15 +65,14 @@ auto static Repl() -> void {
     } else {
       // @TODO(eddie) - do something with the status
       Assert(compile_res.Get().type == ObjectType::Function);
-      auto *function = static_cast<Object::Function*>(compile_res.Get());
+      auto* function = static_cast<Object::Function*>(compile_res.Get());
       status = VIRTUAL_MACHINE.Interpret(function, &string_pool, &object_pool);
     }
   }
 }
 
 auto main(int argc, char** argv) -> int {
-  std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
-            << Roc_VERSION_MINOR << std::endl;
+  std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "." << Roc_VERSION_MINOR << std::endl;
 
   VIRTUAL_MACHINE.Init();
   defer(VIRTUAL_MACHINE.Deinit());

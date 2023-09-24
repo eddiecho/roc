@@ -20,13 +20,9 @@ auto Chunk::Deinit() -> void {
   this->lines.Deinit();
 }
 
-auto Chunk::Count() const -> u64 {
-  return this->bytecode.count;
-}
+auto Chunk::Count() const -> u64 { return this->bytecode.count; }
 
-auto Chunk::BaseInstructionPointer() const -> u8* {
-  return this->bytecode.data;
-}
+auto Chunk::BaseInstructionPointer() const -> u8* { return this->bytecode.data; }
 
 auto Chunk::AddLine(u64 line) -> void {
   auto count = this->bytecode.count;
@@ -110,7 +106,7 @@ auto Chunk::ByteInstruction(const char* name, int offset) const -> int {
 }
 
 auto Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
-  auto *location = this->bytecode.data + 1;
+  auto* location = this->bytecode.data + 1;
   // auto *as_int = reinterpret_cast<u32*>(location);
   const u32 jmp = *location;
 
@@ -227,7 +223,7 @@ auto Chunk::PrintAtOffset(int offset) const -> const int {
       return this->ByteInstruction("OP_INVOKE", offset) + 3;
     }
     case OpCode::Closure: {
-      auto *location = this->bytecode.data + offset + 1;
+      auto* location = this->bytecode.data + offset + 1;
       // auto *as_int = reinterpret_cast<u32*>(location);
       const u32 func_idx = *location;
 

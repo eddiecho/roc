@@ -2,7 +2,6 @@
 
 #include <cstdarg>
 #include <cstdlib>
-
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
@@ -12,12 +11,12 @@
 #include "utils.h"
 #include "value.h"
 
-auto VirtualMachine::Init()->void {
+auto VirtualMachine::Init() -> void {
   // reset stack pointer
   this->stack_top = this->stack;
 }
 
-auto VirtualMachine::Deinit()->void {
+auto VirtualMachine::Deinit() -> void {
   this->stack_top = this->stack;
   this->frame_count = 0;
 
@@ -45,15 +44,11 @@ auto VirtualMachine::Pop() -> Value {
   return *this->stack_top;
 }
 
-auto VirtualMachine::Peek() const -> Value {
-  return this->stack_top[-1];
-}
+auto VirtualMachine::Peek() const -> Value { return this->stack_top[-1]; }
 
-auto VirtualMachine::Peek(int dist) const -> Value {
-  return this->stack_top[-1 - dist];
-}
+auto VirtualMachine::Peek(int dist) const -> Value { return this->stack_top[-1 - dist]; }
 
-auto VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
+auto VirtualMachine::RuntimeError(const char *msg, ...) -> InterpretError {
   va_list args;
   va_start(args, msg);
   vfprintf(stderr, msg, args);
@@ -61,15 +56,14 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   fputs("\n", stderr);
 
   for (int i = this->frame_count - 1; i >= 0; i--) {
-    StackFrame* frame = &this->frames[i];
+    StackFrame *frame = &this->frames[i];
     auto *closure = frame->closure;
     auto func = closure->as.closure;
 
     u64 inst = frame->inst_ptr - func.chunk->BaseInstructionPointer() - 1;
 
     auto line_range = func.chunk->lines[inst];
-    const auto *name = frame->closure == nullptr ? frame->function->name
-                                          : frame->closure->name;
+    const auto *name = frame->closure == nullptr ? frame->function->name : frame->closure->name;
     fprintf(stderr, "[line %lu] in ", line_range.val);
     fprintf(stderr, "%s\n", name);
   }
@@ -80,20 +74,18 @@ auto VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
   return InterpretError::RuntimeError;
 }
 
-auto VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
-    ->Result<size_t, InterpretError> {
+auto VirtualMachine::Invoke(Object::Closure *closure, u32 argc) -> Result<size_t, InterpretError> {
   const auto inner_func = closure->as.closure;
 
   if (argc != inner_func.arity) {
-    return this->RuntimeError("Expected %d arguments to function but got %d",
-                              inner_func.arity, argc);
+    return this->RuntimeError("Expected %d arguments to function but got %d", inner_func.arity, argc);
   }
 
   if (this->frame_count == VM_STACK_MAX) {
     return this->RuntimeError("Stack overflow");
   }
 
-  StackFrame* ret = &this->frames[this->frame_count++];
+  StackFrame *ret = &this->frames[this->frame_count++];
   ret->type = FrameType::Closure;
   ret->closure = closure;
   ret->inst_ptr = inner_func.chunk->BaseInstructionPointer();
@@ -105,18 +97,16 @@ auto VirtualMachine::Invoke(Object::Closure* closure, u32 argc)
   return this->frame_count - 1;
 }
 
-auto VirtualMachine::Invoke(Object::Function* function, u32 argc)
-    ->Result<size_t, InterpretError> {
+auto VirtualMachine::Invoke(Object::Function *function, u32 argc) -> Result<size_t, InterpretError> {
   if (argc != function->as.function.arity) {
-    return this->RuntimeError("Expected %d arguments to function but got %d",
-                              function->as.function.arity, argc);
+    return this->RuntimeError("Expected %d arguments to function but got %d", function->as.function.arity, argc);
   }
 
   if (this->frame_count == VM_STACK_MAX) {
     return this->RuntimeError("Stack overflow");
   }
 
-  StackFrame* ret = &this->frames[this->frame_count++];
+  StackFrame *ret = &this->frames[this->frame_count++];
   ret->type = FrameType::Function;
   ret->function = function;
   ret->inst_ptr = function->as.function.chunk->BaseInstructionPointer();
@@ -131,11 +121,9 @@ auto VirtualMachine::Invoke(Object::Function* function, u32 argc)
 // @TODO(eddie) - big sweep through all the opcodes
 // basically everything is actually a 64bit int, but im truncating it down to
 // 32s
-auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
-                              Arena<Object>* object_pool)
-    ->InterpretResult {
+auto VirtualMachine::Interpret(Object *obj, StringPool *string_pool, Arena<Object> *object_pool) -> InterpretResult {
   Assert(obj != nullptr);
-  auto *function = static_cast<Object::Function*>(obj);
+  auto *function = static_cast<Object::Function *>(obj);
 
   // setup initial call stack
   auto frame_result = this->Invoke(function, 0);
@@ -154,8 +142,8 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
 #endif
 
 #define READ_BYTE() (*frame->inst_ptr++)
-#define READ_INT()          \
-  *(u32*)(frame->inst_ptr); \
+#define READ_INT()           \
+  *(u32 *)(frame->inst_ptr); \
   (frame->inst_ptr += sizeof(u32))
 #define READ_CONSTANT() (frame->chunk->locals[READ_BYTE()])
 
@@ -278,7 +266,7 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
       case OpCode::SetGlobal: {
         u32 idx = READ_INT();
         Value val = this->Pop();
-        Object* slot = this->object_pool->Nth(idx);
+        Object *slot = this->object_pool->Nth(idx);
         slot = std::move(val.as.object);
         break;
       }
@@ -351,7 +339,7 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
           default:
             return this->RuntimeError("Can not invoke non function object");
           case ObjectType::Function: {
-            auto *new_function = static_cast<Object::Function*>(function_obj);
+            auto *new_function = static_cast<Object::Function *>(function_obj);
             auto new_frame_result = this->Invoke(new_function, argc);
             if (new_frame_result.IsError()) {
               return new_frame_result.Err();
@@ -361,8 +349,7 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
             break;
           }
           case ObjectType::Closure: {
-            auto *new_closure =
-                static_cast<Object::Closure*>(function_base.as.object);
+            auto *new_closure = static_cast<Object::Closure *>(function_base.as.object);
             auto new_frame_result = this->Invoke(new_closure, argc);
             if (new_frame_result.IsError()) {
               return new_frame_result.Err();
@@ -392,11 +379,11 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
         auto *obj = func_obj.as.object;
 
         Assert(obj->type == ObjectType::Function);
-        const auto *function = static_cast<const Object::Function*>(obj);
+        const auto *function = static_cast<const Object::Function *>(obj);
 
         // dirty, disgusting pointer memory shenanigans
         // these alias to the same memory location
-        auto *closure = static_cast<Object::Closure*>(obj);
+        auto *closure = static_cast<Object::Closure *>(obj);
         closure->Init(function);
 
         u8 upvalue_count = READ_BYTE();
@@ -405,11 +392,10 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
         for (int i = 0; i < upvalue_count; i++) {
           const u8 local = READ_BYTE();
           const u8 index = READ_BYTE();
-          closure->as.closure.upvalues[i] =
-              local ? this->CaptureUpvalue(frame->locals + index) :
-                    // so if its in a nested closure, this check should always
-                    // be true...
-                  frame->closure->as.closure.upvalues[index];
+          closure->as.closure.upvalues[i] = local ? this->CaptureUpvalue(frame->locals + index) :
+                                                  // so if its in a nested closure, this check should always
+                                                  // be true...
+                                                frame->closure->as.closure.upvalues[index];
         }
 
         break;
@@ -420,8 +406,7 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
         break;
       }
       default: {
-        printf("Unimplemented OpCode %d reached???\n",
-               static_cast<u8>(instruction));
+        printf("Unimplemented OpCode %d reached???\n", static_cast<u8>(instruction));
         break;
       }
     }
@@ -434,11 +419,11 @@ auto VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
   return this->Peek();
 }
 
-auto inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
+auto inline VirtualMachine::CaptureUpvalue(Value *local) -> Object::Upvalue * {
   // this search should usually be fine,
   // because you really shouldn't be capturing too many upvalues in the first
   // place
-  Object::Upvalue* prev_upvalue = nullptr;
+  Object::Upvalue *prev_upvalue = nullptr;
   auto *upvalue = this->open_upvalues;
   // locals should be on a stack
   while (upvalue != nullptr && upvalue->as.upvalue.location > local) {
@@ -451,7 +436,7 @@ auto inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   }
 
   const auto index = this->object_pool->Alloc();
-  auto *obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
+  auto *obj = static_cast<Object::Upvalue *>(this->object_pool->Nth(index));
   obj->Init(local);
   obj->as.upvalue.next = upvalue;
 
@@ -464,9 +449,8 @@ auto inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   return obj;
 }
 
-auto inline VirtualMachine::CloseUpvalues(Value* local)->void {
-  while (this->open_upvalues != nullptr &&
-         this->open_upvalues->as.upvalue.location >= local) {
+auto inline VirtualMachine::CloseUpvalues(Value *local) -> void {
+  while (this->open_upvalues != nullptr && this->open_upvalues->as.upvalue.location >= local) {
     auto *upvalue = this->open_upvalues;
     upvalue->as.upvalue.closed_value = *upvalue->as.upvalue.location;
     upvalue->as.upvalue.location = &upvalue->as.upvalue.closed_value;

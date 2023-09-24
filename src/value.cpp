@@ -38,6 +38,4 @@ auto Value::IsTruthy() const -> bool {
   }
 }
 
-auto Value::IsObject() const -> bool {
-  return this->type == ValueType::Object;
-}
+auto Value::IsObject() const -> bool { return this->type == ValueType::Object; }

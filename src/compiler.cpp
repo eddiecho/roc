@@ -37,18 +37,12 @@ auto Token::IdentifiersEqual(Token other) const -> bool {
   return memcmp(this->start, other.start, this->len) == 0;
 }
 
-auto static constexpr IsDigit(const char c) -> const bool {
-  return c >= '0' && c <= '9';
-}
+auto static constexpr IsDigit(const char c) -> const bool { return c >= '0' && c <= '9'; }
 
-auto static IsWhitespace(const char c) -> const bool {
-  return c == ' ' || c == '\n' || c == '\t' || c == '\r';
-}
+auto static IsWhitespace(const char c) -> const bool { return c == ' ' || c == '\n' || c == '\t' || c == '\r'; }
 
 // @STDLIB
-auto static IsIdentifier(const char c) -> const bool {
-  return !ispunct(c) && !isspace(c);
-}
+auto static IsIdentifier(const char c) -> const bool { return !ispunct(c) && !isspace(c); }
 
 Scanner::Scanner() noexcept {
   this->start = nullptr;
@@ -64,9 +58,7 @@ auto Scanner::Init(const char* src) -> void {
   this->row = 0;
 }
 
-auto constexpr inline Scanner::IsEnd() const -> const bool {
-  return *this->curr == '\0';
-}
+auto constexpr inline Scanner::IsEnd() const -> const bool { return *this->curr == '\0'; }
 
 auto inline Scanner::Pop() -> char {
   this->curr++;
@@ -90,13 +82,9 @@ auto inline Scanner::Match(char expected) -> bool {
   return true;
 }
 
-auto constexpr inline Scanner::Peek() const -> const char {
-  return *this->curr;
-}
+auto constexpr inline Scanner::Peek() const -> const char { return *this->curr; }
 
-auto constexpr inline Scanner::PeekNext() const -> const char {
-  return this->IsEnd() ? '\0' : this->curr[1];
-}
+auto constexpr inline Scanner::PeekNext() const -> const char { return this->IsEnd() ? '\0' : this->curr[1]; }
 
 auto Scanner::SkipWhitespace() -> void {
   while (1) {
@@ -145,10 +133,9 @@ auto Scanner::NumberToken() -> const Token {
 }
 
 // @STDLIB
-auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest,
-                          Token::Lexeme possible) const->const Token::Lexeme {
-  if (this->curr - this->start == start + length &&
-      memcmp(this->start + start, rest, length) == 0) {
+auto Scanner::CheckKeyword(u32 start, u32 length, const char* rest, Token::Lexeme possible) const
+    -> const Token::Lexeme {
+  if (this->curr - this->start == start + length && memcmp(this->start + start, rest, length) == 0) {
     return possible;
   }
 
@@ -242,17 +229,13 @@ auto Scanner::ScanToken() -> Token {
     case '*':
       return this->MakeToken(Token::Lexeme::Star);
     case '!':
-      return this->MakeToken(this->Match('=') ? Token::Lexeme::BangEqual
-                                              : Token::Lexeme::Bang);
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::BangEqual : Token::Lexeme::Bang);
     case '=':
-      return this->MakeToken(this->Match('=') ? Token::Lexeme::EqualEqual
-                                              : Token::Lexeme::Equal);
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::EqualEqual : Token::Lexeme::Equal);
     case '<':
-      return this->MakeToken(this->Match('=') ? Token::Lexeme::LessEqual
-                                              : Token::Lexeme::Less);
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::LessEqual : Token::Lexeme::Less);
     case '>':
-      return this->MakeToken(this->Match('=') ? Token::Lexeme::GreaterEqual
-                                              : Token::Lexeme::Greater);
+      return this->MakeToken(this->Match('=') ? Token::Lexeme::GreaterEqual : Token::Lexeme::Greater);
     // @TODO(eddie) - Multiline comments
     case '/': {
       if (this->PeekNext() == '/') {
@@ -281,58 +264,39 @@ auto Scanner::ScanToken() -> Token {
   }
 }
 
-auto CompilerState::Merge(CompilerState other)->void {
-  this->value |= other.value;
-}
+auto CompilerState::Merge(CompilerState other) -> void { this->value |= other.value; }
 
 Compiler::Compiler() noexcept = default;
 
 const ParseRuleMap Compiler::PARSE_RULES = {
-    {Token::Lexeme::LeftParens,
-     ParseRule(&Grammar::Parenthesis, &Grammar::InvokeOp, Precedence::Invoke)},
+    {Token::Lexeme::LeftParens, ParseRule(&Grammar::Parenthesis, &Grammar::InvokeOp, Precedence::Invoke)},
     {Token::Lexeme::RightParens, ParseRule(nullptr, nullptr, Precedence::None)},
 
-    {Token::Lexeme::Minus,
-     ParseRule(&Grammar::Unary, &Grammar::Binary, Precedence::Term)},
-    {Token::Lexeme::Bang,
-     ParseRule(&Grammar::Unary, nullptr, Precedence::None)},
-    {Token::Lexeme::Plus,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Term)},
-    {Token::Lexeme::Slash,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
-    {Token::Lexeme::Star,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
+    {Token::Lexeme::Minus, ParseRule(&Grammar::Unary, &Grammar::Binary, Precedence::Term)},
+    {Token::Lexeme::Bang, ParseRule(&Grammar::Unary, nullptr, Precedence::None)},
+    {Token::Lexeme::Plus, ParseRule(nullptr, &Grammar::Binary, Precedence::Term)},
+    {Token::Lexeme::Slash, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
+    {Token::Lexeme::Star, ParseRule(nullptr, &Grammar::Binary, Precedence::Factor)},
 
-    {Token::Lexeme::Greater,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-    {Token::Lexeme::GreaterEqual,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-    {Token::Lexeme::Less,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-    {Token::Lexeme::LessEqual,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
-    {Token::Lexeme::BangEqual,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
-    {Token::Lexeme::EqualEqual,
-     ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+    {Token::Lexeme::Greater, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::GreaterEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::Less, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::LessEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Comparison)},
+    {Token::Lexeme::BangEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
+    {Token::Lexeme::EqualEqual, ParseRule(nullptr, &Grammar::Binary, Precedence::Equality)},
 
-    {Token::Lexeme::Number,
-     ParseRule(&Grammar::Number, nullptr, Precedence::None)},
+    {Token::Lexeme::Number, ParseRule(&Grammar::Number, nullptr, Precedence::None)},
 
-    {Token::Lexeme::False,
-     ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
-    {Token::Lexeme::True,
-     ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
-    {Token::Lexeme::String,
-     ParseRule(&Grammar::String, nullptr, Precedence::None)},
+    {Token::Lexeme::False, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+    {Token::Lexeme::True, ParseRule(&Grammar::Literal, nullptr, Precedence::None)},
+    {Token::Lexeme::String, ParseRule(&Grammar::String, nullptr, Precedence::None)},
 
     {Token::Lexeme::And, ParseRule(nullptr, &Grammar::AndOp, Precedence::And)},
     {Token::Lexeme::Or, ParseRule(nullptr, &Grammar::OrOp, Precedence::Or)},
     {Token::Lexeme::LeftBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::RightBrace, ParseRule(nullptr, nullptr, Precedence::None)},
     {Token::Lexeme::Eof, ParseRule(nullptr, nullptr, Precedence::None)},
-    {Token::Lexeme::Identifier,
-     ParseRule(&Grammar::Variable, nullptr, Precedence::None)},
+    {Token::Lexeme::Identifier, ParseRule(&Grammar::Variable, nullptr, Precedence::None)},
 
     // @TODO(eddie)
     {Token::Lexeme::Error, ParseRule(nullptr, nullptr, Precedence::None)},
@@ -353,34 +317,29 @@ const ParseRuleMap Compiler::PARSE_RULES = {
 
 };
 
-auto Compiler::Init(const char* src, StringPool* string_pool,
-                   GlobalPool* global_pool)
-    ->void {
+auto Compiler::Init(const char* src, StringPool* string_pool, GlobalPool* global_pool) -> void {
   this->string_pool = string_pool;
   this->global_pool = global_pool;
   this->scanner.Init(src);
 }
 
-auto Compiler::Compile()->Result<Object*, CompileError> {
+auto Compiler::Compile() -> Result<Object*, CompileError> {
   CompilerEngine engine = {};
   engine.Init(this);
 
   return engine.Compile();
 }
 
-auto inline CompilerEngine::Init(Compiler* compiler)->void {
-  this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN,
-             Compiler::GLOBAL_FUNCTION_NAME);
+auto inline CompilerEngine::Init(Compiler* compiler) -> void {
+  this->Init(compiler, Compiler::GLOBAL_FUNCTION_NAME_LEN, Compiler::GLOBAL_FUNCTION_NAME);
 }
 
-auto CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name)
-    ->void {
+auto CompilerEngine::Init(Compiler* compiler, u32 name_length, const char* name) -> void {
   this->compiler = compiler;
   this->parent = nullptr;
 
   auto func_idx = compiler->global_pool->Alloc(name_length, name);
-  auto curr_func =
-      static_cast<Object::Function*>(compiler->global_pool->Nth(func_idx));
+  auto curr_func = static_cast<Object::Function*>(compiler->global_pool->Nth(func_idx));
 
   auto name_idx = this->AddString(name_length, name);
   auto interned_name = compiler->string_pool->Nth(name_idx);
@@ -415,9 +374,7 @@ auto CompilerEngine::Compile() -> CompileResult {
   return this->curr_func;
 }
 
-auto inline CompilerEngine::CurrentChunk() -> Chunk* {
-  return this->curr_func->as.function.chunk;
-}
+auto inline CompilerEngine::CurrentChunk() -> Chunk* { return this->curr_func->as.function.chunk; }
 
 auto CompilerEngine::Declaration() -> void {
   switch (this->curr.type) {
@@ -468,7 +425,7 @@ auto CompilerEngine::Statement() -> void {
   }
 }
 
-auto CompilerEngine::Expression(const bool nested)->void {
+auto CompilerEngine::Expression(const bool nested) -> void {
   switch (this->curr.type) {
     case Token::Lexeme::If: {
       this->Advance();
@@ -534,16 +491,14 @@ auto CompilerEngine::Expression(const bool nested)->void {
     default: {
       this->GetPrecedence(Precedence::Assignment);
 
-      if (!nested)
-        this->Consume(Token::Lexeme::Semicolon,
-                      "Expected semicolon ';' after non block expression.");
+      if (!nested) this->Consume(Token::Lexeme::Semicolon, "Expected semicolon ';' after non block expression.");
 
       break;
     }
   }
 }
 
-auto CompilerEngine::Jump(OpCode kind)->u32 {
+auto CompilerEngine::Jump(OpCode kind) -> u32 {
   this->Emit(kind);
   int placeholder = 0xFFFFFFFF;
   const auto place = IntToBytes(&placeholder);
@@ -592,14 +547,13 @@ auto CompilerEngine::SyncOnError() -> void {
   }
 }
 
-auto CompilerEngine::BeginScope()->void { this->scope_depth++; }
+auto CompilerEngine::BeginScope() -> void { this->scope_depth++; }
 
-auto CompilerEngine::EndScope()->void {
+auto CompilerEngine::EndScope() -> void {
   this->scope_depth--;
 
   // @TODO(eddie) - PopN opcode, because this sucks
-  while (this->locals_count > 0 &&
-         this->locals[this->locals_count - 1].depth > this->scope_depth) {
+  while (this->locals_count > 0 && this->locals[this->locals_count - 1].depth > this->scope_depth) {
     const auto local = this->locals[this->locals_count - 1];
     const auto op = local.captured ? OpCode::CloseUpvalue : OpCode::Pop;
 
@@ -608,16 +562,15 @@ auto CompilerEngine::EndScope()->void {
   }
 }
 
-auto CompilerEngine::CodeBlock()->void {
-  while (this->curr.type != Token::Lexeme::RightBrace &&
-         this->curr.type != Token::Lexeme::Eof) {
+auto CompilerEngine::CodeBlock() -> void {
+  while (this->curr.type != Token::Lexeme::RightBrace && this->curr.type != Token::Lexeme::Eof) {
     this->Declaration();
   }
 
   this->Consume(Token::Lexeme::RightBrace, "Expected '}' to end block");
 }
 
-auto CompilerEngine::Advance()->void {
+auto CompilerEngine::Advance() -> void {
   u32 line = 0xFFFFFFFF;
   Token token;
   this->prev = this->curr;
@@ -662,9 +615,7 @@ auto inline CompilerEngine::ErrorAtToken(const char* message, Token id) -> void 
   this->state.error = 1;
 }
 
-auto inline CompilerEngine::ErrorAtCurr(const char* message) -> void {
-  this->ErrorAtToken(message, this->curr);
-}
+auto inline CompilerEngine::ErrorAtCurr(const char* message) -> void { this->ErrorAtToken(message, this->curr); }
 
 auto CompilerEngine::VariableDeclaration() -> void {
   const bool in_for_loop = this->curr.type == Token::Lexeme::For;
@@ -724,10 +675,9 @@ auto CompilerEngine::FunctionDeclaration() -> void {
   }
 }
 
-auto CompilerEngine::FunctionBody()->void {
+auto CompilerEngine::FunctionBody() -> void {
   this->BeginScope();
-  this->Consume(Token::Lexeme::LeftParens,
-                "Functions require function parameters starting with '(");
+  this->Consume(Token::Lexeme::LeftParens, "Functions require function parameters starting with '(");
 
   if (this->curr.type != Token::Lexeme::RightParens) {
     do {
@@ -737,24 +687,20 @@ auto CompilerEngine::FunctionBody()->void {
     } while (this->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
-  this->Consume(Token::Lexeme::RightParens,
-                "No closing parentheses for function parameters");
-  this->Consume(Token::Lexeme::LeftBrace,
-                "Expect code block following function declaration");
+  this->Consume(Token::Lexeme::RightParens, "No closing parentheses for function parameters");
+  this->Consume(Token::Lexeme::LeftBrace, "Expect code block following function declaration");
 
   this->CodeBlock();
   this->EndScope();
 }
 
-auto inline CompilerEngine::AddString(u32 length, const char* start)->u32 {
+auto inline CompilerEngine::AddString(u32 length, const char* start) -> u32 {
   return this->compiler->string_pool->Alloc(length, start);
 }
 
-auto inline CompilerEngine::AddGlobal(Token id)->u64 {
-  return this->compiler->global_pool->Alloc(id.len, id.start);
-}
+auto inline CompilerEngine::AddGlobal(Token id) -> u64 { return this->compiler->global_pool->Alloc(id.len, id.start); }
 
-auto CompilerEngine::AddLocal(Token id)->void {
+auto CompilerEngine::AddLocal(Token id) -> void {
   // @TODO(eddie) - this sucks
   if (this->locals_count == Compiler::MAX_LOCALS_COUNT) {
     this->ErrorAtCurr("Too many locals in current scope");
@@ -773,9 +719,7 @@ auto CompilerEngine::AddUpvalue(u8 index, bool local) -> u32 {
   return this->curr_func->as.function.upvalue_count++;
 }
 
-auto inline CompilerEngine::FindLocal(Token id) -> Option<u64> {
-  return this->FindLocal(id, this->locals);
-}
+auto inline CompilerEngine::FindLocal(Token id) -> Option<u64> { return this->FindLocal(id, this->locals); }
 
 auto CompilerEngine::FindLocal(Token id, Local* scope) -> Option<u64> {
   for (int i = this->locals_count - 1; i >= 0; i--) {
@@ -821,7 +765,7 @@ auto inline CompilerEngine::FindGlobal(Token id) -> Option<u64> {
  * POV Lookups are handled in CompilerEngine, we store an array of names here,
  * and lookups return an index into the locals array
  */
-auto CompilerEngine::LoadVariable(bool assignment)->void {
+auto CompilerEngine::LoadVariable(bool assignment) -> void {
   OpCode get = {};
   OpCode set = {};
 
@@ -835,7 +779,6 @@ auto CompilerEngine::LoadVariable(bool assignment)->void {
     get = OpCode::GetLocal;
     set = OpCode::SetLocal;
   } else if (idx = this->FindGlobal(this->prev); !idx.IsNone()) {
-
     /*
     auto obj = this->compiler->global_pool->Nth(idx.Get());
     if (obj->type == ObjectType::Function) {
@@ -868,9 +811,7 @@ auto CompilerEngine::LoadVariable(bool assignment)->void {
   this->Emit(IntToBytes(&unwrapped), 4);
 }
 
-auto inline CompilerEngine::Emit(u8 byte) -> void {
-  this->CurrentChunk()->AddInstruction(byte, this->prev.line);
-}
+auto inline CompilerEngine::Emit(u8 byte) -> void { this->CurrentChunk()->AddInstruction(byte, this->prev.line); }
 
 auto inline CompilerEngine::Emit(u8* bytes, u32 count) -> void {
   this->CurrentChunk()->AddInstruction(bytes, count, this->prev.line);
@@ -1033,9 +974,7 @@ auto static Grammar::String(CompilerEngine* compiler, bool assign) -> void {
   compiler->Emit(IntToBytes(&index), 4);
 }
 
-auto static Grammar::Variable(CompilerEngine* compiler, bool assign) -> void {
-  compiler->LoadVariable(assign);
-}
+auto static Grammar::Variable(CompilerEngine* compiler, bool assign) -> void { compiler->LoadVariable(assign); }
 
 auto static Grammar::AndOp(CompilerEngine* compiler, bool assign) -> void {
   u32 short_circuit = compiler->Jump(OpCode::JumpFalse);
@@ -1062,8 +1001,7 @@ auto static Grammar::InvokeOp(CompilerEngine* compiler, bool assign) -> void {
     } while (compiler->MatchAndAdvance(Token::Lexeme::Comma));
   }
 
-  compiler->Consume(Token::Lexeme::RightParens,
-                    "Expected closing parenthesis ')' after arguments");
+  compiler->Consume(Token::Lexeme::RightParens, "Expected closing parenthesis ')' after arguments");
 
   compiler->Emit(OpCode::Invoke);
   compiler->Emit(IntToBytes(&arg_count), 4);

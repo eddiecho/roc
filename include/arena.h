@@ -49,7 +49,6 @@ class Arena {
   T* data;
   Arena<T>* next = nullptr;
   T* first_free = nullptr;
-
 };
 
 template <Nodeable T>

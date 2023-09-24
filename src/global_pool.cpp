@@ -6,9 +6,7 @@
 #include "common.h"
 #include "object.h"
 
-auto GlobalPool::Init(Arena<Object>* object_pool) -> void {
-  this->object_pool = object_pool;
-}
+auto GlobalPool::Init(Arena<Object>* object_pool) -> void { this->object_pool = object_pool; }
 
 auto GlobalPool::Deinit() -> void {
   this->object_pool = nullptr;
@@ -40,6 +38,4 @@ auto GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
   return OptionType::None;
 }
 
-auto GlobalPool::Nth(u64 index) -> Object* {
-  return this->object_pool->Nth(index);
-}
+auto GlobalPool::Nth(u64 index) -> Object* { return this->object_pool->Nth(index); }

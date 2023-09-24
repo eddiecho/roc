@@ -74,14 +74,14 @@ struct Result {
     this->as.obj = t;
   };
 
-  auto IsError() const->bool { return this->type == ResultType::Error; }
+  auto IsError() const -> bool { return this->type == ResultType::Error; }
 
-  auto Get() const->T {
+  auto Get() const -> T {
     Assert(this->type == ResultType::Ok);
     return this->as.obj;
   }
 
-  auto Err() const->E {
+  auto Err() const -> E {
     Assert(this->type == ResultType::Error);
     return this->as.err;
   }
@@ -112,9 +112,9 @@ struct Option {
     this->data = t;
   }
 
-  auto IsNone() const->bool { return this->type == OptionType::None; }
+  auto IsNone() const -> bool { return this->type == OptionType::None; }
 
-  auto Get() const->T {
+  auto Get() const -> T {
     Assert(this->type == OptionType::Some);
     return this->data;
   }
