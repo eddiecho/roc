@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "common.h"
 #include "dynamic_array.h"

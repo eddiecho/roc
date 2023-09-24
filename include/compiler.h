@@ -46,7 +46,7 @@ struct Token {
 
   Token() noexcept;
   Token(Lexeme type, const char* start, u32 len, u32 line) noexcept;
-  Token(const char* error) noexcept;
+  explicit Token(const char* error) noexcept;
 
   fnc IdentifiersEqual(Token other) const -> bool;
   fnc constexpr Print() const -> const char* {
@@ -207,7 +207,7 @@ class CompilerEngine {
   fnc inline MatchAndAdvance(Token::Lexeme type) -> bool;
   fnc Consume(Token::Lexeme type, const char* message) -> void;
   fnc Declaration() -> void;
-  fnc Expression(const bool nested = false) -> void;
+  fnc Expression(bool nested = false) -> void;
   fnc EndCompilation() -> void;
   fnc ErrorAtToken(const char* message, Token id) -> void;
   fnc ErrorAtCurr(const char* message) -> void;

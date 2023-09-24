@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "common.h"
 #include "memory.h"
@@ -20,7 +20,7 @@ class Arena {
     this->data = reinterpret_cast<T*>(malloc(DEFAULT_ARENA_SIZE * sizeof(T)));
   };
 
-  Arena(u64 size) {
+  explicit Arena(u64 size) {
     this->count = 0;
     this->capacity = size;
     this->data = reinterpret_cast<T*>(malloc(size * sizeof(T)));

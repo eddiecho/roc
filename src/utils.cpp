@@ -1,12 +1,12 @@
 #include "utils.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "common.h"
 
 // @STDLIB
-fnc Utils::ReadFile(const char* path) -> char* {
+fnc Utils::ReadFile(const char* path)->char* {
   FILE* file;
 
 #ifdef _WIN32
@@ -26,11 +26,11 @@ fnc Utils::ReadFile(const char* path) -> char* {
   defer(fclose(file));
 
   fseek(file, 0L, SEEK_END);
-  size_t file_size = ftell(file);
+  const size_t file_size = ftell(file);
   rewind(file);
 
   char* buffer = reinterpret_cast<char*>(malloc(file_size + 1));
-  size_t bytes_read = fread(buffer, sizeof(char), file_size, file);
+  const size_t bytes_read = fread(buffer, sizeof(char), file_size, file);
   buffer[bytes_read] = '\0';
 
   return buffer;

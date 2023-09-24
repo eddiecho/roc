@@ -800,7 +800,7 @@ fnc CompilerEngine::FindUpvalue(Token id) -> Option<u64> {
 
   idx = this->parent->FindUpvalue(id);
   if (!idx.IsNone()) {
-    return this->AddUpvalue(idx, false);
+    return this->AddUpvalue(idx.Get(), false);
   }
 
   return OptionType::None;

@@ -1,6 +1,6 @@
 #include "chunk.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "common.h"
 #include "memory.h"
@@ -55,11 +55,11 @@ fnc Chunk::AddInstruction(u8* bytes, u64 count, u64 line) -> u64 {
 fnc Chunk::AddLocal(Value val, u64 line) -> u64 {
   this->AddLine(line);
 
-  u32 idx = this->locals.count;
+  const u32 idx = this->locals.count;
 
   if (idx < SMALL_CONST_POOL_SIZE) {
     this->bytecode.Append(static_cast<u8>(OpCode::Constant));
-    this->bytecode.Append((u8)idx);
+    this->bytecode.Append(static_cast<u8>(idx));
   } else {
     this->bytecode.Append(static_cast<u8>(OpCode::ConstantLong));
 
@@ -78,7 +78,7 @@ fnc Chunk::SimpleInstruction(const char* name, int offset) const -> int {
 }
 
 fnc Chunk::ConstantInstruction(int offset) const -> int {
-  u8 const_idx = this->bytecode[offset + 1];
+  const u8 const_idx = this->bytecode[offset + 1];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT", 0, 0, const_idx);
   this->locals[const_idx].Print();
   printf("\n");
@@ -87,9 +87,9 @@ fnc Chunk::ConstantInstruction(int offset) const -> int {
 }
 
 fnc Chunk::ConstantLongInstruction(int offset) const -> int {
-  u8 one = this->bytecode[offset + 1];
-  u8 two = this->bytecode[offset + 2];
-  u8 thr = this->bytecode[offset + 3];
+  const u8 one = this->bytecode[offset + 1];
+  const u8 two = this->bytecode[offset + 2];
+  const u8 thr = this->bytecode[offset + 3];
   printf("%-16s %04d %04d %04d ' ", "OP_CONSTANT_LONG", one, two, thr);
 
   u32 idx = 0;
@@ -104,25 +104,25 @@ fnc Chunk::ConstantLongInstruction(int offset) const -> int {
 }
 
 fnc Chunk::ByteInstruction(const char* name, int offset) const -> int {
-  u8 idx = this->bytecode[offset + 1];
+  const u8 idx = this->bytecode[offset + 1];
   printf("%-16s %4d\n", name, idx);
   return offset + 2;
 }
 
 fnc Chunk::JumpInstruction(const char* name, int sign, int offset) const -> int {
-  auto location = this->bytecode.data + 1;
-  auto as_int = reinterpret_cast<u32*>(location);
-  u32 jmp = *location;
+  auto *location = this->bytecode.data + 1;
+  // auto *as_int = reinterpret_cast<u32*>(location);
+  const u32 jmp = *location;
 
   printf("%-16s %4d -> %d\n", name, offset, offset + 5 + sign + jmp);
   return offset + 5;
 }
 
 fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
-  u8 one = this->bytecode[offset + 1];
-  u8 two = this->bytecode[offset + 2];
-  u8 thr = this->bytecode[offset + 3];
-  u8 fou = this->bytecode[offset + 4];
+  const u8 one = this->bytecode[offset + 1];
+  const u8 two = this->bytecode[offset + 2];
+  const u8 thr = this->bytecode[offset + 3];
+  const u8 fou = this->bytecode[offset + 4];
 
   printf("%-16s %04d %04d %04d %04d ' \n", name, one, two, thr, fou);
 
@@ -134,11 +134,11 @@ fnc Chunk::GlobalInstruction(const char* name, int offset) const -> int {
 fnc Chunk::PrintAtOffset(int offset) const -> const int {
   printf("%04d ", offset);
 
-  u32 line_idx = this->lines.Search(offset);
-  u32 line = this->lines[line_idx].val;
+  const u32 line_idx = this->lines.Search(offset);
+  const u32 line = this->lines[line_idx].val;
   printf("%4d ", line);
 
-  u8 byte = this->bytecode[offset];
+  const u8 byte = this->bytecode[offset];
   auto instruction = static_cast<OpCode>(byte);
 
   switch (instruction) {
@@ -227,9 +227,9 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
       return this->ByteInstruction("OP_INVOKE", offset) + 3;
     }
     case OpCode::Closure: {
-      auto location = this->bytecode.data + offset + 1;
-      auto as_int = reinterpret_cast<u32*>(location);
-      u32 func_idx = *location;
+      auto *location = this->bytecode.data + offset + 1;
+      // auto *as_int = reinterpret_cast<u32*>(location);
+      const u32 func_idx = *location;
 
       Assert(obj.type == ValueType::Object);
       printf("%-16s %4d ", "OP_CLOSURE", func_idx);
@@ -237,10 +237,10 @@ fnc Chunk::PrintAtOffset(int offset) const -> const int {
 
       offset += sizeof(u32) + 2;
 
-      u8 upvalue_count = this->bytecode[offset];
+      const u8 upvalue_count = this->bytecode[offset];
       for (int i = 0; i < upvalue_count; i++) {
-        bool local = this->bytecode[offset++];
-        u32 index = this->bytecode[offset++];
+        bool local = static_cast<bool>(this->bytecode[offset++]);
+        const u32 index = this->bytecode[offset++];
         printf("%04d    | %s %d\n", offset - 2, local ? "local" : "upvalue", index);
       }
 

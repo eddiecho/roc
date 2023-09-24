@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstddef>
+#include <cstdint>
 
 #define u8 uint8_t
 #define u32 uint32_t

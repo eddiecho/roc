@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include "absl/container/flat_hash_set.h"
 #include "arena.h"
@@ -38,7 +38,7 @@ fnc static ErrorToString(InterpretError err) -> const char* {
 }
 
 #define VM_STACK_MAX 128
-#define VM_LOCAL_MAX VM_STACK_MAX * 4
+#define VM_LOCAL_MAX (VM_STACK_MAX * 4)
 
 enum class FrameType {
   Closure,

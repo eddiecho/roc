@@ -15,15 +15,15 @@ struct Range {
 template <typename T>
 class RangeArray : public DynamicArray<Range<T>> {
  public:
-  fnc Search(u64 val) const -> const u64;
+  fnc Search(u64 val) const -> u64;
 
   fnc operator[](size_t idx) -> Range<T>& { return this->data[idx]; }
-  const Range<T>& operator[](size_t idx) const { return this->data[idx]; }
+  fnc operator[](size_t idx) const -> const Range<T>& { return this->data[idx]; }
 };
 
 template <typename T>
 // returns the index of the Range struct
-fnc RangeArray<T>::Search(u64 range) const -> const u64 {
+fnc RangeArray<T>::Search(u64 range) const -> u64 {
   if (this->count == 0) {
     return 0xFFFFFFFF;
   }

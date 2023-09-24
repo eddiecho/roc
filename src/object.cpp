@@ -1,6 +1,6 @@
 #include "object.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <string>
 
@@ -119,7 +119,7 @@ fnc Object::Function::Init(Chunk* chunk, u32 name_len, const char* name) -> void
 Object::Closure::Closure() noexcept {
   this->type = ObjectType::Closure;
   this->name_len = 0;
-  this->name = 0;
+  this->name = nullptr;
   this->as.closure = {};
 }
 
@@ -139,7 +139,7 @@ fnc Object::Closure::Init(const Object::Function* function) -> void {
 
 fnc Object::Closure::Init(const Object* obj) -> void {
   Assert(obj->type == ObjectType::Function);
-  auto function = static_cast<const Object::Function*>(obj);
+  const auto *function = static_cast<const Object::Function*>(obj);
 
   this->Init(obj);
 }

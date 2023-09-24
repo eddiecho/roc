@@ -38,12 +38,14 @@ class Object {
     Object::Upvalue** upvalues;
   };
 
-  bool operator==(const Object* o) const { return this->type == o->type; }
+  auto operator==(const Object* o) const -> bool { return this->type == o->type; }
 
   fnc Print() const->void;
   fnc IsTruthy() const->const bool;
 
  public:
+  Object() = default;
+
   ObjectType type;
 
   // used for free lists in GlobalPools to find the next free memory slot
@@ -58,7 +60,7 @@ class Object {
     ClosureData closure;
     UpvalueData upvalue;
 
-    Data() { memset(this, 0, sizeof(Data)); }
+    Data() { string = {}; }
     ~Data() {}
   } as;
 };
@@ -67,26 +69,25 @@ class Object::String : public Object {
  public:
   String() noexcept;
   String(u32 name_len, const char* name) noexcept;
-  String(std::string_view str) noexcept;
+  explicit String(std::string_view str) noexcept;
   String(Object::String& str) noexcept;
   String(const Object::String&& str) noexcept;
 
-  operator std::string_view() const {
-    std::string_view ret{this->name, this->name_len};
-
+  explicit operator std::string_view() const {
+    const std::string_view ret{this->name, this->name_len};
     return ret;
   }
 
   fnc operator==(const Object* o) const -> bool {
     if (o->type != ObjectType::String) return false;
 
-    auto other = static_cast<const Object::String*>(o);
+    const auto *other = static_cast<const Object::String*>(o);
     if (this->name_len != other->name_len) return false;
 
     return std::memcmp(this->name, other->name, this->name_len) == 0;
   }
 
-  fnc operator==(Object::String o) const -> bool {
+  fnc operator==(Object::String& o) const -> bool {
     if (this->name_len != o.name_len) return false;
 
     return std::memcmp(this->name, o.name, this->name_len) == 0;

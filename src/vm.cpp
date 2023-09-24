@@ -1,7 +1,7 @@
 #include "vm.h"
 
-#include <stdarg.h>
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstdlib>
 
 #include <string>
 
@@ -62,13 +62,13 @@ fnc VirtualMachine::RuntimeError(const char* msg, ...) -> InterpretError {
 
   for (int i = this->frame_count - 1; i >= 0; i--) {
     StackFrame* frame = &this->frames[i];
-    auto closure = frame->closure;
+    auto *closure = frame->closure;
     auto func = closure->as.closure;
 
     u64 inst = frame->inst_ptr - func.chunk->BaseInstructionPointer() - 1;
 
     auto line_range = func.chunk->lines[inst];
-    auto name = frame->closure == nullptr ? frame->function->name
+    const auto *name = frame->closure == nullptr ? frame->function->name
                                           : frame->closure->name;
     fprintf(stderr, "[line %lu] in ", line_range.val);
     fprintf(stderr, "%s\n", name);
@@ -135,7 +135,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
                               Arena<Object>* object_pool)
     ->InterpretResult {
   Assert(obj != nullptr);
-  auto function = static_cast<Object::Function*>(obj);
+  auto *function = static_cast<Object::Function*>(obj);
 
   // setup initial call stack
   auto frame_result = this->Invoke(function, 0);
@@ -143,7 +143,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
     return frame_result.Err();
   }
   auto frame_idx = frame_result.Get();
-  auto frame = &this->frames[frame_idx];
+  auto *frame = &this->frames[frame_idx];
 
   this->string_pool = string_pool;
   this->object_pool = object_pool;
@@ -160,7 +160,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
 #define READ_CONSTANT() (frame->chunk->locals[READ_BYTE()])
 
   u8 byte;
-  while (1) {
+  while (true) {
     byte = READ_BYTE();
     auto instruction = static_cast<OpCode>(byte);
 
@@ -202,7 +202,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
       case OpCode::String: {
         u32 idx = READ_INT();
 
-        auto str = this->string_pool->Nth(idx);
+        auto *str = this->string_pool->Nth(idx);
         auto constant = Value(str);
         this->Push(constant);
         break;
@@ -302,14 +302,14 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
       case OpCode::SetUpvalue: {
         u32 index = READ_INT();
         // lmao thats a lot of indirection
-        auto upval = frame->closure->as.closure.upvalues[index];
+        auto *upval = frame->closure->as.closure.upvalues[index];
         *upval->as.upvalue.location = this->Peek();
         break;
       }
       case OpCode::GetUpvalue: {
         u32 index = READ_INT();
-        auto upval = frame->closure->as.closure.upvalues[index];
-        auto val = upval->as.upvalue.location;
+        auto *upval = frame->closure->as.closure.upvalues[index];
+        auto *val = upval->as.upvalue.location;
         this->Push(*val);
         break;
       }
@@ -346,12 +346,12 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
           return this->RuntimeError("Can not invoke non function object");
         }
 
-        auto function_obj = function_base.as.object;
+        auto *function_obj = function_base.as.object;
         switch (function_obj->type) {
           default:
             return this->RuntimeError("Can not invoke non function object");
           case ObjectType::Function: {
-            auto new_function = static_cast<Object::Function*>(function_obj);
+            auto *new_function = static_cast<Object::Function*>(function_obj);
             auto new_frame_result = this->Invoke(new_function, argc);
             if (new_frame_result.IsError()) {
               return new_frame_result.Err();
@@ -361,7 +361,7 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
             break;
           }
           case ObjectType::Closure: {
-            auto new_closure =
+            auto *new_closure =
                 static_cast<Object::Closure*>(function_base.as.object);
             auto new_frame_result = this->Invoke(new_closure, argc);
             if (new_frame_result.IsError()) {
@@ -389,14 +389,14 @@ fnc VirtualMachine::Interpret(Object* obj, StringPool* string_pool,
         Value func_obj = this->object_pool->Nth(idx);
 
         Assert(func_obj.type == ValueType::Object);
-        auto obj = func_obj.as.object;
+        auto *obj = func_obj.as.object;
 
         Assert(obj->type == ObjectType::Function);
-        const auto function = static_cast<const Object::Function*>(obj);
+        const auto *function = static_cast<const Object::Function*>(obj);
 
         // dirty, disgusting pointer memory shenanigans
         // these alias to the same memory location
-        auto closure = static_cast<Object::Closure*>(obj);
+        auto *closure = static_cast<Object::Closure*>(obj);
         closure->Init(function);
 
         u8 upvalue_count = READ_BYTE();
@@ -439,7 +439,7 @@ fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   // because you really shouldn't be capturing too many upvalues in the first
   // place
   Object::Upvalue* prev_upvalue = nullptr;
-  auto upvalue = this->open_upvalues;
+  auto *upvalue = this->open_upvalues;
   // locals should be on a stack
   while (upvalue != nullptr && upvalue->as.upvalue.location > local) {
     prev_upvalue = upvalue;
@@ -451,7 +451,7 @@ fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
   }
 
   const auto index = this->object_pool->Alloc();
-  auto obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
+  auto *obj = static_cast<Object::Upvalue*>(this->object_pool->Nth(index));
   obj->Init(local);
   obj->as.upvalue.next = upvalue;
 
@@ -467,7 +467,7 @@ fnc inline VirtualMachine::CaptureUpvalue(Value* local)->Object::Upvalue* {
 fnc inline VirtualMachine::CloseUpvalues(Value* local)->void {
   while (this->open_upvalues != nullptr &&
          this->open_upvalues->as.upvalue.location >= local) {
-    auto upvalue = this->open_upvalues;
+    auto *upvalue = this->open_upvalues;
     upvalue->as.upvalue.closed_value = *upvalue->as.upvalue.location;
     upvalue->as.upvalue.location = &upvalue->as.upvalue.closed_value;
     this->open_upvalues = upvalue->as.upvalue.next;

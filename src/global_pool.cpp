@@ -31,7 +31,7 @@ fnc GlobalPool::Alloc(u64 length, const char* start) -> u64 {
 }
 
 fnc GlobalPool::Find(u64 length, const char* start) -> Option<u64> {
-  KeyType key = {start, length};
+  const KeyType key = {start, length};
   auto it = this->index.find(key);
   if (it != this->index.end()) {
     return it->second;

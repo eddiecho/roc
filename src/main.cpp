@@ -1,3 +1,4 @@
+#include <cstdbool>
 #include <iostream>
 #include <memory>
 
@@ -15,7 +16,7 @@
 #define DEBUG_TRACE_EXECUTION
 #undef DEBUG_TRACE_EXECUTION
 
-static VirtualMachine VM;
+static VirtualMachine VIRTUAL_MACHINE;
 static Compiler COMPILER;
 
 fnc static RunFile(const char* path) -> InterpretResult {
@@ -28,16 +29,16 @@ fnc static RunFile(const char* path) -> InterpretResult {
   global_pool.Init(&object_pool);
 
   COMPILER.Init(src, &string_pool, &global_pool);
-  CompileResult compile_res = COMPILER.Compile();
+  const CompileResult compile_res = COMPILER.Compile();
   if (compile_res.IsError()) {
     return InterpretError::CompileError;
   }
 
   Assert(compile_res.Get().type == ObjectType::Function);
-  Object::Function* function = static_cast<Object::Function*>(compile_res.Get());
-  VM.Init();
+  auto *function = static_cast<Object::Function*>(compile_res.Get());
+  VIRTUAL_MACHINE.Init();
 
-  return VM.Interpret(function, &string_pool, &object_pool);
+  return VIRTUAL_MACHINE.Interpret(function, &string_pool, &object_pool);
 }
 
 fnc static Repl() -> void {
@@ -48,24 +49,24 @@ fnc static Repl() -> void {
   GlobalPool global_pool;
   global_pool.Init(&object_pool);
 
-  while (1) {
+  while (true) {
     printf("> ");
 
-    if (!fgets(line, sizeof(line), stdin)) {
+    if (fgets(line, sizeof(line), stdin) == nullptr) {
       printf("\n");
       break;
     }
 
     // @FIXME(eddie) - should reuse the same chunk for this
     COMPILER.Init(line, &string_pool, &global_pool);
-    CompileResult compile_res = COMPILER.Compile();
+    const CompileResult compile_res = COMPILER.Compile();
     if (compile_res.IsError()) {
       status = InterpretError::CompileError;
     } else {
       // @TODO(eddie) - do something with the status
       Assert(compile_res.Get().type == ObjectType::Function);
-      Object::Function* function = static_cast<Object::Function*>(compile_res.Get());
-      status = VM.Interpret(function, &string_pool, &object_pool);
+      auto *function = static_cast<Object::Function*>(compile_res.Get());
+      status = VIRTUAL_MACHINE.Interpret(function, &string_pool, &object_pool);
     }
   }
 }
@@ -74,8 +75,8 @@ fnc main(int argc, char** argv) -> int {
   std::cout << argv[0] << " Version " << Roc_VERSION_MAJOR << "."
             << Roc_VERSION_MINOR << std::endl;
 
-  VM.Init();
-  defer(VM.Deinit());
+  VIRTUAL_MACHINE.Init();
+  defer(VIRTUAL_MACHINE.Deinit());
 
   if (argc == 1) {
     Repl();

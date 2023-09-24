@@ -10,7 +10,7 @@ struct PrivDefer {
 };
 
 template <typename F>
-PrivDefer<F> Deferfnc(F f) {
+fnc Deferfnc(F f) -> PrivDefer<F> {
   return PrivDefer<F>(f);
 }
 
@@ -28,16 +28,16 @@ PrivDefer<F> Deferfnc(F f) {
 #define Assert(Expression)
 #endif
 
-#define IntToBytes(num) reinterpret_cast<u8*>(num)
+#define IntToBytes(num) (reinterpret_cast<u8*>(num))
 
 namespace Utils {
 fnc ReadFile(const char* path) -> char*;
 
 fnc constexpr inline HashString(const char* str, u64 length) -> u32 {
-  u32 hash = 2166136261u;
+  u32 hash = 2166136261U;
 
   for (u32 i = 0; i < length; i++) {
-    hash ^= (u8)str[i];
+    hash ^= static_cast<u8>(str[i]);
     hash *= 16777619;
   }
 
@@ -119,7 +119,7 @@ struct Option {
     return this->data;
   }
 
-  operator bool() { return !this->IsNone(); }
+  explicit operator bool() { return !this->IsNone(); }
 };
 
 #define c_macro_var(name) concat(name, __LINE__)

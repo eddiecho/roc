@@ -1,6 +1,6 @@
 #include "memory.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "common.h"
 
