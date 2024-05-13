@@ -1,3 +1,2 @@
-*.rdbg
-.vs
-out
+build
+.cache
