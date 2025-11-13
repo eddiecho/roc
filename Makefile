@@ -1,3 +1,6 @@
+.PHONY: release
+release: build test
+
 .PHONY: cmake
 cmake:
 	cmake -S . -B build
@@ -59,5 +62,3 @@ tidy:
 cloc:
 	cloc src/ include/ test/
 
-.PHONY: release
-release: sync build test
