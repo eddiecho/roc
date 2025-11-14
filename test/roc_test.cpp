@@ -25,7 +25,7 @@
 #define GetTestFilePath(pp) \
   std::snprintf(path, MAX_PATH_LEN, "%s/" pp, TEST_DIR)
 
-fnc Fibonacci(u64 n) -> u64 {
+auto Fibonacci(u64 n) -> u64 {
   if (n <= 1) return 1;
 
   u64 prev = 1;
@@ -40,25 +40,25 @@ fnc Fibonacci(u64 n) -> u64 {
 
 class VirtualMachineTest : public ::testing::Test {
  protected:
-  fnc SetUp() -> void override {
+  auto SetUp() -> void override {
     string_pool.Init(&string_object_pool);
     global_pool.Init(&object_pool);
     virtual_machine.Init();
   }
 
-  fnc TearDown() -> void override {
+  auto TearDown() -> void override {
     object_pool.Clear();
     string_pool.Deinit();
     virtual_machine.Deinit();
   }
 
-  fnc InitCompiler(const char* test_file) -> void {
+  auto InitCompiler(const char* test_file) -> void {
     std::snprintf(path, MAX_PATH_LEN, "%s/%s", TEST_DIR, test_file);
     char* src = Utils::ReadFile(path);
     compiler.Init(src, &string_pool, &global_pool);
   }
 
-  fnc BasicTest(const char* test_file) -> InterpretResult {
+  auto BasicTest(const char* test_file) -> InterpretResult {
     InitCompiler(test_file);
     auto res = compiler.Compile();
     EXPECT_FALSE(res.IsError());
