@@ -4,12 +4,15 @@
   };
   outputs = { self, nixpkgs, utils }: utils.lib.eachDefaultSystem (system:
     let
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+      };
     in
     {
-      devShell = pkgs.mkShell {
+      devShell = pkgs.mkShellNoCC {
         buildInputs = with pkgs; [
-          clang
+          clang-tools # this has to come before clang everytime...
+          clang_21
           cmake
           gnumake
         ];

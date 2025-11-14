@@ -1,5 +1,5 @@
 .PHONY: release
-release: build test
+release: cmake build test
 
 .PHONY: cmake
 cmake:
@@ -22,6 +22,7 @@ sync:
 .PHONY: build
 build:
 	@$(MAKE) --no-print-directory --directory build
+	cp build/compile_commands.json .
 
 .PHONY: test
 test:
@@ -62,3 +63,7 @@ tidy:
 cloc:
 	cloc src/ include/ test/
 
+.PHONY: clean
+clean:
+	rm -rf clean/
+	rm -rf build/
