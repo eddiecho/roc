@@ -1,0 +1,42 @@
+#pragma once
+
+#include <cctype>
+#include <cstdint>
+#include <type_traits>
+#include <utility>
+
+using u8 = unsigned char;
+using i32 = int32_t;
+using i64 = int64_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using f32 = float;
+using f64 = double;
+
+#define AlignPow2(x, b) (((x) + (b) - 1) & (~((b) - 1)))
+#define KB(n) (((u64)(n)) << 10)
+#define MB(n) (((u64)(n)) << 20)
+#define GB(n) (((u64)(n)) << 30)
+#define TB(n) (((u64)(n)) << 40)
+
+#define global static
+
+#define Stringify_(S) #S
+#define Stringify(S) Stringify_(S)
+
+#define Concat_(A, B) A##B
+#define Concat(A, B) Concat_(A, B)
+
+template <typename _Fx> struct __defer_t {
+  _Fx __fx;
+
+  __defer_t(_Fx &&__arg_fx) noexcept(
+      ::std::is_nothrow_move_constructible_v<_Fx>)
+      : __fx(::std::move(__arg_fx)) {}
+
+  ~__defer_t() noexcept(::std::is_nothrow_invocable_v<_Fx>) { __fx(); }
+};
+
+template <typename _Fx> __defer_t(_Fx __fx) -> __defer_t<::std::decay_t<_Fx>>;
+
+#define defer __defer_t Concat(__scoped_defer_obj, __COUNTER__) = [&]()

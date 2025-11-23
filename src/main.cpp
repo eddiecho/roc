@@ -1,21 +1,21 @@
-#include <iostream>
+#include <cstdio>
+#include <print>
 
-#include "chunk.cpp"
-#include "common.h"
-#include "roc_config.h"
-#include "utils/utils.h"
+#include "roc/common.h"
+#include "roc/os/os.h"
 
-int main(int argc, char** argv) {
-  std::cout << argv[0] << " Version "
-    << Roc_VERSION_MAJOR << "." << Roc_VERSION_MINOR
-    << std::endl;
+auto main(int argc, char **argv) -> int {
+  std::print("argc: {}\n", argc);
+  for (int i = 0; i < argc; i++) {
+    std::print("arg[{}]: {}\n", i, argv[i]);
+  }
 
-  Chunk chunk;
+  auto sys_info = Os::GetSystemInfo();
+  std::print("cpu count: {}\n", sys_info.cpu_count);
+  std::print("page size: {}\n", sys_info.page_size);
 
-  chunk.addConstant(1.2, 123);
-  chunk.addConstant(42, 123);
-  chunk.addChunk(OpCode::RETURN, 199);
+  auto *copy = Os::ReserveMemory(sizeof(argv[0]));
+  defer { Os::ReleaseMemory(copy, sizeof(argv[0])); };
 
-  chunk.disassemble();
-  return 0;
+  std::print("copy: {}\n", copy);
 }
