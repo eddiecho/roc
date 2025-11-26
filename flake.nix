@@ -1,8 +1,6 @@
 {
   inputs = {
     utils.url = "github:numtide/flake-utils";
-
-    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
   outputs = { self, nixpkgs, utils }: utils.lib.eachDefaultSystem (system:
     let
