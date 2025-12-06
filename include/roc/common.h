@@ -27,6 +27,29 @@ using f64 = double;
 #define Concat_(A, B) A##B
 #define Concat(A, B) Concat_(A, B)
 
+#if defined(__GNUC__) && !defined(__clang__)
+#define COMPILER_GCC
+#endif
+
+#ifdef __clang__
+#define COMPILER_CLANG
+#endif
+
+#ifdef _MSC_VER
+#define COMPILER_MSVC
+#endif
+
+
+#ifdef COMPILER_MSVC
+#define Trap() __debugbreak()
+#elifdef COMPILER_CLANG
+#define Trap() __builtin_trap()
+#elifdef COMPILER_GCC
+#define Trap() __builtin_trap()
+#endif
+
+#define Assert(expr) do{if(!(expr)) {Trap();} }while(0)
+
 template <typename _Fx> struct __defer_t {
   _Fx __fx;
 
@@ -40,3 +63,6 @@ template <typename _Fx> struct __defer_t {
 template <typename _Fx> __defer_t(_Fx __fx) -> __defer_t<::std::decay_t<_Fx>>;
 
 #define defer __defer_t Concat(__scoped_defer_obj, __COUNTER__) = [&]()
+
+#define Min(a, b) ((a < b) ? a : b)
+#define Max(a, b) ((a > b) ? a : b)

@@ -18,6 +18,6 @@ struct SysInfo {
   Kind kind;
 };
 
-auto GetSystemInfo() -> SysInfo;
+auto GetSysInfo() -> SysInfo;
 
 } // namespace Os

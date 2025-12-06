@@ -10,7 +10,7 @@ auto main(int argc, char **argv) -> int {
     std::print("arg[{}]: {}\n", i, argv[i]);
   }
 
-  auto sys_info = Os::GetSystemInfo();
+  auto sys_info = Os::GetSysInfo();
   std::print("cpu count: {}\n", sys_info.cpu_count);
   std::print("page size: {}\n", sys_info.page_size);
 

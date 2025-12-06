@@ -29,7 +29,7 @@ auto UncommitMemory(void *ptr, u64 size) -> void {
   mprotect(ptr, size, PROT_NONE);
 }
 
-auto GetSystemInfo() -> SysInfo {
+auto GetSysInfo() -> SysInfo {
   global SysInfo ret = {};
 
   if (ret.page_size == 0) {

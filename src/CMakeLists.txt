@@ -1,6 +1,6 @@
 file(GLOB_RECURSE HDR_FILES   CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/include/*.h")
 file(GLOB_RECURSE COMMON_SRCS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
-list(FILTER COMMON_SRCS EXCLUDE REGEX ".*(win32|linux|macos)/.*")
+list(FILTER COMMON_SRCS EXCLUDE REGEX ".*(win32|linux|darwin)/.*")
 
 # I think this is only for Visual Studio?
 source_group(
