@@ -57,3 +57,28 @@ TEST_F(ArenaTest, Overflow) {
 
   this->arena->Clear();
 }
+
+TEST_F(ArenaTest, MultipleOverflow) {
+  EXPECT_NE(this->arena, nullptr);
+
+  auto *first = this->arena->head;
+
+  auto *ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+
+  EXPECT_NE(first, this->arena->head);
+  EXPECT_NE(this->arena->prev, nullptr);
+
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+
+  this->arena->Clear();
+}
