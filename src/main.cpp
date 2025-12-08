@@ -2,6 +2,7 @@
 #include <print>
 
 #include "roc/common.h"
+#include "roc/ds/arena.h"
 #include "roc/os/os.h"
 
 auto main(int argc, char **argv) -> int {
@@ -14,8 +15,11 @@ auto main(int argc, char **argv) -> int {
   std::print("cpu count: {}\n", sys_info.cpu_count);
   std::print("page size: {}\n", sys_info.page_size);
 
-  auto *copy = Os::ReserveMemory(sizeof(argv[0]));
-  defer { Os::ReleaseMemory(copy, sizeof(argv[0])); };
+  auto *arena = Alloc();
+  auto *ptr = reinterpret_cast<char *>(arena->Push(sizeof(argv[0])));
+  ptr = argv[0];
 
-  std::print("copy: {}\n", copy);
+  defer { arena->Release(); };
+
+  std::print("copy: {}\n", ptr);
 }
