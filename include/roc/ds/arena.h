@@ -2,12 +2,15 @@
 
 #include "roc/common.h"
 
+// Intrusive, singly linked list of buffers
+// Allows pushing heterogenous data, but can not delete from arbitrary slots;
+// Can only clear everything from the top to a certain amount
+// In practice, we reserve RESERVE amounts of memory for both the struct and the data.
 struct Arena {
-  Arena *curr = nullptr;
+  Arena *head = nullptr;
   Arena *prev = nullptr;
-  u64 reserve_size = 0;
-  u64 commit_size = 0;
-  u64 commit_pos = 0;
+  u64 reserve = 0;
+  u64 commit = 0;
   u64 pos = 0;
 
   const char *alloc_file_location;
@@ -17,7 +20,6 @@ struct Arena {
   auto Push(u64 size) -> void*;
   auto Pop(u64 size) -> void;
   auto Clear() -> void;
-
 };
 
 auto Alloc__(const char *file, int line) -> Arena *;

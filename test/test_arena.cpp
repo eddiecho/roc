@@ -18,7 +18,7 @@ class ArenaTest : public ::testing::Test {
 
 TEST_F(ArenaTest, BasicAlloc) {
   EXPECT_NE(this->arena, nullptr);
-  EXPECT_GT(this->arena->reserve_size, 0);
+  EXPECT_GT(this->arena->reserve, 0);
 }
 
 TEST_F(ArenaTest, BasicOps) {
@@ -38,12 +38,22 @@ TEST_F(ArenaTest, BasicOps) {
 
   this->arena->Clear();
   EXPECT_NE(this->arena, nullptr);
-  EXPECT_NE(this->arena->curr, nullptr);
+  EXPECT_NE(this->arena->head, nullptr);
   EXPECT_EQ(this->arena->prev, nullptr);
 }
 
 TEST_F(ArenaTest, Overflow) {
   EXPECT_NE(this->arena, nullptr);
 
+  auto *first = this->arena->head;
+
   auto *ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+  ptr = this->arena->Push(MB(1));
+
+  EXPECT_NE(first, this->arena->head);
+  EXPECT_NE(this->arena->prev, nullptr);
+
+  this->arena->Clear();
 }

@@ -13,11 +13,10 @@ auto Alloc__(const char* file, int line) -> Arena * {
   Os::CommitMemory(base, commit_size);
 
   Arena *ret = static_cast<Arena *>(base);
-  ret->curr = ret;
+  ret->head = ret;
   ret->prev = nullptr;
-  ret->reserve_size = reserve_size;
-  ret->commit_size = commit_size;
-  ret->commit_pos = commit_size;
+  ret->reserve = reserve_size;
+  ret->commit = commit_size;
   ret->pos = ARENA_HEADER_SIZE;
   ret->alloc_file_location = file;
   ret->alloc_file_line = line;
@@ -26,39 +25,42 @@ auto Alloc__(const char* file, int line) -> Arena * {
 }
 
 auto Arena::Release() -> void {
-  Arena *curr = this->curr;
+  Arena *curr = this->head;
   while (curr != nullptr) {
     Arena *tmp = this->prev;
-    Os::ReleaseMemory(curr, curr->reserve_size);
+    Os::ReleaseMemory(curr, curr->reserve);
     curr = tmp;
   }
 }
 
 auto Arena::Push(u64 size) -> void *{
-  auto *curr = this->curr;
+  auto *curr = this->head;
   auto pos = AlignPow2(curr->pos, 1);
   auto pos_final = pos + size;
 
   // I imagine it's extremely unlikely to do a single push more than the reserve size
   Assert(size < DEFAULT_RESERVE);
 
-  if (curr->reserve_size < pos_final) {
+  if (curr->reserve < pos_final) {
     Arena *next = Alloc__(curr->alloc_file_location, curr->alloc_file_line);
 
-    this->curr = next;
+    // TODO - do I need to walk the list and update every head pointer?
+    this->head = next;
     this->prev = curr;
     curr = next;
+
+    pos_final = curr->pos + size;
   }
 
-  while (curr->commit_size < pos_final) {
-    u64 commit_pos_final = curr->commit_pos + DEFAULT_COMMIT;
-    u64 commit_size = Min(commit_pos_final, curr->reserve_size) - curr->commit_pos;
-    Os::CommitMemory((u8*)curr + curr->commit_pos, commit_size);
-    curr->commit_pos += commit_size;
+  while (curr->commit < pos_final) {
+    u64 commit_pos_final = AlignPow2(pos_final, DEFAULT_COMMIT);
+    u64 commit_size = Min(commit_pos_final, curr->reserve) - curr->commit;
+    Os::CommitMemory((u8*)curr + curr->commit, commit_size);
+    curr->commit += commit_size;
   }
 
   void* result = nullptr;
-  Assert(curr->commit_pos >= pos_final);
+  Assert(curr->commit >= pos_final);
   // return the pointer to the old pos
   result = (u8*)curr + pos;
   curr->pos = pos_final;
@@ -67,24 +69,23 @@ auto Arena::Push(u64 size) -> void *{
 }
 
 auto Arena::Pop(u64 size) -> void {
-  auto *curr = this->curr;
+  auto *curr = this->head;
   u64 final_pos = Max(ARENA_HEADER_SIZE, curr->pos - size);
   u64 pop_size = curr->pos - final_pos;
   curr->pos = final_pos;
   if (pop_size < size) {
-    this->curr = this->prev;
+    this->head = this->prev;
     Os::ReleaseMemory(curr, DEFAULT_RESERVE);
     this->Pop(size - pop_size);
   }
 }
 
 auto Arena::Clear() -> void {
-  auto *curr = this->curr;
-  while (this->prev != nullptr) {
-    auto *prev = this->prev;
-    Os::ReleaseMemory(curr, DEFAULT_RESERVE);
-    this->curr = prev;
-    curr = prev;
+  auto *looking = this->head;
+  while (looking->prev != nullptr) {
+    auto *next = looking->prev;
+    Os::ReleaseMemory(looking, DEFAULT_RESERVE);
+    looking = next;
   }
   this->prev = nullptr;
 }
