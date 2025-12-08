@@ -1,8 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "roc/os/os.h"
 #include "roc/os/memory.h"
+#include "roc/os/os.h"
 
 namespace Os {
 
@@ -24,7 +24,6 @@ auto UncommitMemory(void *ptr, u64 size) -> void {
   VirtualFree(ptr, size, MEM_DECOMMIT);
 }
 
-
 auto GetSysInfo() -> SysInfo {
   global SysInfo ret = {};
 
@@ -40,4 +39,4 @@ auto GetSysInfo() -> SysInfo {
   return ret;
 }
 
-}
+} // namespace Os

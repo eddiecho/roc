@@ -1,10 +1,10 @@
 #include "roc/ds/arena.h"
 
 #include "roc/common.h"
-#include "roc/os/os.h"
 #include "roc/os/memory.h"
+#include "roc/os/os.h"
 
-auto Alloc__(const char* file, int line) -> Arena * {
+auto Alloc__(const char *file, int line) -> Arena * {
   auto sys_info = Os::GetSysInfo();
   u64 reserve_size = AlignPow2(DEFAULT_RESERVE, sys_info.page_size);
   u64 commit_size = AlignPow2(DEFAULT_COMMIT, sys_info.page_size);
@@ -33,12 +33,13 @@ auto Arena::Release() -> void {
   }
 }
 
-auto Arena::Push(u64 size) -> void *{
+auto Arena::Push(u64 size) -> void * {
   auto *curr = this->head;
   auto pos = AlignPow2(curr->pos, 1);
   auto pos_final = pos + size;
 
-  // I imagine it's extremely unlikely to do a single push more than the reserve size
+  // I imagine it's extremely unlikely to do a single push more than the reserve
+  // size
   Assert(size < DEFAULT_RESERVE);
 
   if (curr->reserve < pos_final) {
@@ -55,14 +56,14 @@ auto Arena::Push(u64 size) -> void *{
   while (curr->commit < pos_final) {
     u64 commit_pos_final = AlignPow2(pos_final, DEFAULT_COMMIT);
     u64 commit_size = Min(commit_pos_final, curr->reserve) - curr->commit;
-    Os::CommitMemory((u8*)curr + curr->commit, commit_size);
+    Os::CommitMemory((u8 *)curr + curr->commit, commit_size);
     curr->commit += commit_size;
   }
 
-  void* result = nullptr;
+  void *result = nullptr;
   Assert(curr->commit >= pos_final);
   // return the pointer to the old pos
-  result = (u8*)curr + pos;
+  result = (u8 *)curr + pos;
   curr->pos = pos_final;
 
   return result;
@@ -81,11 +82,11 @@ auto Arena::Pop(u64 size) -> void {
 }
 
 auto Arena::Clear() -> void {
-  auto *looking = this->head;
-  while (looking->prev != nullptr) {
-    auto *next = looking->prev;
-    Os::ReleaseMemory(looking, DEFAULT_RESERVE);
-    looking = next;
+  auto *curr = this->head;
+  while (curr->prev != nullptr) {
+    auto *next = curr->prev;
+    Os::ReleaseMemory(curr, DEFAULT_RESERVE);
+    curr = next;
   }
   this->prev = nullptr;
 }

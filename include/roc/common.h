@@ -39,7 +39,6 @@ using f64 = double;
 #define COMPILER_MSVC
 #endif
 
-
 #ifdef COMPILER_MSVC
 #define Trap() __debugbreak()
 #elifdef COMPILER_CLANG
@@ -48,7 +47,12 @@ using f64 = double;
 #define Trap() __builtin_trap()
 #endif
 
-#define Assert(expr) do{if(!(expr)) {Trap();} }while(0)
+#define Assert(expr)                                                           \
+  do {                                                                         \
+    if (!(expr)) {                                                             \
+      Trap();                                                                  \
+    }                                                                          \
+  } while (0)
 
 template <typename _Fx> struct __defer_t {
   _Fx __fx;

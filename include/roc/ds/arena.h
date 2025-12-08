@@ -5,7 +5,8 @@
 // Intrusive, singly linked list of buffers
 // Allows pushing heterogenous data, but can not delete from arbitrary slots;
 // Can only clear everything from the top to a certain amount
-// In practice, we reserve RESERVE amounts of memory for both the struct and the data.
+// In practice, we reserve RESERVE amounts of memory for both the struct and the
+// data.
 struct Arena {
   Arena *head = nullptr;
   Arena *prev = nullptr;
@@ -17,7 +18,7 @@ struct Arena {
   int alloc_file_line;
 
   auto Release() -> void;
-  auto Push(u64 size) -> void*;
+  auto Push(u64 size) -> void *;
   auto Pop(u64 size) -> void;
   auto Clear() -> void;
 };
@@ -33,4 +34,3 @@ auto Alloc__(const char *file, int line) -> Arena *;
 #define ARENA_HEADER_SIZE 64
 static_assert(ARENA_HEADER_SIZE >= sizeof(Arena));
 static_assert(DEFAULT_COMMIT >= sizeof(Arena));
-
