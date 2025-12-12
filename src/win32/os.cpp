@@ -11,7 +11,8 @@ auto ReserveMemory(u64 size) -> void * {
 }
 
 auto ReleaseMemory(void *ptr, u64 size) -> void {
-  VirtualFree(ptr, size, MEM_RELEASE);
+  // Windows is weird like that
+  VirtualFree(ptr, 0, MEM_RELEASE);
 }
 
 auto CommitMemory(void *ptr, u64 size) -> void {

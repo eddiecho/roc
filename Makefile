@@ -1,9 +1,16 @@
-.PHONY: release
-release: cmake build test
+.PHONY: debug
+debug: cmake-debug build test
 
-.PHONY: cmake
-cmake:
-	cmake -S . -B build -G Ninja
+.PHONY: cmake-debug
+cmake-debug:
+	cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+
+.PHONY: release
+release: cmake-release build test
+
+.PHONY: cmake-release
+cmake-release:
+	cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 WIN_DIR = /Documents/code/roc-win64
 FULL_WIN_DIR := $(join ${WIN_HOME_DIR}, $(WIN_DIR))

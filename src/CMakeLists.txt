@@ -22,17 +22,19 @@ elseif(APPLE)
   list(APPEND SRCFILES ${DARWIN_SRCS})
 endif()
 
-add_executable("${EXECUTABLE_NAME}" ${SRCFILES})
-set_target_properties("${EXECUTABLE_NAME}" PROPERTIES
+add_executable("${EXE_NAME}" ${SRCFILES})
+set_compiler_flags("${EXE_NAME}")
+
+set_target_properties("${EXE_NAME}" PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/bin"
   RUNTIME_OUTPUT_DIRECTORY_DEBUG   "${CMAKE_BINARY_DIR}/bin"
   RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin"
 )
 
-target_include_directories("${EXECUTABLE_NAME}" PUBLIC
+target_include_directories("${EXE_NAME}" PUBLIC
   "${PROJECT_SOURCE_DIR}/include")
 
 target_link_libraries(
-  "${EXECUTABLE_NAME}"
+  "${EXE_NAME}"
   ${THIRD_PARTY_LIB}
 )

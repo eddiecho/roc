@@ -26,6 +26,8 @@ add_executable(
   ${TEST_SRCS}
 )
 
+set_compiler_flags("${TEST_EXE_NAME}")
+
 target_include_directories(
   "${TEST_EXE_NAME}"
   PUBLIC

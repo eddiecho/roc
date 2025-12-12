@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <utility>
 
+using b32 = int32_t;
 using u8 = unsigned char;
 using i32 = int32_t;
 using i64 = int64_t;
