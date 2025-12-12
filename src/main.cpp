@@ -19,11 +19,9 @@ auto main(int argc, char **argv) -> int {
   defer { arena->Release(); };
 
   for (int i = 0; i < argc; i++) {
-    auto *ptr = reinterpret_cast<char *>(arena->Push(sizeof(argv[i])));
-    ptr = argv[i];
-    auto s = NewString(ptr);
-    s.Upper(arena);
+    auto s = NewString(argv[i]);
+    auto u = s.Upper(arena);
 
-    std::print("copy[{}]: {}\n", i, ptr);
+    std::print("copy[{}]: {}\n", i, u);
   }
 }

@@ -67,11 +67,13 @@ auto NewString(char *c, u64 size) -> String {
 auto String::Lower(Arena *arena) -> String {
   auto *ptr = reinterpret_cast<String*>(arena->Push(sizeof(u64) + this->len));
   ptr->len = this->len;
-  memcpy(ptr->raw, this->raw, this->len);
+  // memcpy(ptr + OffsetOf(String, raw), this->raw, this->len);
 
-  char* cursor = ptr->raw;
+  auto* dst_cur = (char*)ptr + OffsetOf(String, raw);
+  auto* src_cur = this->raw;
   for (u64 i = 0; i < this->len; i++) {
-    *cursor = ToLower(*cursor++);
+    // *cursor = ToLower(*cursor++);
+    *dst_cur++ = ToLower(*src_cur++);
   }
 
   return *ptr;
@@ -80,11 +82,12 @@ auto String::Lower(Arena *arena) -> String {
 auto String::Upper(Arena *arena) -> String {
   auto *ptr = reinterpret_cast<String*>(arena->Push(sizeof(u64) + this->len));
   ptr->len = this->len;
-  memcpy(ptr->raw, this->raw, this->len);
+  // memcpy(ptr + OffsetOf(String, raw), this->raw, this->len);
 
-  char* cursor = ptr->raw;
+  auto* dst_cur = (char*)ptr + OffsetOf(String, raw);
+  auto* src_cur = this->raw;
   for (u64 i = 0; i < this->len; i++) {
-    *cursor = ToUpper(*cursor++);
+    *dst_cur++ = ToUpper(*src_cur++);
   }
 
   return *ptr;

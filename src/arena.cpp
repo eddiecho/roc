@@ -35,8 +35,8 @@ auto Arena::Release() -> void {
 
 auto Arena::Push(u64 size) -> void * {
   auto *curr = this->head;
-  auto pos = AlignPow2(curr->pos, 1);
-  auto pos_final = pos + size;
+  auto base = AlignPow2(curr->pos, 1);
+  auto pos_final = base + size;
 
   // I imagine it's extremely unlikely to do a single push more than the reserve
   // size

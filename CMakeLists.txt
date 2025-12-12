@@ -28,7 +28,6 @@ function(set_compiler_flags target)
     target_compile_options(${target} PRIVATE
       /EHs-c-
       /D_HAS_EXCEPTIONS=0
-
       /W4              # Warning level 4 (highest reasonable level)
       /w14456          # Shadow: local variable
       /w14457          # Shadow: parameter
@@ -40,7 +39,6 @@ function(set_compiler_flags target)
       /w14906          # String literal cast
       /w14061          # Switch enum not handled
       /w14100          # Unreferenced formal parameter
-
       $<$<CONFIG:Debug>:/Od /Zi /MDd>
       $<$<CONFIG:Release>:/O2 /MD /DNDEBUG>
       $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /MD>
@@ -64,11 +62,16 @@ function(set_compiler_flags target)
       -Winline
       -Wredundant-decls
       -Wchar-subscripts
-
       $<$<CONFIG:Debug>:-g -O0 -DDEBUG>
       $<$<CONFIG:Release>:-O3 -DNDEBUG>
       $<$<CONFIG:RelWithDebInfo>:-O2 -g -DDEBUG>
       $<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
+    )
+
+    target_compile_features(${target} PRIVATE cxx_std_23)
+
+    target_link_options(${target} PRIVATE
+      -lc++abi
     )
   endif()
 endfunction()
