@@ -25,7 +25,8 @@ TEST_F(ArenaTest, BasicOps) {
   u64 arr[] = {1, 2, 3, 4};
   auto *ptr = (u64 *)this->arena->Push(sizeof(arr));
   ptr = arr;
-  for (int i = 0; i < (sizeof(arr) / sizeof(arr[0])); i++) {
+
+  for (u64 i = 0; i < (sizeof(arr) / sizeof(arr[0])); i++) {
     EXPECT_EQ(arr[i], ptr[i]);
   }
 
@@ -48,6 +49,7 @@ TEST_F(ArenaTest, Overflow) {
   auto *first = this->arena->head;
 
   auto *ptr = this->arena->Push(MB(1));
+  EXPECT_NE(ptr, nullptr);
   ptr = this->arena->Push(MB(1));
   ptr = this->arena->Push(MB(1));
   ptr = this->arena->Push(MB(1));
@@ -64,6 +66,7 @@ TEST_F(ArenaTest, MultipleOverflow) {
   auto *first = this->arena->head;
 
   auto *ptr = this->arena->Push(MB(1));
+  EXPECT_NE(ptr, nullptr);
   ptr = this->arena->Push(MB(1));
   ptr = this->arena->Push(MB(1));
   ptr = this->arena->Push(MB(1));

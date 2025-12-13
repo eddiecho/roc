@@ -33,8 +33,12 @@ auto GetSysInfo() -> SysInfo {
   global SysInfo ret = {};
 
   if (ret.page_size == 0) {
-    ret.cpu_count = get_nprocs();
-    ret.page_size = getpagesize();
+    auto n = get_nprocs();
+    Assert(n > 0);
+    ret.cpu_count = static_cast<u32>(n);
+    auto p = getpagesize();
+    Assert(p > 0);
+    ret.page_size = static_cast<u64>(p);
     ret.kind = Os::Kind::Linux;
   }
 

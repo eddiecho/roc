@@ -67,12 +67,6 @@ function(set_compiler_flags target)
       $<$<CONFIG:RelWithDebInfo>:-O2 -g -DDEBUG>
       $<$<CONFIG:MinSizeRel>:-Os -DNDEBUG>
     )
-
-    target_compile_features(${target} PRIVATE cxx_std_23)
-
-    target_link_options(${target} PRIVATE
-      -lc++abi
-    )
   endif()
 endfunction()
 
