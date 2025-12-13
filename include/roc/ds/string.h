@@ -3,11 +3,13 @@
 #include "roc/common.h"
 #include "roc/ds/arena.h"
 
+// No SSO because I'm stupid
+// But in practice, any Arena based methods will alloc next to the struct itself
 struct String {
   u64 len;
-  const char *raw;
+  const char *ptr;
 
-  auto Print() -> const char*;
+  auto PrintString() -> void;
   auto Lower(Arena *arena) -> String;
   auto Upper(Arena *arena) -> String;
 

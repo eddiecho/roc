@@ -1,6 +1,7 @@
 #include "roc/ds/string.h"
 
 #include <cctype>
+#include <cstdio>
 #include <cstring>
 
 #include "roc/ds/arena.h"
@@ -38,11 +39,11 @@ auto inline IsIdentifier(char c) -> b32 {
 }
 
 auto inline ToUpper(char c) -> char {
-  return toupper(c);
+  return (char)toupper(c);
 }
 
 auto inline ToLower(char c) -> char {
-  return tolower(c);
+  return (char)tolower(c);
 }
 
 auto NewString() -> String {
@@ -53,54 +54,75 @@ auto NewString() -> String {
 auto NewString(char *c) -> String {
   String ret = {};
   ret.len = strlen(c); // reminder that strlen doesn't include the null terminator
-  ret.raw = c;
+  ret.ptr = c;
   return ret;
 }
 
 auto NewString(char *c, u64 size) -> String {
   String ret = {};
   ret.len = size;
-  ret.raw = c;
+  ret.ptr = c;
   return ret;
 }
 
-auto String::Lower(Arena *arena) -> String {
-  auto *ptr = reinterpret_cast<String*>(arena->Push(sizeof(u64) + this->len));
-  ptr->len = this->len;
-  // memcpy(ptr + OffsetOf(String, raw), this->raw, this->len);
+auto String::PrintString() -> void {
+  printf("(%.*s)\n", (int)this->len, this->ptr);
+}
 
-  auto* dst_cur = (char*)ptr + OffsetOf(String, raw);
-  auto* src_cur = this->raw;
+auto String::Lower(Arena *arena) -> String {
+  auto *ret = reinterpret_cast<String*>(arena->Push(sizeof(String)));
+  ret->len = this->len;
+
+  auto *dst_cur = reinterpret_cast<char*>(arena->Push(this->len));
+  ret->ptr = dst_cur;
+
+  auto* src_cur = this->ptr;
   for (u64 i = 0; i < this->len; i++) {
-    // *cursor = ToLower(*cursor++);
     *dst_cur++ = ToLower(*src_cur++);
   }
 
-  return *ptr;
+  return *ret;
 }
 
 auto String::Upper(Arena *arena) -> String {
-  auto *ptr = reinterpret_cast<String*>(arena->Push(sizeof(u64) + this->len));
-  ptr->len = this->len;
-  // memcpy(ptr + OffsetOf(String, raw), this->raw, this->len);
+  auto *ret = reinterpret_cast<String*>(arena->Push(sizeof(String)));
+  ret->len = this->len;
 
-  auto* dst_cur = (char*)ptr + OffsetOf(String, raw);
-  auto* src_cur = this->raw;
+  auto *dst_cur = reinterpret_cast<char*>(arena->Push(this->len));
+  ret->ptr = dst_cur;
+
+  auto* src_cur = this->ptr;
   for (u64 i = 0; i < this->len; i++) {
     *dst_cur++ = ToUpper(*src_cur++);
   }
 
-  return *ptr;
+  return *ret;
 }
 
 auto String::Substring(Arena *arena, u64 lo, u64 hi) -> String {
-  return *this;
+  auto *ret = reinterpret_cast<String*>(arena->Push(sizeof(String)));
+  ret->len = this->len;
+
+  Assert(hi >= lo);
+  if (hi == lo) {
+    return NewString();
+  }
+
+  auto *dst_cur = reinterpret_cast<char*>(arena->Push(hi - lo));
+  ret->ptr = dst_cur;
+
+  auto* src_cur = this->ptr + lo;
+  for (u64 i = lo; i < hi; i++) {
+    *dst_cur++ = *src_cur++;
+  }
+
+  return *ret;
 }
 
 auto String::Prefix(Arena *arena, u64 end) -> String {
-  return *this;
+  return this->Substring(arena, 0, end);
 }
 
 auto String::Suffix(Arena *arena, u64 start) -> String {
-  return *this;
+  return this->Substring(arena, start, this->len);
 }

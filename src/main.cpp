@@ -20,8 +20,12 @@ auto main(int argc, char **argv) -> int {
 
   for (int i = 0; i < argc; i++) {
     auto s = NewString(argv[i]);
+    s.PrintString();
+
     auto u = s.Upper(arena);
 
-    printf("copy[%d]: %.*s\n", i, (int)u.len, u.raw);
+    printf("copy[%d]: ", i);
+    u.PrintString();
+    printf("\n");
   }
 }
