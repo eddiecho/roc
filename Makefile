@@ -39,20 +39,9 @@ else
 	ctest --test-dir build/test --output-on-failure -R $(testregex)
 endif
 
-SOURCES = $(shell find src/ -name '*.cpp')
-HEADERS = $(shell find include/ -name '*.h')
-
 .PHONY: fmt
 fmt:
-	@for src in $(SOURCES) ; do \
-		echo "Formatting $$src..." ; \
-		clang-format -i "$$src" ; \
-	done
-	@for src in $(HEADERS) ; do \
-		echo "Formatting $$src..." ; \
-		clang-format -i "$$src" ; \
-	done
-	@echo "Done"
+	nix fmt .
 
 .PHONY: tidy
 tidy:

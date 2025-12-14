@@ -12,12 +12,14 @@ struct String {
   const char *ptr;
 
   auto PrintString() -> void;
+  auto Copy(Arena *arena) -> String;
   auto Lower(Arena *arena) -> String;
   auto Upper(Arena *arena) -> String;
 
-  auto Substring(Arena *arena,u64 lo, u64 hi) -> String;
-  auto Prefix(Arena *arena, u64 end) -> String;
-  auto Suffix(Arena *arena, u64 start) -> String;
+  // These don't copy the underlying char* by default
+  auto Substring(u64 lo, u64 hi) -> String;
+  auto Prefix(u64 end) -> String;
+  auto Suffix(u64 start) -> String;
 };
 
 auto NewString() -> String;

@@ -12,7 +12,8 @@
 #endif
 
 auto Fibonacci(u64 n) -> u64 {
-  if (n <= 1) return 1;
+  if (n <= 1)
+    return 1;
 
   u64 prev = 1;
   u64 curr = 1;
@@ -28,13 +29,9 @@ auto Fibonacci(u64 n) -> u64 {
 }
 
 class CompilerTest : public ::testing::Test {
-  auto SetUp() -> void override {
-  }
+  auto SetUp() -> void override {}
 
-  auto TearDown() -> void override {
-  }
+  auto TearDown() -> void override {}
 };
 
-TEST_F(CompilerTest, BasicCompiler) {
-  EXPECT_EQ(Fibonacci(4), 5);
-}
+TEST_F(CompilerTest, BasicCompiler) { EXPECT_EQ(Fibonacci(4), 5); }

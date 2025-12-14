@@ -4,15 +4,11 @@
 #include "roc/ds/arena.h"
 
 class ArenaTest : public ::testing::Test {
-  auto SetUp() -> void override {
-    this->arena = Alloc();
-  }
+  auto SetUp() -> void override { this->arena = Alloc(); }
 
-  auto TearDown() -> void override {
-    this->arena->Release();
-  }
+  auto TearDown() -> void override { this->arena->Release(); }
 
- public:
+public:
   Arena *arena = nullptr;
 };
 
