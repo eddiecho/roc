@@ -3,6 +3,8 @@
 #include "roc/common.h"
 #include "roc/ds/arena.h"
 
+// Not necessarily null-terminated
+// If in doubt, use the PrintString() method
 // No SSO because I'm stupid
 // But in practice, any Arena based methods will alloc next to the struct itself
 struct String {

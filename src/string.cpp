@@ -100,21 +100,14 @@ auto String::Upper(Arena *arena) -> String {
 }
 
 auto String::Substring(Arena *arena, u64 lo, u64 hi) -> String {
-  auto *ret = reinterpret_cast<String*>(arena->Push(sizeof(String)));
-  ret->len = this->len;
-
   Assert(hi >= lo);
   if (hi == lo) {
     return NewString();
   }
 
-  auto *dst_cur = reinterpret_cast<char*>(arena->Push(hi - lo));
-  ret->ptr = dst_cur;
-
-  auto* src_cur = this->ptr + lo;
-  for (u64 i = lo; i < hi; i++) {
-    *dst_cur++ = *src_cur++;
-  }
+  auto *ret = reinterpret_cast<String*>(arena->Push(sizeof(String)));
+  ret->len = hi - lo;
+  ret->ptr = this->ptr + lo;
 
   return *ret;
 }
